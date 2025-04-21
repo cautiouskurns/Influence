@@ -296,7 +296,7 @@ public class EventManager : MonoBehaviour
         {
             text = "Import resources from neighboring regions",
             result = "You negotiate favorable import terms with neighboring regions.",
-            wealthEffect = -50,
+            wealthEffect = -500,
             productionEffect = 20,
             nextEventId = "economic_reform"
         });

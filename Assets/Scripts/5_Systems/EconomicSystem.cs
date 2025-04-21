@@ -177,5 +177,24 @@ namespace Systems
                 RegisterRegion(region);
             }
         }
+
+        /// <summary>
+        /// Gets the total wealth across all regions in the economic system
+        /// </summary>
+        /// <returns>The sum of wealth from all regions</returns>
+        public int GetTotalWealth()
+        {
+            int totalWealth = 0;
+            
+            foreach (var region in regions.Values)
+            {
+                if (region != null)
+                {
+                    totalWealth += region.Wealth;
+                }
+            }
+            
+            return totalWealth;
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace UI
     public class StatsDisplayUIModule : UIModuleBase
     {
         [Header("Data References")]
-        // [SerializeField] private GameManager gameManager;
+        [SerializeField] private GameManager gameManager;
         [SerializeField] private EconomicSystem economicSystem;
         
         [Header("UI Settings")]
@@ -36,8 +36,8 @@ namespace UI
             base.Initialize();
             
             // Find references if not set
-            // if (gameManager == null)
-            //     gameManager = FindFirstObjectByType<GameManager>();
+            if (gameManager == null)
+                gameManager = FindFirstObjectByType<GameManager>();
                 
             if (economicSystem == null)
                 economicSystem = FindFirstObjectByType<EconomicSystem>();
@@ -181,7 +181,7 @@ namespace UI
                 
                 TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
                 labelText.text = statName + ":";
-                labelText.fontSize = 14;
+                labelText.fontSize = 20;
                 labelText.color = Color.white;
                 labelText.alignment = TextAlignmentOptions.Left;
                 
@@ -195,7 +195,7 @@ namespace UI
                 
                 TextMeshProUGUI valueText = valueObj.AddComponent<TextMeshProUGUI>();
                 valueText.text = "0";
-                valueText.fontSize = 14;
+                valueText.fontSize = 20;
                 valueText.color = Color.white;
                 valueText.alignment = TextAlignmentOptions.Left;
                 
@@ -224,19 +224,19 @@ namespace UI
         
         private void UpdateStats()
         {
-            // if (economicSystem == null || gameManager == null)
-            //     return;
+            if (economicSystem == null || gameManager == null)
+                return;
                 
             // Update economic stats
-            // UpdateStatValue("Economy.Total Wealth", FormatNumber(economicSystem.GetTotalWealth()));
+            UpdateStatValue("Economy.Total Wealth", FormatNumber(economicSystem.GetTotalWealth()));
             // UpdateStatValue("Economy.Average Wealth", FormatNumber(economicSystem.GetAverageWealth()));
             // UpdateStatValue("Economy.Wealth Inequality", FormatPercent(economicSystem.GetWealthInequality()));
             // UpdateStatValue("Economy.Exchange Volume", FormatNumber(economicSystem.GetExchangeVolume()));
             
             // // Update population stats
-            // UpdateStatValue("Population.Total Population", FormatNumber(gameManager.GetTotalPopulation()));
-            // UpdateStatValue("Population.Growth Rate", FormatPercent(gameManager.GetPopulationGrowthRate()));
-            // UpdateStatValue("Population.Migration Rate", FormatPercent(gameManager.GetMigrationRate()));
+            UpdateStatValue("Population.Total Population", FormatNumber(gameManager.GetTotalPopulation()));
+            UpdateStatValue("Population.Growth Rate", FormatPercent(gameManager.GetPopulationGrowthRate()));
+            UpdateStatValue("Population.Migration Rate", FormatPercent(gameManager.GetMigrationRate()));
             
             // // Update resource stats
             // UpdateStatValue("Resources.Production Rate", FormatNumber(economicSystem.GetTotalProduction()));
