@@ -11,9 +11,12 @@ namespace UI
         [Header("Map Settings")]
         [SerializeField] private GameObject regionPrefab;
         [SerializeField] private Transform regionsContainer;
-        [SerializeField] private int gridWidth = 3;
-        [SerializeField] private int gridHeight = 3;
-        [SerializeField] private float regionSpacing = 2.2f;
+        [SerializeField] private int gridWidth = 5;
+        [SerializeField] private int gridHeight = 5;
+        [SerializeField] private float hexSize = 1.0f;
+        
+        [Header("Hex Grid Settings")]
+        [SerializeField] private bool pointyTopHexes = false; // False = flat-top, True = pointy-top orientation
         
         // Tracking
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
@@ -27,7 +30,7 @@ namespace UI
         
         private void Start()
         {
-            CreateRegionGrid();
+            CreateHexGrid();
         }
         
         private void OnEnable()
@@ -42,27 +45,60 @@ namespace UI
             EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
         }
         
-        private void CreateRegionGrid()
+        private void CreateHexGrid()
         {
-            for (int x = 0; x < gridWidth; x++)
+            // Constants for hex grid positioning
+            float width, height, xOffset, yOffset, startX, startY;
+            
+            if (pointyTopHexes)
             {
-                for (int y = 0; y < gridHeight; y++)
+                // Pointy-top hexagons
+                width = hexSize * 2;
+                height = hexSize * Mathf.Sqrt(3);
+                xOffset = width * 0.75f;
+                yOffset = height;
+                startX = -xOffset * (gridWidth / 2);
+                startY = -yOffset * (gridHeight / 2);
+            }
+            else
+            {
+                // Flat-top hexagons
+                width = hexSize * Mathf.Sqrt(3);
+                height = hexSize * 2;
+                xOffset = width;
+                yOffset = height * 0.75f;
+                startX = -xOffset * (gridWidth / 2);
+                startY = -yOffset * (gridHeight / 2);
+            }
+            
+            for (int q = 0; q < gridWidth; q++)
+            {
+                for (int r = 0; r < gridHeight; r++)
                 {
-                    // Calculate position
-                    Vector3 position = new Vector3(
-                        (x - gridWidth/2) * regionSpacing, 
-                        (y - gridHeight/2) * regionSpacing, 
-                        0
-                    );
+                    // Calculate position based on hex grid coordinates
+                    float x, y;
+                    
+                    if (pointyTopHexes)
+                    {
+                        x = startX + q * xOffset;
+                        y = startY + r * yOffset + (q % 2) * (yOffset / 2); // Offset every other column
+                    }
+                    else
+                    {
+                        x = startX + q * xOffset + (r % 2) * (xOffset / 2); // Offset every other row
+                        y = startY + r * yOffset;
+                    }
+                    
+                    Vector3 position = new Vector3(x, y, 0);
                     
                     // Generate region ID and name
-                    string regionId = $"Region_{x}_{y}";
-                    string regionName = $"R{x},{y}";
+                    string regionId = $"Region_{q}_{r}";
+                    string regionName = $"R{q},{r}";
                     
                     // Create color based on position (for visual distinction)
                     Color regionColor = new Color(
-                        0.4f + (float)x/gridWidth * 0.6f,
-                        0.4f + (float)y/gridHeight * 0.6f,
+                        0.4f + (float)q/gridWidth * 0.6f,
+                        0.4f + (float)r/gridHeight * 0.6f,
                         0.5f
                     );
                     
@@ -74,7 +110,7 @@ namespace UI
                 }
             }
             
-            Debug.Log($"MapManager created {regionViews.Count} regions");
+            Debug.Log($"MapManager created {regionViews.Count} hexagonal regions");
         }
         
         private void CreateRegionEntity(string regionId)
