@@ -5,10 +5,15 @@ using TMPro;
 namespace UI
 {
     /// <summary>
-    /// Helper class to set up a UI Canvas with simulation controls
+    /// Helper class to set up a UI Canvas with simulation controls.
+    /// This class can work standalone or integrate with the UIManager system.
     /// </summary>
     public class UICanvasSetup : MonoBehaviour
     {
+        [Header("UI Integration")]
+        [SerializeField] private bool useUIManagerSystem = true;
+        [SerializeField] private UIManager uiManager;
+        
         [Header("UI Prefabs")]
         public Button buttonPrefab;
         public Slider sliderPrefab;
@@ -44,6 +49,8 @@ namespace UI
         private MapColorController colorController;
 
         private SimulationController simulationController;
+        private SimulationUIModule simulationUIModule;
+        private VisualizationUIModule visualizationUIModule;
 
         private void Awake()
         {
@@ -51,10 +58,81 @@ namespace UI
             {
                 mapManager = FindFirstObjectByType<MapManager>();
             }
+            
+            if (useUIManagerSystem && uiManager == null)
+            {
+                uiManager = FindFirstObjectByType<UIManager>();
+                if (uiManager == null)
+                {
+                    Debug.Log("No UIManager found. Creating one...");
+                    GameObject uiManagerObj = new GameObject("UIManager");
+                    uiManager = uiManagerObj.AddComponent<UIManager>();
+                }
+            }
         }
 
         [ContextMenu("Setup Simulation UI")]
         public void SetupUI()
+        {
+            if (useUIManagerSystem && uiManager != null)
+            {
+                SetupUIWithManager();
+            }
+            else
+            {
+                SetupUIStandalone();
+            }
+        }
+        
+        /// <summary>
+        /// Sets up UI using the UIManager system
+        /// </summary>
+        private void SetupUIWithManager()
+        {
+            // Initialize UIManager if not already initialized
+            if (uiManager.gameObject.GetComponentsInChildren<RectTransform>().Length <= 1)
+            {
+                uiManager.Initialize();
+            }
+            
+            // Create or get SimulationUIModule
+            simulationUIModule = uiManager.GetModule<SimulationUIModule>();
+            if (simulationUIModule == null)
+            {
+                Debug.Log("Creating SimulationUIModule through UIManager");
+                simulationUIModule = uiManager.CreateModule<SimulationUIModule>(UIPosition.Bottom);
+            }
+            
+            // Create or get VisualizationUIModule
+            visualizationUIModule = uiManager.GetModule<VisualizationUIModule>();
+            if (visualizationUIModule == null)
+            {
+                Debug.Log("Creating VisualizationUIModule through UIManager");
+                visualizationUIModule = uiManager.CreateModule<VisualizationUIModule>(UIPosition.Bottom);
+            }
+            
+            // Initialize UI modules
+            simulationUIModule.Initialize();
+            visualizationUIModule.Initialize();
+            
+            // Store references to UI elements for backwards compatibility
+            if (simulationUIModule != null)
+            {
+                System.Type type = simulationUIModule.GetType();
+                playButton = (Button)type.GetField("playButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(simulationUIModule);
+                pauseButton = (Button)type.GetField("pauseButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(simulationUIModule);
+                stepButton = (Button)type.GetField("stepButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(simulationUIModule);
+                speedSlider = (Slider)type.GetField("speedSlider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(simulationUIModule);
+                statusText = (TextMeshProUGUI)type.GetField("statusText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(simulationUIModule);
+            }
+            
+            Debug.Log("UI Setup complete with UIManager integration!");
+        }
+        
+        /// <summary>
+        /// Sets up UI in standalone mode (original behavior)
+        /// </summary>
+        private void SetupUIStandalone()
         {
             // Make sure we have a Canvas component
             Canvas canvas = GetComponent<Canvas>();
@@ -117,16 +195,35 @@ namespace UI
             simulationController.speedSlider = speedSlider;
             simulationController.statusText = statusText;
 
-            Debug.Log("UI Canvas setup complete!");
+            Debug.Log("UI Canvas setup complete in standalone mode!");
         }
 
         [ContextMenu("Setup UI Canvas")]
         public void SetupUICanvas()
         {
-            CreateUICanvas();
-            CreateControlPanel();
-            CreateLegendPanel();
-            CreateControllerObject();
+            if (useUIManagerSystem && uiManager != null)
+            {
+                // Initialize UIManager
+                uiManager.Initialize();
+                
+                // Create visualization UI module if it doesn't exist
+                visualizationUIModule = uiManager.GetModule<VisualizationUIModule>();
+                if (visualizationUIModule == null)
+                {
+                    visualizationUIModule = uiManager.CreateModule<VisualizationUIModule>(UIPosition.Bottom);
+                    visualizationUIModule.Initialize();
+                }
+                
+                Debug.Log("UI Canvas setup complete with UIManager!");
+            }
+            else
+            {
+                // Use traditional setup
+                CreateUICanvas();
+                CreateControlPanel();
+                CreateLegendPanel();
+                CreateControllerObject();
+            }
         }
 
         private void CreateUICanvas()
@@ -608,6 +705,98 @@ namespace UI
             textRect.sizeDelta = Vector2.zero;
 
             return textComponent;
+        }
+        
+        /// <summary>
+        /// Converts this standalone UI to use the UIManager system
+        /// </summary>
+        [ContextMenu("Convert To UIManager System")]
+        public void ConvertToUIManagerSystem()
+        {
+            if (uiManager == null)
+            {
+                GameObject uiManagerObj = new GameObject("UIManager");
+                uiManager = uiManagerObj.AddComponent<UIManager>();
+            }
+            
+            // Initialize the UI Manager
+            uiManager.Initialize();
+            
+            // Create a SimulationUIModule and transfer existing UI elements
+            SimulationUIModule simModule = uiManager.CreateModule<SimulationUIModule>(UIPosition.Bottom);
+            
+            // Set SimulationUIModule properties using reflection
+            if (simModule != null && playButton != null)
+            {
+                System.Type type = simModule.GetType();
+                type.GetField("playButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(simModule, playButton);
+                type.GetField("pauseButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(simModule, pauseButton);
+                type.GetField("stepButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(simModule, stepButton);
+                type.GetField("speedSlider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(simModule, speedSlider);
+                type.GetField("statusText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(simModule, statusText);
+                
+                // Reparent the UI elements to the module
+                playButton.transform.SetParent(simModule.transform, true);
+                pauseButton.transform.SetParent(simModule.transform, true);
+                stepButton.transform.SetParent(simModule.transform, true);
+                speedSlider.transform.SetParent(simModule.transform, true);
+                statusText.transform.SetParent(simModule.transform, true);
+            }
+            
+            // Create a VisualizationUIModule and transfer existing UI elements
+            if (colorButtons[0] != null)
+            {
+                VisualizationUIModule visModule = uiManager.CreateModule<VisualizationUIModule>(UIPosition.Bottom);
+                
+                // Set VisualizationUIModule properties using reflection
+                System.Type type = visModule.GetType();
+                type.GetField("defaultColorButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(visModule, colorButtons[0]);
+                type.GetField("positionColorButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(visModule, colorButtons[1]);
+                type.GetField("wealthColorButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(visModule, colorButtons[2]);
+                type.GetField("productionColorButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(visModule, colorButtons[3]);
+                
+                if (legendPanel != null)
+                {
+                    type.GetField("legendPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(visModule, legendPanel);
+                    
+                    // Transfer legend panel elements
+                    Transform legendTitle = legendPanel.transform.Find("LegendTitle");
+                    Transform minColorImage = legendPanel.transform.Find("MinColorContainer/MinColorImage");
+                    Transform maxColorImage = legendPanel.transform.Find("MaxColorContainer/MaxColorImage");
+                    Transform minValueText = legendPanel.transform.Find("MinColorContainer/MinValueText");
+                    Transform maxValueText = legendPanel.transform.Find("MaxColorContainer/MaxValueText");
+                    
+                    if (legendTitle != null && minColorImage != null && maxColorImage != null && 
+                        minValueText != null && maxValueText != null)
+                    {
+                        type.GetField("legendTitle", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            .SetValue(visModule, legendTitle.GetComponent<TextMeshProUGUI>());
+                        type.GetField("minColorImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            .SetValue(visModule, minColorImage.GetComponent<Image>());
+                        type.GetField("maxColorImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            .SetValue(visModule, maxColorImage.GetComponent<Image>());
+                        type.GetField("minValueText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            .SetValue(visModule, minValueText.GetComponent<TextMeshProUGUI>());
+                        type.GetField("maxValueText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                            .SetValue(visModule, maxValueText.GetComponent<TextMeshProUGUI>());
+                    }
+                    
+                    // Reparent the legend panel
+                    legendPanel.transform.SetParent(visModule.transform, true);
+                }
+                
+                // Reparent the color buttons
+                foreach (Button button in colorButtons)
+                {
+                    if (button != null)
+                    {
+                        button.transform.SetParent(visModule.transform, true);
+                    }
+                }
+            }
+            
+            useUIManagerSystem = true;
+            Debug.Log("Successfully converted to UIManager system!");
         }
     }
 }
