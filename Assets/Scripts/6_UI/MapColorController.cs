@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.Events;
 
 namespace UI
 {
@@ -23,43 +24,103 @@ namespace UI
         public TextMeshProUGUI minValueText;
         public TextMeshProUGUI maxValueText;
         
+        [Header("Debug")]
+        [SerializeField] private bool logDebugInfo = true;
+        
         private void Awake()
         {
             // If not set in inspector, try to find MapManager
             if (mapManager == null)
             {
                 mapManager = FindFirstObjectByType<MapManager>();
+                if (mapManager == null)
+                {
+                    Debug.LogError("MapColorController: Could not find MapManager in scene!");
+                }
+                else if (logDebugInfo)
+                {
+                    Debug.Log("MapColorController: Found MapManager: " + mapManager.name);
+                }
             }
-            
-            // Set up button listeners
-            if (defaultColorButton != null)
-                defaultColorButton.onClick.AddListener(() => SetColorMode(RegionColorMode.Default));
-                
-            if (positionColorButton != null)
-                positionColorButton.onClick.AddListener(() => SetColorMode(RegionColorMode.Position));
-                
-            if (wealthColorButton != null)
-                wealthColorButton.onClick.AddListener(() => SetColorMode(RegionColorMode.Wealth));
-                
-            if (productionColorButton != null)
-                productionColorButton.onClick.AddListener(() => SetColorMode(RegionColorMode.Production));
         }
         
         private void Start()
         {
+            // Set up button listeners directly in Start
+            SetupButtonListeners();
+            
             // Initialize with default mode
             SetColorMode(RegionColorMode.Default);
+            
+            if (logDebugInfo)
+            {
+                Debug.Log("MapColorController initialized. UI Controls: " + 
+                         (defaultColorButton != null ? "Default✓ " : "Default✗ ") +
+                         (positionColorButton != null ? "Position✓ " : "Position✗ ") +
+                         (wealthColorButton != null ? "Wealth✓ " : "Wealth✗ ") +
+                         (productionColorButton != null ? "Production✓ " : "Production✗ "));
+            }
+        }
+        
+        private void SetupButtonListeners()
+        {
+            // IMPORTANT: Completely clear and re-add all button listeners
+            SetupButton(defaultColorButton, () => OnColorButtonClick(RegionColorMode.Default), "Default");
+            SetupButton(positionColorButton, () => OnColorButtonClick(RegionColorMode.Position), "Position");
+            SetupButton(wealthColorButton, () => OnColorButtonClick(RegionColorMode.Wealth), "Wealth");
+            SetupButton(productionColorButton, () => OnColorButtonClick(RegionColorMode.Production), "Production");
+        }
+        
+        private void SetupButton(Button button, UnityAction action, string name)
+        {
+            if (button != null)
+            {
+                // Clear existing listeners to avoid duplicates
+                button.onClick.RemoveAllListeners();
+                
+                // Add fresh listener
+                button.onClick.AddListener(action);
+                
+                if (logDebugInfo)
+                {
+                    button.onClick.AddListener(() => Debug.Log($"{name} button clicked"));
+                }
+            }
+            else if (logDebugInfo)
+            {
+                Debug.LogWarning($"{name} button reference is missing!");
+            }
+        }
+        
+        private void OnColorButtonClick(RegionColorMode mode)
+        {
+            SetColorMode(mode);
         }
         
         public void SetColorMode(RegionColorMode mode)
         {
-            if (mapManager == null) return;
+            if (mapManager == null)
+            {
+                Debug.LogError("Cannot set color mode: MapManager is null!");
+                
+                // Try to find it again as a last resort
+                mapManager = FindFirstObjectByType<MapManager>();
+                if (mapManager == null) return;
+            }
+            
+            Debug.Log($"Setting color mode to: {mode}");
             
             // Call the MapManager's method to change color mode
             mapManager.SetColorMode((int)mode);
             
             // Update the legend based on the selected mode
             UpdateLegend(mode);
+            
+            // Directly force an update of colors in case the event system fails
+            if (mapManager != null)
+            {
+                mapManager.UpdateRegionColors();
+            }
         }
         
         private void UpdateLegend(RegionColorMode mode)
@@ -103,6 +164,24 @@ namespace UI
                     maxValueText.text = "High";
                     break;
             }
+        }
+        
+        // Public method that can be called from UI buttons directly
+        public void SetDefaultColorMode() => OnColorButtonClick(RegionColorMode.Default);
+        public void SetPositionColorMode() => OnColorButtonClick(RegionColorMode.Position);
+        public void SetWealthColorMode() => OnColorButtonClick(RegionColorMode.Wealth);
+        public void SetProductionColorMode() => OnColorButtonClick(RegionColorMode.Production);
+        
+        // Call this method to manually refresh connections
+        public void RefreshConnections()
+        {
+            if (mapManager == null)
+            {
+                mapManager = FindFirstObjectByType<MapManager>();
+            }
+            
+            SetupButtonListeners();
+            Debug.Log("MapColorController: Connections refreshed");
         }
     }
 }

@@ -355,26 +355,65 @@ namespace UI
             CreateHexGrid();
         }
 
-        // Method to update region colors based on current color mode
+        // Ensure region colors update properly
         public void UpdateRegionColors()
         {
+            if (regionViews == null || regionViews.Count == 0)
+            {
+                Debug.LogWarning("MapManager: No region views to update colors on!");
+                return;
+            }
+            
+            Debug.Log($"MapManager: Updating {regionViews.Count} region colors to {colorMode} mode");
+            
             foreach (var kvp in regionViews)
             {
                 string regionId = kvp.Key;
                 RegionView view = kvp.Value;
                 
-                int q = int.Parse(regionId.Split('_')[1]);
-                int r = int.Parse(regionId.Split('_')[2]);
+                if (view == null || view.gameObject == null)
+                {
+                    continue;
+                }
                 
+                // Extract coordinates from region ID (format: "Region_X_Y")
+                string[] parts = regionId.Split('_');
+                if (parts.Length < 3)
+                {
+                    continue;
+                }
+                
+                if (!int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
+                {
+                    continue;
+                }
+                
+                // Calculate new color based on current mode
                 Color newColor = GetRegionColor(q, r, regionId);
+                
+                // Force immediate update on the view
                 view.UpdateColor(newColor);
             }
+            
+            Debug.Log($"MapManager: Finished updating region colors to {colorMode} mode");
         }
-        
-        // Public method to change color mode (can be called from UI buttons)
+
+        // Update the SetColorMode method to include better error handling
         public void SetColorMode(int modeValue)
         {
-            colorMode = (RegionColorMode)modeValue;
+            // Validate the input mode value
+            if (modeValue < 0 || modeValue > System.Enum.GetValues(typeof(RegionColorMode)).Length - 1)
+            {
+                Debug.LogError($"MapManager: Invalid color mode value: {modeValue}");
+                return;
+            }
+            
+            // Convert to enum and assign
+            RegionColorMode newMode = (RegionColorMode)modeValue;
+            Debug.Log($"MapManager: Changing color mode from {colorMode} to {newMode}");
+            colorMode = newMode;
+            
+            // Update all region colors immediately
             UpdateRegionColors();
         }
     }

@@ -100,6 +100,60 @@ namespace UI
         }
         
         /// <summary>
+        /// Resize a panel to the specified size
+        /// </summary>
+        /// <param name="position">The panel to resize</param>
+        /// <param name="size">The new size (for side panels: width, for top/bottom: height)</param>
+        public void ResizePanel(UIPosition position, float size)
+        {
+            RectTransform panel = GetPanelForPosition(position);
+            
+            switch (position)
+            {
+                case UIPosition.Top:
+                case UIPosition.Bottom:
+                    // For top/bottom panels, change the height
+                    panel.sizeDelta = new Vector2(panel.sizeDelta.x, size);
+                    break;
+                    
+                case UIPosition.Left:
+                case UIPosition.Right:
+                    // For left/right panels, change the width
+                    panel.sizeDelta = new Vector2(size, panel.sizeDelta.y);
+                    break;
+                    
+                case UIPosition.Center:
+                    // For center panel, both dimensions
+                    Debug.LogWarning("Use ResizeCenterPanel for center panel to specify both dimensions");
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// Resize the center panel with specific width and height
+        /// </summary>
+        /// <param name="width">The new width</param>
+        /// <param name="height">The new height</param>
+        public void ResizeCenterPanel(float width, float height)
+        {
+            if (centerPanel != null)
+            {
+                centerPanel.sizeDelta = new Vector2(width, height);
+            }
+        }
+        
+        /// <summary>
+        /// Get the current size of a panel
+        /// </summary>
+        /// <param name="position">The panel position</param>
+        /// <returns>The size of the panel (for top/bottom: height, for left/right: width, for center: Vector2 with both dimensions)</returns>
+        public Vector2 GetPanelSize(UIPosition position)
+        {
+            RectTransform panel = GetPanelForPosition(position);
+            return panel.sizeDelta;
+        }
+        
+        /// <summary>
         /// Show all registered UI modules
         /// </summary>
         public void ShowAllModules()
@@ -219,7 +273,7 @@ namespace UI
                 bottomPanel.anchorMin = new Vector2(0, 0);
                 bottomPanel.anchorMax = new Vector2(1, 0);
                 bottomPanel.pivot = new Vector2(0.5f, 0);
-                bottomPanel.sizeDelta = new Vector2(0, 80);
+                bottomPanel.sizeDelta = new Vector2(0, 150);
                 bottomPanel.anchoredPosition = Vector2.zero;
             }
             

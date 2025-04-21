@@ -178,7 +178,13 @@ namespace UI
         {
             if (mainRenderer != null)
             {
+                // Set the new color on the renderer
                 mainRenderer.color = newColor;
+                Debug.Log($"RegionView {RegionName}: Updated color to {newColor}");
+            }
+            else
+            {
+                Debug.LogError($"RegionView {RegionName}: Cannot update color - mainRenderer is null");
             }
         }
     }
