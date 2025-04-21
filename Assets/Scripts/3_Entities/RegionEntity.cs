@@ -35,7 +35,7 @@ namespace Entities
             Production = initialProduction;
             LaborAvailable = 100;  // Default labor value
             InfrastructureLevel = 5;  // Default infrastructure level
-            Debug.Log($"Created region: {Name} with Wealth: {Wealth}, Production: {Production}");
+//            Debug.Log($"Created region: {Name} with Wealth: {Wealth}, Production: {Production}");
         }
 
         // Additional constructor with default values

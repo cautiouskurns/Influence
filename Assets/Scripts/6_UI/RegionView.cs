@@ -71,7 +71,7 @@ namespace UI
                 RegionEntity existingEntity = economicSystem.GetRegion(RegionName);
                 if (existingEntity != null)
                 {
-                    Debug.Log($"RegionView {RegionName}: Found economic entity");
+//                    Debug.Log($"RegionView {RegionName}: Found economic entity");
                     RegionEntity = existingEntity;
                     UpdateUIFromEntity();
                 }
@@ -180,7 +180,7 @@ namespace UI
             {
                 // Set the new color on the renderer
                 mainRenderer.color = newColor;
-                Debug.Log($"RegionView {RegionName}: Updated color to {newColor}");
+//                Debug.Log($"RegionView {RegionName}: Updated color to {newColor}");
             }
             else
             {

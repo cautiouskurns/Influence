@@ -46,7 +46,7 @@ public class UIInitializer : MonoBehaviour
         
         // Initialize the UIManager (create canvas and panels)
         uiManager.Initialize();
-        Debug.Log("UIManager initialized");
+//        Debug.Log("UIManager initialized");
         
         // Create requested UI modules
         CreateUIModules();

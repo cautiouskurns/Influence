@@ -98,7 +98,7 @@ namespace Systems
             // Update wealth based on production
             region.Wealth += Mathf.RoundToInt(region.Production * 0.1f);
             
-            Debug.Log($"Processed economic tick for {region.Name}: Production = {region.Production}, Wealth = {region.Wealth}");
+//            Debug.Log($"Processed economic tick for {region.Name}: Production = {region.Production}, Wealth = {region.Wealth}");
         }
         
         /// <summary>
@@ -122,8 +122,8 @@ namespace Systems
             // Update region's production value
             region.Production = Mathf.RoundToInt(production);
             
-            Debug.Log($"[Production] {region.Name} - Labor: {labor}, Capital: {capital}, " +
-                      $"Output: {region.Production}");
+//            Debug.Log($"[Production] {region.Name} - Labor: {labor}, Capital: {capital}, " +
+//                      $"Output: {region.Production}");
         }
         
         public void RegisterRegion(RegionEntity region)
@@ -133,7 +133,7 @@ namespace Systems
             if (!regions.ContainsKey(region.Name))
             {
                 regions.Add(region.Name, region);
-                Debug.Log($"Region registered: {region.Name}");
+//                Debug.Log($"Region registered: {region.Name}");
             }
         }
         
@@ -154,6 +154,28 @@ namespace Systems
         public List<string> GetAllRegionIds()
         {
             return regions.Keys.ToList();
+        }
+
+        /// <summary>
+        /// Update an existing region entity
+        /// </summary>
+        /// <param name="region">The updated region entity</param>
+        public void UpdateRegion(RegionEntity region)
+        {
+            if (region == null) return;
+            
+            if (regions.ContainsKey(region.Name))
+            {
+                regions[region.Name] = region;
+                
+                // Trigger an event to notify listeners of the update
+                EventBus.Trigger("RegionUpdated", region);
+            }
+            else
+            {
+                // If region doesn't exist yet, register it
+                RegisterRegion(region);
+            }
         }
     }
 }

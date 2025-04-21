@@ -395,7 +395,7 @@ namespace UI
                 view.UpdateColor(newColor);
             }
             
-            Debug.Log($"MapManager: Finished updating region colors to {colorMode} mode");
+//            Debug.Log($"MapManager: Finished updating region colors to {colorMode} mode");
         }
 
         // Update the SetColorMode method to include better error handling
