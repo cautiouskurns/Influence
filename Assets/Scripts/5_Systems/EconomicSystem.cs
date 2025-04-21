@@ -28,12 +28,14 @@ namespace Systems
         {
             EventBus.Subscribe("TurnEnded", OnTurnEnded);
             EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
+            EventBus.Subscribe("EconomicTick", OnEconomicTick);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe("TurnEnded", OnTurnEnded);
             EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
+            EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
         }
 
         private void OnTurnEnded(object _)
@@ -50,6 +52,12 @@ namespace Systems
             {
                 RegisterRegion(region);
             }
+        }
+
+        private void OnEconomicTick(object data)
+        {
+            // Also update all map colors when the economy ticks
+            EventBus.Trigger("UpdateMapColors", null);
         }
 
         [ContextMenu("Process Economic Tick")]
@@ -141,6 +149,11 @@ namespace Systems
         public List<RegionEntity> GetAllRegions()
         {
             return regions.Values.ToList();
+        }
+
+        public List<string> GetAllRegionIds()
+        {
+            return regions.Keys.ToList();
         }
     }
 }

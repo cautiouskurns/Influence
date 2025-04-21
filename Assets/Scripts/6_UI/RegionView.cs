@@ -172,5 +172,14 @@ namespace UI
                 nameText.fontStyle = FontStyles.Normal;
             }
         }
+
+        // Add method to update the region's color (called when color mode changes)
+        public void UpdateColor(Color newColor)
+        {
+            if (mainRenderer != null)
+            {
+                mainRenderer.color = newColor;
+            }
+        }
     }
 }

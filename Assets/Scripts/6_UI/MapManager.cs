@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Managers;
 using Entities;
@@ -6,6 +7,14 @@ using Systems;
 
 namespace UI
 {
+    public enum RegionColorMode
+    {
+        Default,
+        Position,
+        Wealth,
+        Production
+    }
+
     public class MapManager : MonoBehaviour
     {
         [Header("Map Settings")]
@@ -19,6 +28,14 @@ namespace UI
         [SerializeField] private bool pointyTopHexes = false; // False = flat-top, True = pointy-top orientation
         [SerializeField] [Range(0.7f, 1.3f)] private float horizontalSpacingAdjust = 1.0f; // Adjust x-spacing
         [SerializeField] [Range(0.7f, 1.3f)] private float verticalSpacingAdjust = 1.0f; // Adjust y-spacing
+        
+        [Header("Color Settings")]
+        [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
+        [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
+        [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f); // Red for poor regions
+        [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy regions
+        [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f); // Blue for low production
+        [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f); // Yellow for high production
         
         // Tracking variables
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
@@ -42,12 +59,14 @@ namespace UI
         {
             EventBus.Subscribe("RegionSelected", OnRegionSelected);
             EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
+            EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
         }
         
         private void OnDisable()
         {
             EventBus.Unsubscribe("RegionSelected", OnRegionSelected);
             EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
+            EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
         }
         
         private void CreateHexGrid()
@@ -135,12 +154,8 @@ namespace UI
             string regionId = $"Region_{q}_{r}";
             string regionName = $"R{q},{r}";
             
-            // Create color based on position (for visual distinction)
-            Color regionColor = new Color(
-                0.4f + (float)q/gridWidth * 0.6f,
-                0.4f + (float)r/gridHeight * 0.6f,
-                0.5f
-            );
+            // Apply color based on the current color mode
+            Color regionColor = GetRegionColor(q, r, regionId);
             
             // Initialize the region
             RegionView regionView = regionObj.GetComponent<RegionView>();
@@ -151,6 +166,92 @@ namespace UI
             
             // Create an economic entity for this region
             CreateRegionEntity(regionId);
+        }
+        
+        private Color GetRegionColor(int q, int r, string regionId)
+        {
+            switch (colorMode)
+            {
+                case RegionColorMode.Position:
+                    // Original position-based coloring
+                    return new Color(
+                        0.4f + (float)q/gridWidth * 0.6f,
+                        0.4f + (float)r/gridHeight * 0.6f,
+                        0.5f
+                    );
+                    
+                case RegionColorMode.Wealth:
+                    return GetWealthBasedColor(regionId);
+                    
+                case RegionColorMode.Production:
+                    return GetProductionBasedColor(regionId);
+                    
+                case RegionColorMode.Default:
+                default:
+                    return defaultRegionColor;
+            }
+        }
+        
+        private Color GetWealthBasedColor(string regionId)
+        {
+            if (economicSystem == null) return defaultRegionColor;
+            
+            var region = economicSystem.GetRegion(regionId);
+            if (region == null) return defaultRegionColor;
+            
+            // Get min/max wealth values in the economy
+            int minWealth = int.MaxValue;
+            int maxWealth = int.MinValue;
+            
+            foreach (var entityId in economicSystem.GetAllRegionIds())
+            {
+                var entity = economicSystem.GetRegion(entityId);
+                if (entity != null)
+                {
+                    minWealth = Mathf.Min(minWealth, entity.Wealth);
+                    maxWealth = Mathf.Max(maxWealth, entity.Wealth);
+                }
+            }
+            
+            // Safeguard against division by zero
+            if (minWealth == maxWealth) return Color.Lerp(wealthMinColor, wealthMaxColor, 0.5f);
+            
+            // Normalize the value between 0 and 1
+            float normalizedValue = (float)(region.Wealth - minWealth) / (maxWealth - minWealth);
+            
+            // Return color gradient based on wealth
+            return Color.Lerp(wealthMinColor, wealthMaxColor, normalizedValue);
+        }
+        
+        private Color GetProductionBasedColor(string regionId)
+        {
+            if (economicSystem == null) return defaultRegionColor;
+            
+            var region = economicSystem.GetRegion(regionId);
+            if (region == null) return defaultRegionColor;
+            
+            // Get min/max production values in the economy
+            int minProduction = int.MaxValue;
+            int maxProduction = int.MinValue;
+            
+            foreach (var entityId in economicSystem.GetAllRegionIds())
+            {
+                var entity = economicSystem.GetRegion(entityId);
+                if (entity != null)
+                {
+                    minProduction = Mathf.Min(minProduction, entity.Production);
+                    maxProduction = Mathf.Max(maxProduction, entity.Production);
+                }
+            }
+            
+            // Safeguard against division by zero
+            if (minProduction == maxProduction) return Color.Lerp(productionMinColor, productionMaxColor, 0.5f);
+            
+            // Normalize the value between 0 and 1
+            float normalizedValue = (float)(region.Production - minProduction) / (maxProduction - minProduction);
+            
+            // Return color gradient based on production
+            return Color.Lerp(productionMinColor, productionMaxColor, normalizedValue);
         }
         
         private void ClearExistingRegions()
@@ -241,11 +342,40 @@ namespace UI
             // This is handled directly by the RegionView components
         }
         
+        private void OnUpdateMapColors(object data)
+        {
+            // Update all region colors when triggered
+            UpdateRegionColors();
+        }
+        
         // Add a reset method that can be called from editor/inspector
         [ContextMenu("Reset Hex Grid")]
         public void ResetHexGrid()
         {
             CreateHexGrid();
+        }
+
+        // Method to update region colors based on current color mode
+        public void UpdateRegionColors()
+        {
+            foreach (var kvp in regionViews)
+            {
+                string regionId = kvp.Key;
+                RegionView view = kvp.Value;
+                
+                int q = int.Parse(regionId.Split('_')[1]);
+                int r = int.Parse(regionId.Split('_')[2]);
+                
+                Color newColor = GetRegionColor(q, r, regionId);
+                view.UpdateColor(newColor);
+            }
+        }
+        
+        // Public method to change color mode (can be called from UI buttons)
+        public void SetColorMode(int modeValue)
+        {
+            colorMode = (RegionColorMode)modeValue;
+            UpdateRegionColors();
         }
     }
 }
