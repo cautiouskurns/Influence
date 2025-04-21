@@ -6,6 +6,7 @@ using Entities;
 using Systems;
 using Core;
 using Managers;
+using UI;
 
 public class EventManager : MonoBehaviour
 {
@@ -35,6 +36,10 @@ public class EventManager : MonoBehaviour
     [Header("Event Settings")]
     [SerializeField] private List<GameEvent> availableEvents = new List<GameEvent>();
     [SerializeField] private float checkInterval = 2.0f;
+    
+    [Header("UI References")]
+    [Tooltip("Drag your DialogueUI GameObject with DialogueView component here")]
+    [SerializeField] public DialogueView dialogueView;
     
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
@@ -66,6 +71,16 @@ public class EventManager : MonoBehaviour
         economicSystem = FindFirstObjectByType<EconomicSystem>();
         gameManager = GameManager.Instance;
         
+        // Find DialogueView if not set
+        if (dialogueView == null)
+        {
+            dialogueView = FindFirstObjectByType<DialogueView>();
+            if (dialogueView == null)
+            {
+                Debug.LogWarning("DialogueView not found! Please create one using DialoguePrefabSetup.");
+            }
+        }
+        
         // Create sample events if we don't have any
         if (availableEvents.Count == 0)
         {
@@ -76,11 +91,23 @@ public class EventManager : MonoBehaviour
     private void OnEnable()
     {
         EventBus.Subscribe("EconomicTick", OnEconomicTick);
+        
+        // Subscribe to dialogue response event
+        if (dialogueView != null)
+        {
+            dialogueView.OnResponseSelected += HandleDialogueResponse;
+        }
     }
     
     private void OnDisable()
     {
         EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
+        
+        // Unsubscribe from dialogue response event
+        if (dialogueView != null)
+        {
+            dialogueView.OnResponseSelected -= HandleDialogueResponse;
+        }
     }
     
     private void Update()
@@ -167,21 +194,57 @@ public class EventManager : MonoBehaviour
             Debug.Log("Game paused due to event");
         }
         
-        // Print event information to console
-        Debug.Log("=================================");
-        Debug.Log($"EVENT: {currentEvent.title}");
-        Debug.Log($"{currentEvent.description}");
-        Debug.Log("---------------------------------");
-        
-        // Print choices
-        for (int i = 0; i < currentEvent.choices.Count; i++)
+        // If we have a DialogueView, use it to display the event
+        if (dialogueView != null)
         {
-            EventChoice choice = currentEvent.choices[i];
-            Debug.Log($"[{i + 1}] {choice.text}");
+            // Convert event choices to string list for DialogueView
+            List<string> choiceTexts = new List<string>();
+            foreach (EventChoice choice in currentEvent.choices)
+            {
+                choiceTexts.Add(choice.text);
+            }
+            
+            // Show the dialogue
+            dialogueView.ShowDialogue(
+                currentEvent.id,
+                currentEvent.title,
+                currentEvent.description,
+                choiceTexts
+            );
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"Displaying event in UI: {currentEvent.title}");
+            }
         }
-        
-        Debug.Log("=================================");
-        Debug.Log("Press the corresponding number key to select an option");
+        else
+        {
+            // Fallback to console display if DialogueView is not available
+            Debug.Log("=================================");
+            Debug.Log($"EVENT: {currentEvent.title}");
+            Debug.Log($"{currentEvent.description}");
+            Debug.Log("---------------------------------");
+            
+            // Print choices
+            for (int i = 0; i < currentEvent.choices.Count; i++)
+            {
+                EventChoice choice = currentEvent.choices[i];
+                Debug.Log($"[{i + 1}] {choice.text}");
+            }
+            
+            Debug.Log("=================================");
+            Debug.Log("Press the corresponding number key to select an option");
+        }
+    }
+    
+    // New method to handle response from DialogueView
+    private void HandleDialogueResponse(string eventId, int choiceIndex)
+    {
+        // Verify this is the current event
+        if (currentEvent != null && currentEvent.id == eventId)
+        {
+            ProcessChoice(choiceIndex);
+        }
     }
     
     public void ProcessChoice(int choiceIndex)
@@ -194,8 +257,11 @@ public class EventManager : MonoBehaviour
         EventChoice choice = currentEvent.choices[choiceIndex];
         
         // Show the result
-        Debug.Log("=================================");
-        Debug.Log($"RESULT: {choice.result}");
+        if (showDebugLogs)
+        {
+            Debug.Log("=================================");
+            Debug.Log($"RESULT: {choice.result}");
+        }
         
         // Apply effects
         if (economicSystem != null)
@@ -212,21 +278,30 @@ public class EventManager : MonoBehaviour
                     if (choice.wealthEffect != 0)
                     {
                         region.Wealth += choice.wealthEffect;
-                        Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Wealth})");
+                        if (showDebugLogs)
+                        {
+                            Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Wealth})");
+                        }
                     }
                     
                     // Apply production effect
                     if (choice.productionEffect != 0)
                     {
                         region.Production += choice.productionEffect;
-                        Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.Production})");
+                        if (showDebugLogs)
+                        {
+                            Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.Production})");
+                        }
                     }
                     
                     // Apply labor effect
                     if (choice.laborEffect != 0)
                     {
                         region.LaborAvailable += choice.laborEffect;
-                        Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.LaborAvailable})");
+                        if (showDebugLogs)
+                        {
+                            Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.LaborAvailable})");
+                        }
                     }
                     
                     // Update the region in the economic system
@@ -235,7 +310,10 @@ public class EventManager : MonoBehaviour
             }
         }
         
-        Debug.Log("=================================");
+        if (showDebugLogs)
+        {
+            Debug.Log("=================================");
+        }
         
         // Check for next event
         string nextEventId = choice.nextEventId;
@@ -275,7 +353,10 @@ public class EventManager : MonoBehaviour
         if (pendingEvents.Count == 0 && currentEvent == null && gameManager != null)
         {
             gameManager.ResumeSimulation();
-            Debug.Log("No more events, resuming simulation");
+            if (showDebugLogs)
+            {
+                Debug.Log("No more events, resuming simulation");
+            }
         }
     }
     
