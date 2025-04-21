@@ -1512,8 +1512,10 @@ MonoBehaviour:
   regionsContainer: {fileID: 1983520340}
   gridWidth: 3
   gridHeight: 3
-  hexSize: 1
-  pointyTopHexes: 0
+  hexSize: 1.9
+  pointyTopHexes: 1
+  horizontalSpacingAdjust: 1.25
+  verticalSpacingAdjust: 0.9
 --- !u!1 &1455276063
 GameObject:
   m_ObjectHideFlags: 0

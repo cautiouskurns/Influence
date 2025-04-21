@@ -122,16 +122,55 @@ namespace UI
         private void UpdateUI(int wealth, int production)
         {
             if (wealthText != null)
-                wealthText.text = $"W: {wealth}";
+            {
+                // Use more compact format for better fit
+                wealthText.text = wealth < 1000 ? $"W:{wealth}" : $"W:{wealth/1000}k";
+                
+                // Color-code wealth text based on value
+                wealthText.color = wealth > 200 ? Color.green : (wealth < 100 ? Color.red : Color.white);
+            }
                 
             if (productionText != null)
-                productionText.text = $"P: {production}";
+            {
+                // Use more compact format for better fit
+                productionText.text = production < 1000 ? $"P:{production}" : $"P:{production/1000}k";
+                
+                // Color-code production text based on value
+                productionText.color = production > 80 ? Color.green : (production < 40 ? Color.red : Color.white);
+            }
         }
         
         private void OnMouseDown()
         {
             SetHighlighted(true);
             EventBus.Trigger("RegionSelected", RegionName);
+            
+            // Display additional info when selected
+            if (RegionEntity != null)
+            {
+                // Make the name text slightly larger when selected for emphasis
+                if (nameText != null)
+                {
+                    nameText.fontStyle = FontStyles.Bold;
+                }
+                
+                Debug.Log($"Region {RegionName} - Wealth: {RegionEntity.Wealth}, " +
+                         $"Production: {RegionEntity.Production}, " +
+                         $"Labor: {RegionEntity.LaborAvailable}, " +
+                         $"Infrastructure: {RegionEntity.InfrastructureLevel}");
+            }
+        }
+        
+        // Add a method to handle deselection
+        public void Deselect()
+        {
+            SetHighlighted(false);
+            
+            // Reset text styling
+            if (nameText != null)
+            {
+                nameText.fontStyle = FontStyles.Normal;
+            }
         }
     }
 }
