@@ -17,7 +17,7 @@ namespace UI
         public Button responseButtonTemplate;
         
         [Header("Panel Settings")]
-        [SerializeField] private Vector2 dialoguePanelSize = new Vector2(800, 400);
+        [SerializeField] private Vector2 dialoguePanelSize = new Vector2(800, 500); // Increased height
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.9f);
         [SerializeField] private Color headerColor = new Color(0.2f, 0.3f, 0.4f, 1f);
         
@@ -34,6 +34,11 @@ namespace UI
         [SerializeField] private float buttonSpacing = 10f;
         [SerializeField] private Color buttonColor = new Color(0.3f, 0.3f, 0.3f, 1f);
         [SerializeField] private Color buttonHoverColor = new Color(0.4f, 0.4f, 0.4f, 1f);
+        
+        [Header("Indicator Settings")]
+        [SerializeField] private Color positiveEffectColor = new Color(0.2f, 0.7f, 0.2f);
+        [SerializeField] private Color negativeEffectColor = new Color(0.7f, 0.2f, 0.2f);
+        [SerializeField] private Color neutralEffectColor = new Color(0.7f, 0.7f, 0.7f);
 
         [ContextMenu("Setup Dialogue Prefab")]
         public void SetupPrefab()
@@ -94,17 +99,17 @@ namespace UI
                 Debug.Log("Created event title text");
             }
             
-            // Create content area
+            // Create content area with more space for description
             GameObject contentObj = SetupChild(dialoguePanel, "ContentPanel", 
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(dialoguePanelSize.x - 40f, dialoguePanelSize.y - 150f), new Vector2(0f, 0f));
+                new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.9f), new Vector2(0.5f, 0.5f),
+                new Vector2(dialoguePanelSize.x - 40f, dialoguePanelSize.y * 0.35f), new Vector2(0f, 0f));
             
             // Create event description text if needed
             if (eventDescriptionText == null)
             {
                 GameObject descObj = SetupChild(contentObj.GetComponent<RectTransform>(), "DescriptionText", 
-                    new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(dialoguePanelSize.x - 60f, dialoguePanelSize.y / 2f - 40f), new Vector2(0f, -20f));
+                    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, Vector2.zero);
                 
                 eventDescriptionText = descObj.AddComponent<TextMeshProUGUI>();
                 eventDescriptionText.text = "This is where the event description will appear. It can be multiple lines of text explaining the situation that the player needs to respond to.";
@@ -112,21 +117,45 @@ namespace UI
                 eventDescriptionText.alignment = TextAlignmentOptions.Top;
                 eventDescriptionText.color = descriptionTextColor;
                 eventDescriptionText.textWrappingMode = TextWrappingModes.Normal;
+                eventDescriptionText.overflowMode = TextOverflowModes.Overflow;
                 
                 Debug.Log("Created event description text");
             }
             
-            // Create response container if needed
+            // Create response container in the bottom section, not overlapping the description
             if (responseContainer == null)
             {
                 GameObject responseObj = SetupChild(dialoguePanel, "ResponseContainer", 
-                    new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                    new Vector2(dialoguePanelSize.x - 40f, 200f), new Vector2(0f, 100f));
+                    new Vector2(0.5f, 0.1f), new Vector2(0.5f, 0.4f), new Vector2(0.5f, 0.5f),
+                    new Vector2(dialoguePanelSize.x - 40f, dialoguePanelSize.y * 0.3f), Vector2.zero);
                 
                 responseContainer = responseObj.GetComponent<RectTransform>();
                 
-                // Add vertical layout group for responses
-                VerticalLayoutGroup layoutGroup = responseObj.AddComponent<VerticalLayoutGroup>();
+                // Add scroll rect for many responses
+                ScrollRect scrollRect = responseObj.AddComponent<ScrollRect>();
+                
+                // Create viewport
+                GameObject viewportObj = SetupChild(responseContainer, "Viewport", 
+                    Vector2.zero, Vector2.one, Vector2.one * 0.5f,
+                    Vector2.zero, Vector2.zero);
+                
+                Image viewportImage = viewportObj.AddComponent<Image>();
+                viewportImage.color = new Color(0, 0, 0, 0.01f); // Almost transparent
+                
+                // Create content container for the scroll rect
+                GameObject contentContainerObj = SetupChild(viewportObj.GetComponent<RectTransform>(), "Content", 
+                    new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1),
+                    new Vector2(0, 0), Vector2.zero);
+                
+                // Setup scroll rect
+                scrollRect.viewport = viewportObj.GetComponent<RectTransform>();
+                scrollRect.content = contentContainerObj.GetComponent<RectTransform>();
+                scrollRect.horizontal = false;
+                scrollRect.vertical = true;
+                scrollRect.scrollSensitivity = 10;
+                
+                // Add vertical layout group to content container
+                VerticalLayoutGroup layoutGroup = contentContainerObj.AddComponent<VerticalLayoutGroup>();
                 layoutGroup.spacing = buttonSpacing;
                 layoutGroup.padding = new RectOffset(20, 20, 0, 20);
                 layoutGroup.childAlignment = TextAnchor.UpperCenter;
@@ -135,11 +164,14 @@ namespace UI
                 layoutGroup.childForceExpandHeight = false;
                 layoutGroup.childForceExpandWidth = false;
                 
-                // Add content size fitter for dynamic sizing
-                ContentSizeFitter fitter = responseObj.AddComponent<ContentSizeFitter>();
+                // Add content size fitter to content container
+                ContentSizeFitter fitter = contentContainerObj.AddComponent<ContentSizeFitter>();
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 
-                Debug.Log("Created response container with layout");
+                // Update response container reference to the content container
+                responseContainer = contentContainerObj.GetComponent<RectTransform>();
+                
+                Debug.Log("Created scrollable response container with layout");
             }
             
             // Create button template if needed
@@ -165,18 +197,40 @@ namespace UI
                 
                 // Create text inside button
                 GameObject textObj = SetupChild(buttonObj.GetComponent<RectTransform>(), "ButtonText", 
-                    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f),
+                    new Vector2(0f, 0f), new Vector2(0.82f, 1f), new Vector2(0.5f, 0.5f),
                     Vector2.zero, Vector2.zero);
                 
                 TextMeshProUGUI buttonText = textObj.AddComponent<TextMeshProUGUI>();
                 buttonText.text = "Response Option";
                 buttonText.fontSize = responseFontSize;
-                buttonText.alignment = TextAlignmentOptions.Center;
+                buttonText.alignment = TextAlignmentOptions.Left;
                 buttonText.color = responseTextColor;
-                buttonText.margin = new Vector4(10, 5, 10, 5);
+                buttonText.margin = new Vector4(15, 5, 10, 5);
                 buttonText.textWrappingMode = TextWrappingModes.Normal;
                 
-                Debug.Log("Created response button template");
+                // Create indicator area
+                GameObject indicatorsObj = SetupChild(buttonObj.GetComponent<RectTransform>(), "EffectIndicators", 
+                    new Vector2(0.85f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f),
+                    Vector2.zero, Vector2.zero);
+                
+                HorizontalLayoutGroup indicatorsLayout = indicatorsObj.AddComponent<HorizontalLayoutGroup>();
+                indicatorsLayout.spacing = 5;
+                indicatorsLayout.padding = new RectOffset(0, 10, 5, 5);
+                indicatorsLayout.childAlignment = TextAnchor.MiddleRight;
+                indicatorsLayout.childControlHeight = false;
+                indicatorsLayout.childControlWidth = false;
+                indicatorsLayout.childForceExpandHeight = false;
+                indicatorsLayout.childForceExpandWidth = false;
+                
+                // Create sample indicators (these are just templates that will be recreated at runtime)
+                CreateSampleIndicator(indicatorsObj.transform, "W", 100, positiveEffectColor);
+                CreateSampleIndicator(indicatorsObj.transform, "P", -50, negativeEffectColor);
+                CreateSampleIndicator(indicatorsObj.transform, "L", 25, positiveEffectColor);
+                
+                // Hide indicators by default - DialogueView will create them as needed
+                indicatorsObj.SetActive(false);
+                
+                Debug.Log("Created response button template with effect indicators");
                 
                 // Initially hide the template - will be used to instantiate real buttons
                 buttonObj.SetActive(false);
@@ -188,6 +242,11 @@ namespace UI
             dialogueView.eventDescriptionText = eventDescriptionText;
             dialogueView.responseContainer = responseContainer;
             dialogueView.responseButtonTemplate = responseButtonTemplate;
+            
+            // Set the indicator colors in DialogueView
+            dialogueView.positiveEffectColor = positiveEffectColor;
+            dialogueView.negativeEffectColor = negativeEffectColor;
+            dialogueView.neutralEffectColor = neutralEffectColor;
             
             Debug.Log("Dialogue prefab setup complete!");
         }
@@ -208,6 +267,35 @@ namespace UI
             rect.localScale = Vector3.one;
             
             return obj;
+        }
+        
+        private void CreateSampleIndicator(Transform parent, string letter, int value, Color color)
+        {
+            GameObject indicator = new GameObject($"{letter}Indicator", typeof(RectTransform));
+            indicator.transform.SetParent(parent, false);
+            
+            RectTransform rect = indicator.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(35, 25);
+            
+            // Add background image
+            Image bg = indicator.AddComponent<Image>();
+            bg.color = new Color(color.r, color.g, color.b, 0.8f);
+            
+            // Add text component
+            GameObject textObj = new GameObject("IndicatorText", typeof(RectTransform));
+            textObj.transform.SetParent(indicator.transform, false);
+            
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = $"{letter}:{(value > 0 ? "+" : "")}{value}";
+            tmp.fontSize = 12;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
         }
     }
 }

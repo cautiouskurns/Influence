@@ -197,24 +197,37 @@ public class EventManager : MonoBehaviour
         // If we have a DialogueView, use it to display the event
         if (dialogueView != null)
         {
-            // Convert event choices to string list for DialogueView
+            // Convert event choices to string list and effects list for DialogueView
             List<string> choiceTexts = new List<string>();
+            List<DialogueView.ResponseEffects> choiceEffects = new List<DialogueView.ResponseEffects>();
+            
             foreach (EventChoice choice in currentEvent.choices)
             {
                 choiceTexts.Add(choice.text);
+                
+                // Create a response effects object for each choice
+                DialogueView.ResponseEffects effects = new DialogueView.ResponseEffects
+                {
+                    wealthEffect = choice.wealthEffect,
+                    productionEffect = choice.productionEffect,
+                    laborEffect = choice.laborEffect
+                };
+                
+                choiceEffects.Add(effects);
             }
             
-            // Show the dialogue
-            dialogueView.ShowDialogue(
+            // Show the dialogue with effects
+            dialogueView.ShowDialogueWithEffects(
                 currentEvent.id,
                 currentEvent.title,
                 currentEvent.description,
-                choiceTexts
+                choiceTexts,
+                choiceEffects
             );
             
             if (showDebugLogs)
             {
-                Debug.Log($"Displaying event in UI: {currentEvent.title}");
+                Debug.Log($"Displaying event in UI with effects: {currentEvent.title}");
             }
         }
         else
@@ -225,11 +238,22 @@ public class EventManager : MonoBehaviour
             Debug.Log($"{currentEvent.description}");
             Debug.Log("---------------------------------");
             
-            // Print choices
+            // Print choices with effects
             for (int i = 0; i < currentEvent.choices.Count; i++)
             {
                 EventChoice choice = currentEvent.choices[i];
-                Debug.Log($"[{i + 1}] {choice.text}");
+                string effectsText = "";
+                
+                if (choice.wealthEffect != 0)
+                    effectsText += $" Wealth: {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect}";
+                
+                if (choice.productionEffect != 0)
+                    effectsText += $" Production: {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect}";
+                
+                if (choice.laborEffect != 0)
+                    effectsText += $" Labor: {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect}";
+                
+                Debug.Log($"[{i + 1}] {choice.text} ({effectsText})");
             }
             
             Debug.Log("=================================");
