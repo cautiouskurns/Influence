@@ -1561,7 +1561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   productivityFactor: 1
   laborElasticity: 0.5
-  capitalElasticity: 0.5
+  capitalElasticity: 0.872
   efficiencyModifier: 0.1
   decayRate: 0.02
   maintenanceCostFactor: 0.05

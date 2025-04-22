@@ -113,6 +113,40 @@ namespace Editor
         private bool showGraphs = true;
         private bool showPriceResourceParams = false;
         private bool showTestCalculations = true;
+        private bool showParameterEffects = true;
+        
+        // Parameter change tracking
+        private Dictionary<string, float> previousValues = new Dictionary<string, float>();
+        private Dictionary<string, string> parameterChangeEffects = new Dictionary<string, string>();
+        private bool showParameterChangeFeedback = false;
+        private float parameterFeedbackDisplayTime = 0f;
+        private const float PARAMETER_FEEDBACK_DURATION = 4.0f;
+        
+        // Parameter descriptions and effects
+        private Dictionary<string, string> parameterDescriptions = new Dictionary<string, string>()
+        {
+            // Production parameters
+            { "productivityFactor", "Controls the overall productivity multiplier of the economy\n\nEFFECT: Higher values increase production output (blue line in Wealth & Production graph). Significant impact on economic growth." },
+            { "laborElasticity", "How much labor affects production (Cobb-Douglas function)\n\nEFFECT: Higher values make changes in labor force more impactful on production. Balance with capitalElasticity (sum should be around 1.0)." },
+            { "capitalElasticity", "How much capital/infrastructure affects production (Cobb-Douglas function)\n\nEFFECT: Higher values make infrastructure investments more effective. Balance with laborElasticity (sum should be around 1.0)." },
+            
+            // Infrastructure parameters
+            { "efficiencyModifier", "Modifier for infrastructure efficiency\n\nEFFECT: Higher values increase the efficiency boost from infrastructure. Visible in the turquoise line in Infrastructure & Efficiency graph." },
+            { "decayRate", "Rate at which infrastructure decays\n\nEFFECT: Higher values cause faster infrastructure deterioration if not maintained. Creates downward pressure on efficiency and production." },
+            { "maintenanceCostFactor", "Factor for maintenance costs of infrastructure\n\nEFFECT: Higher values increase maintenance costs. Affects wealth indirectly as more wealth is needed for infrastructure upkeep." },
+            
+            // Consumption parameters
+            { "baseConsumptionRate", "Base rate of consumption\n\nEFFECT: Higher values increase consumption across all wealth levels. Can lead to more unmet demand if production doesn't keep up." },
+            { "wealthConsumptionExponent", "Exponent for wealth-based consumption\n\nEFFECT: Controls how consumption scales with wealth. Lower values create more equal consumption across wealth levels." },
+            { "unmetDemandUnrestFactor", "Factor for unrest due to unmet demand\n\nEFFECT: Higher values create more unrest when demand is not met. Affects simulation stability." },
+            
+            // Price parameters
+            { "volatilityFactor", "Factor for price volatility\n\nEFFECT: Higher values create more dramatic price fluctuations. Visible as sharper peaks and valleys in the Prices graph." },
+            
+            // Cycle parameters
+            { "cycleLength", "Length of economic cycle in turns\n\nEFFECT: Longer cycles stretch out economic phases. Creates slower oscillations in the Economic Cycle Effects graph." },
+            { "enableEconomicCycles", "Toggle economic cycles on/off\n\nEFFECT: When enabled, economic conditions fluctuate through expansion, peak, contraction, and trough phases." }
+        };
         
         [MenuItem("Window/Economic Debug")]
         public static void ShowWindow()
@@ -217,6 +251,17 @@ namespace Editor
             if (simulationActive && economicSystem != null)
             {
                 SyncRegionDataForGraphs();
+            }
+            
+            // Handle parameter change feedback timer
+            if (showParameterChangeFeedback)
+            {
+                parameterFeedbackDisplayTime -= Time.deltaTime;
+                if (parameterFeedbackDisplayTime <= 0)
+                {
+                    showParameterChangeFeedback = false;
+                    parameterChangeEffects.Clear();
+                }
             }
             
             // Force repaint every frame when in Play Mode to keep UI fresh
@@ -363,6 +408,45 @@ namespace Editor
         
         private void DrawParametersSection()
         {
+            // Parameter effects help box
+            showParameterEffects = EditorGUILayout.Foldout(showParameterEffects, "Parameter Effects Guide", true);
+            if (showParameterEffects)
+            {
+                EditorGUILayout.HelpBox(
+                    "Parameter Effect Guide:\n\n" +
+                    "PRODUCTION PARAMETERS affect the Wealth & Production graph:\n" +
+                    "• Productivity Factor: Higher = more production (blue line rises faster)\n" +
+                    "• Labor/Capital Elasticity: Controls balance between labor/infrastructure impact\n\n" +
+                    
+                    "INFRASTRUCTURE PARAMETERS affect the Infrastructure & Efficiency graph:\n" +
+                    "• Efficiency Modifier: Higher = more efficiency boost from infrastructure\n" +
+                    "• Decay Rate: Higher = faster infrastructure deterioration\n" +
+                    "• Maintenance Cost: Higher = more expense to maintain infrastructure\n\n" +
+                    
+                    "CONSUMPTION PARAMETERS affect the Supply & Demand graph:\n" +
+                    "• Base Rate: Higher = more consumption across all wealth levels\n" +
+                    "• Wealth Exponent: Higher = wealthy regions consume proportionally more\n" +
+                    "• Unmet Demand Factor: Higher = more unrest from unfulfilled demand\n\n" +
+                    
+                    "PRICE PARAMETERS affect the Prices graph:\n" +
+                    "• Volatility: Higher = more dramatic price fluctuations\n" +
+                    "• Resource Elasticities: Higher = resource prices more sensitive to supply/demand\n\n" +
+                    
+                    "CYCLE PARAMETERS affect the Economic Cycle Effects graph:\n" +
+                    "• Cycle Length: Longer = slower oscillations between phases\n" +
+                    "• Effect Modifiers: Higher = more dramatic boom/bust cycles",
+                    MessageType.Info);
+            }
+            
+            // Show feedback from parameter changes
+            if (showParameterChangeFeedback)
+            {
+                foreach (var effect in parameterChangeEffects)
+                {
+                    EditorGUILayout.HelpBox(effect.Value, MessageType.Warning);
+                }
+            }
+            
             showProductionParams = EditorGUILayout.Foldout(showProductionParams, "Production Parameters", true);
             
             if (showProductionParams)
@@ -371,36 +455,58 @@ namespace Editor
                 
                 // Productivity Factor
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Productivity Factor:", "Controls the overall productivity multiplier of the economy"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Productivity Factor:", parameterDescriptions["productivityFactor"]), GUILayout.Width(150));
+                
+                // Store previous value for comparison
+                float oldProductivityFactor = productivityFactor;
+                
                 float newProductivityFactor = EditorGUILayout.Slider(productivityFactor, 0.1f, 5.0f);
                 if (newProductivityFactor != productivityFactor)
                 {
                     productivityFactor = newProductivityFactor;
                     ApplyToSystem();
+                    RecordParameterChange("productivityFactor", oldProductivityFactor, productivityFactor);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Labor Elasticity
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Labor Elasticity:", "How much labor affects production (Cobb-Douglas function)"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Labor Elasticity:", parameterDescriptions["laborElasticity"]), GUILayout.Width(150));
+                
+                float oldLaborElasticity = laborElasticity;
+                
                 float newLaborElasticity = EditorGUILayout.Slider(laborElasticity, 0.1f, 1.0f);
                 if (newLaborElasticity != laborElasticity)
                 {
                     laborElasticity = newLaborElasticity;
                     ApplyToSystem();
+                    RecordParameterChange("laborElasticity", oldLaborElasticity, laborElasticity);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Capital Elasticity
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Capital Elasticity:", "How much capital/infrastructure affects production (Cobb-Douglas function)"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Capital Elasticity:", parameterDescriptions["capitalElasticity"]), GUILayout.Width(150));
+                
+                float oldCapitalElasticity = capitalElasticity;
+                
                 float newCapitalElasticity = EditorGUILayout.Slider(capitalElasticity, 0.1f, 1.0f);
                 if (newCapitalElasticity != capitalElasticity)
                 {
                     capitalElasticity = newCapitalElasticity;
                     ApplyToSystem();
+                    RecordParameterChange("capitalElasticity", oldCapitalElasticity, capitalElasticity);
                 }
                 EditorGUILayout.EndHorizontal();
+                
+                // Display elasticity sum warning if not close to 1.0
+                float elasticitySum = laborElasticity + capitalElasticity;
+                if (Mathf.Abs(elasticitySum - 1.0f) > 0.1f)
+                {
+                    EditorGUILayout.HelpBox(
+                        $"Warning: Labor + Capital elasticity = {elasticitySum:F2}. For optimal Cobb-Douglas function, this sum should be close to 1.0.", 
+                        elasticitySum > 1.1f ? MessageType.Warning : MessageType.Info);
+                }
                 
                 EditorGUI.indentLevel--;
             }
@@ -413,34 +519,46 @@ namespace Editor
                 
                 // Efficiency Modifier
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Efficiency Modifier:", "Modifier for infrastructure efficiency"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Efficiency Modifier:", parameterDescriptions["efficiencyModifier"]), GUILayout.Width(150));
+                
+                float oldEfficiencyModifier = efficiencyModifier;
+                
                 float newEfficiencyModifier = EditorGUILayout.Slider(efficiencyModifier, 0.01f, 0.5f);
                 if (newEfficiencyModifier != efficiencyModifier)
                 {
                     efficiencyModifier = newEfficiencyModifier;
                     ApplyToSystem();
+                    RecordParameterChange("efficiencyModifier", oldEfficiencyModifier, efficiencyModifier);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Decay Rate
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Decay Rate:", "Rate at which infrastructure decays"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Decay Rate:", parameterDescriptions["decayRate"]), GUILayout.Width(150));
+                
+                float oldDecayRate = decayRate;
+                
                 float newDecayRate = EditorGUILayout.Slider(decayRate, 0.01f, 0.1f);
                 if (newDecayRate != decayRate)
                 {
                     decayRate = newDecayRate;
                     ApplyToSystem();
+                    RecordParameterChange("decayRate", oldDecayRate, decayRate);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Maintenance Cost Factor
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Maintenance Cost Factor:", "Factor for maintenance costs of infrastructure"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Maintenance Cost Factor:", parameterDescriptions["maintenanceCostFactor"]), GUILayout.Width(150));
+                
+                float oldMaintenanceCostFactor = maintenanceCostFactor;
+                
                 float newMaintenanceCostFactor = EditorGUILayout.Slider(maintenanceCostFactor, 0.01f, 0.1f);
                 if (newMaintenanceCostFactor != maintenanceCostFactor)
                 {
                     maintenanceCostFactor = newMaintenanceCostFactor;
                     ApplyToSystem();
+                    RecordParameterChange("maintenanceCostFactor", oldMaintenanceCostFactor, maintenanceCostFactor);
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -455,34 +573,46 @@ namespace Editor
                 
                 // Base Consumption Rate
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Base Consumption Rate:", "Base rate of consumption"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Base Consumption Rate:", parameterDescriptions["baseConsumptionRate"]), GUILayout.Width(150));
+                
+                float oldBaseConsumptionRate = baseConsumptionRate;
+                
                 float newBaseConsumptionRate = EditorGUILayout.Slider(baseConsumptionRate, 0.1f, 1.0f);
                 if (newBaseConsumptionRate != baseConsumptionRate)
                 {
                     baseConsumptionRate = newBaseConsumptionRate;
                     ApplyToSystem();
+                    RecordParameterChange("baseConsumptionRate", oldBaseConsumptionRate, baseConsumptionRate);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Wealth Consumption Exponent
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Wealth Consumption Exponent:", "Exponent for wealth-based consumption"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Wealth Consumption Exponent:", parameterDescriptions["wealthConsumptionExponent"]), GUILayout.Width(150));
+                
+                float oldWealthConsumptionExponent = wealthConsumptionExponent;
+                
                 float newWealthConsumptionExponent = EditorGUILayout.Slider(wealthConsumptionExponent, 0.1f, 1.0f);
                 if (newWealthConsumptionExponent != wealthConsumptionExponent)
                 {
                     wealthConsumptionExponent = newWealthConsumptionExponent;
                     ApplyToSystem();
+                    RecordParameterChange("wealthConsumptionExponent", oldWealthConsumptionExponent, wealthConsumptionExponent);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Unmet Demand Unrest Factor
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Unmet Demand Unrest Factor:", "Factor for unrest due to unmet demand"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Unmet Demand Unrest Factor:", parameterDescriptions["unmetDemandUnrestFactor"]), GUILayout.Width(150));
+                
+                float oldUnmetDemandUnrestFactor = unmetDemandUnrestFactor;
+                
                 float newUnmetDemandUnrestFactor = EditorGUILayout.Slider(unmetDemandUnrestFactor, 0.01f, 0.1f);
                 if (newUnmetDemandUnrestFactor != unmetDemandUnrestFactor)
                 {
                     unmetDemandUnrestFactor = newUnmetDemandUnrestFactor;
                     ApplyToSystem();
+                    RecordParameterChange("unmetDemandUnrestFactor", oldUnmetDemandUnrestFactor, unmetDemandUnrestFactor);
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -497,12 +627,16 @@ namespace Editor
                 
                 // Volatility Factor
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Volatility Factor:", "Factor for price volatility"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Volatility Factor:", parameterDescriptions["volatilityFactor"]), GUILayout.Width(150));
+                
+                float oldVolatilityFactor = volatilityFactor;
+                
                 float newVolatilityFactor = EditorGUILayout.Slider(volatilityFactor, 0.1f, 1.0f);
                 if (newVolatilityFactor != volatilityFactor)
                 {
                     volatilityFactor = newVolatilityFactor;
                     ApplyToSystem();
+                    RecordParameterChange("volatilityFactor", oldVolatilityFactor, volatilityFactor);
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -516,7 +650,10 @@ namespace Editor
                     foreach (var resource in resourceKeys)
                     {
                         EditorGUILayout.BeginHorizontal();
-                        EditorGUILayout.LabelField(new GUIContent($"{resource} Elasticity:", $"Elasticity for {resource}"), GUILayout.Width(150));
+                        EditorGUILayout.LabelField(new GUIContent($"{resource} Elasticity:", $"Elasticity for {resource}\n\nEFFECT: Higher values make {resource} prices more sensitive to supply/demand changes. Watch in Resource Prices graph."), GUILayout.Width(150));
+                        
+                        float oldElasticity = resourceElasticities[resource];
+                        
                         float newElasticity = EditorGUILayout.Slider(resourceElasticities[resource], 0.1f, 2.0f);
                         if (newElasticity != resourceElasticities[resource])
                         {
@@ -526,6 +663,7 @@ namespace Editor
                                 priceCalculator.SetResourceElasticity(resource, newElasticity);
                             }
                             ApplyToSystem();
+                            RecordParameterChange($"{resource}Elasticity", oldElasticity, newElasticity);
                         }
                         EditorGUILayout.EndHorizontal();
                     }
@@ -565,7 +703,10 @@ namespace Editor
                 
                 // Cycle Length
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Cycle Length:", "Length of economic cycle in turns"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Cycle Length:", parameterDescriptions["cycleLength"]), GUILayout.Width(150));
+                
+                int oldCycleLength = cycleLength;
+                
                 int newCycleLength = EditorGUILayout.IntSlider(cycleLength, 6, 24);
                 if (newCycleLength != cycleLength)
                 {
@@ -576,17 +717,30 @@ namespace Editor
                         cycleCalculator = new EconomicCycleCalculator(cycleLength);
                     }
                     ApplyToSystem();
+                    RecordParameterChange("cycleLength", oldCycleLength, cycleLength);
                 }
                 EditorGUILayout.EndHorizontal();
                 
                 // Enable Economic Cycles
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(new GUIContent("Enable Economic Cycles:", "Toggle economic cycles on/off"), GUILayout.Width(150));
+                EditorGUILayout.LabelField(new GUIContent("Enable Economic Cycles:", parameterDescriptions["enableEconomicCycles"]), GUILayout.Width(150));
+                
+                bool oldEnableEconomicCycles = enableEconomicCycles;
+                
                 bool newEnableEconomicCycles = EditorGUILayout.Toggle(enableEconomicCycles);
                 if (newEnableEconomicCycles != enableEconomicCycles)
                 {
                     enableEconomicCycles = newEnableEconomicCycles;
                     ApplyToSystem();
+                    
+                    if (enableEconomicCycles != oldEnableEconomicCycles)
+                    {
+                        parameterChangeEffects["enableEconomicCycles"] = enableEconomicCycles 
+                            ? "Economic cycles enabled: Economy will now fluctuate through boom and bust phases over time. Watch the 'Economic Cycle Effects' graph."
+                            : "Economic cycles disabled: Economy will now grow more consistently without cyclic fluctuations.";
+                        showParameterChangeFeedback = true;
+                        parameterFeedbackDisplayTime = PARAMETER_FEEDBACK_DURATION;
+                    }
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -626,7 +780,10 @@ namespace Editor
                 foreach (var effect in effectKeys)
                 {
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField(new GUIContent($"{effect} Effect:", $"Effect of {effect} during economic cycle"), GUILayout.Width(150));
+                    EditorGUILayout.LabelField(new GUIContent($"{effect} Effect:", $"Effect of {effect} during economic cycle\n\nEFFECT: Higher values create more pronounced effects during economic cycles. Impacts amplitude of cycle fluctuations."), GUILayout.Width(150));
+                    
+                    float oldEffect = cycleEffects[effect]; 
+                    
                     float newEffect = EditorGUILayout.Slider(cycleEffects[effect], 0.5f, 1.5f);
                     if (newEffect != cycleEffects[effect])
                     {
@@ -643,6 +800,7 @@ namespace Editor
                             }
                         }
                         ApplyToSystem();
+                        RecordParameterChange($"{effect}Effect", oldEffect, newEffect);
                     }
                     EditorGUILayout.EndHorizontal();
                 }
@@ -1787,53 +1945,78 @@ namespace Editor
                 Debug.Log($"Initialized graph data: Wealth={region.Wealth}, Production={region.Production}");
             }
         }
+        
+        private void RecordParameterChange(string paramName, float oldValue, float newValue)
+        {
+            // Skip if the change is very small
+            if (Mathf.Abs(oldValue - newValue) < 0.01f) return;
+            
+            float percentChange = ((newValue - oldValue) / Mathf.Max(0.1f, Mathf.Abs(oldValue))) * 100f;
+            string direction = newValue > oldValue ? "increased" : "decreased";
+            
+            string feedback = "";
+            
+            switch (paramName)
+            {
+                case "productivityFactor":
+                    feedback = $"Productivity Factor {direction} by {Mathf.Abs(percentChange):F0}%\n" +
+                               $"EFFECT: Production output should {direction} significantly. Watch the blue line in the Wealth & Production graph.";
+                    break;
+                case "laborElasticity":
+                    feedback = $"Labor Elasticity {direction} to {newValue:F2}\n" +
+                               $"EFFECT: Labor force changes will have {(newValue > oldValue ? "more" : "less")} impact on production. Labor now has {newValue/(laborElasticity+capitalElasticity):P0} weight in production.";
+                    break;
+                case "capitalElasticity":
+                    feedback = $"Capital Elasticity {direction} to {newValue:F2}\n" +
+                               $"EFFECT: Infrastructure investment will have {(newValue > oldValue ? "more" : "less")} impact on production. Capital now has {newValue/(laborElasticity+capitalElasticity):P0} weight in production.";
+                    break;
+                case "efficiencyModifier":
+                    feedback = $"Efficiency Modifier {direction} by {Mathf.Abs(percentChange):F0}%\n" +
+                               $"EFFECT: Infrastructure efficiency boost should {direction}. Watch the turquoise line in the Infrastructure & Efficiency graph.";
+                    break;
+                case "decayRate":
+                    feedback = $"Decay Rate {direction} by {Mathf.Abs(percentChange):F0}%\n" +
+                               $"EFFECT: Infrastructure will deteriorate {(newValue > oldValue ? "faster" : "slower")}. May require higher maintenance investment.";
+                    break;
+                case "baseConsumptionRate":
+                    feedback = $"Base Consumption Rate {direction} by {Mathf.Abs(percentChange):F0}%\n" +
+                               $"EFFECT: Overall consumption will {direction}. May lead to {(newValue > oldValue ? "higher" : "lower")} unmet demand if production doesn't adjust.";
+                    break;
+                case "wealthConsumptionExponent":
+                    feedback = $"Wealth Consumption Exponent {direction} to {newValue:F2}\n" +
+                               $"EFFECT: Consumption will scale {(newValue > oldValue ? "more" : "less")} steeply with wealth. Wealthy regions will consume {(newValue > oldValue ? "more" : "less")}.";
+                    break;
+                case "volatilityFactor":
+                    feedback = $"Price Volatility {direction} by {Mathf.Abs(percentChange):F0}%\n" +
+                               $"EFFECT: Price fluctuations should become {(newValue > oldValue ? "more dramatic" : "more stable")}. Watch for {(newValue > oldValue ? "sharper" : "smoother")} peaks and valleys in the Prices graph.";
+                    break;
+                case "cycleLength":
+                    feedback = $"Economic Cycle Length {direction} to {newValue} turns\n" +
+                               $"EFFECT: Economic phases will last {(newValue > oldValue ? "longer" : "shorter")}. Full cycle (boom to bust and back) will take about {newValue} turns.";
+                    break;
+                default:
+                    // For resource elasticities and other parameters
+                    if (paramName.Contains("Elasticity") && !paramName.Contains("labor") && !paramName.Contains("capital"))
+                    {
+                        string resource = paramName.Replace("Elasticity", "");
+                        feedback = $"{resource} Price Elasticity {direction} to {newValue:F2}\n" +
+                                   $"EFFECT: {resource} prices will be {(newValue > oldValue ? "more" : "less")} sensitive to supply/demand changes. Watch in the Resource Prices graph.";
+                    }
+                    else if (paramName.Contains("Effect"))
+                    {
+                        string effect = paramName.Replace("Effect", "");
+                        feedback = $"{effect} Cycle Effect {direction} to {newValue:F2}\n" +
+                                   $"EFFECT: {effect} will be {(newValue > oldValue ? "more" : "less")} strongly affected by economic cycles. Expect {(newValue > oldValue ? "larger" : "smaller")} fluctuations.";
+                    }
+                    break;
+            }
+            
+            if (!string.IsNullOrEmpty(feedback))
+            {
+                parameterChangeEffects[paramName] = feedback;
+                showParameterChangeFeedback = true;
+                parameterFeedbackDisplayTime = PARAMETER_FEEDBACK_DURATION;
+            }
+        }
     }
-    
-    // /// <summary>
-    // /// Helper window for adding new resource types to the price calculator
-    // /// </summary>
-    // public class AddResourcePopup : EditorWindow
-    // {
-    //     private string resourceName = "";
-    //     private System.Action<string> onAddCallback;
-        
-    //     public static void ShowWindow(Editor.EconomicDebugWindow parent, System.Action<string> callback)
-    //     {
-    //         var window = ScriptableObject.CreateInstance<AddResourcePopup>();
-    //         window.titleContent = new GUIContent("Add Resource");
-    //         window.position = new Rect(
-    //             parent.position.x + 100, 
-    //             parent.position.y + 100, 
-    //             250, 
-    //             100
-    //         );
-    //         window.onAddCallback = callback;
-    //         window.ShowModalUtility();
-    //     }
-        
-    //     private void OnGUI()
-    //     {
-    //         EditorGUILayout.LabelField("Enter Resource Name:", EditorStyles.boldLabel);
-    //         resourceName = EditorGUILayout.TextField(resourceName);
-            
-    //         EditorGUILayout.Space(10);
-            
-    //         EditorGUILayout.BeginHorizontal();
-            
-    //         if (GUILayout.Button("Cancel"))
-    //         {
-    //             Close();
-    //         }
-            
-    //         GUI.enabled = !string.IsNullOrEmpty(resourceName);
-    //         if (GUILayout.Button("Add"))
-    //         {
-    //             onAddCallback?.Invoke(resourceName);
-    //             Close();
-    //         }
-    //         GUI.enabled = true;
-            
-    //         EditorGUILayout.EndHorizontal();
-    //     }
-    // }
 }
