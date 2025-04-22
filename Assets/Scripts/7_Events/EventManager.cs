@@ -660,14 +660,18 @@ public class EventManager : MonoBehaviour
         // Reset the event's triggered state to make sure it can be displayed
         evt.hasTriggered = false;
         
-        // Add to pending events
+        // If another event is active, clear it to make way for the debug event
+        if (currentEvent != null)
+        {
+            Debug.Log($"Canceling current event to display debug event: {evt.title}");
+            currentEvent = null;
+        }
+        
+        // Add to pending events queue
         QueueEvent(evt);
         
-        // Display immediately if no other event is active
-        if (currentEvent == null)
-        {
-            DisplayNextEvent();
-        }
+        // Force display the event immediately
+        DisplayNextEvent();
         
         if (showDebugLogs)
         {
