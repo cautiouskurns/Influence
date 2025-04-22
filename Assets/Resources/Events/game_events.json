@@ -1,0 +1,294 @@
+{
+    "events": [
+        {
+            "id": "trade_agreement",
+            "title": "Trade Agreement Opportunity",
+            "description": "A neighboring kingdom has offered to establish a formal trade agreement that would reduce tariffs on exported goods.",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 3.0,
+            "choices": [
+                {
+                    "text": "Accept the agreement and focus on exports",
+                    "result": "You sign the agreement, opening new markets for your goods and boosting your economy.",
+                    "wealthEffect": 50,
+                    "productionEffect": 10,
+                    "laborEffect": 5,
+                    "nextEventId": "market_expansion"
+                },
+                {
+                    "text": "Negotiate for better terms",
+                    "result": "Your diplomats push for more favorable terms, delaying the agreement but potentially improving its benefits.",
+                    "wealthEffect": -10,
+                    "productionEffect": 0,
+                    "laborEffect": 0,
+                    "nextEventId": "trade_renegotiation"
+                },
+                {
+                    "text": "Reject the offer to protect local industries",
+                    "result": "You decide to maintain existing trade barriers to protect your local producers from foreign competition.",
+                    "wealthEffect": -20,
+                    "productionEffect": 5,
+                    "laborEffect": 10,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "market_expansion",
+            "title": "Market Expansion",
+            "description": "With the success of recent trade initiatives, merchants are eager to expand into new territories. They seek your support for their ventures.",
+            "hasTriggered": false,
+            "conditionType": 1,
+            "conditionValue": 200.0,
+            "choices": [
+                {
+                    "text": "Fund exploratory trade missions",
+                    "result": "You finance exploratory missions to identify new trade routes and market opportunities.",
+                    "wealthEffect": -50,
+                    "productionEffect": 25,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Establish a merchant guild to coordinate efforts",
+                    "result": "You charter a new merchant guild to coordinate expansion efforts, providing structure and regulation.",
+                    "wealthEffect": -30,
+                    "productionEffect": 15,
+                    "laborEffect": 5,
+                    "nextEventId": "guild_politics"
+                },
+                {
+                    "text": "Allow merchants to proceed on their own",
+                    "result": "You offer moral support but leave merchants to fund and organize their own expansion efforts.",
+                    "wealthEffect": 0,
+                    "productionEffect": 5,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "trade_renegotiation",
+            "title": "Trade Renegotiation",
+            "description": "After months of diplomatic exchanges, the neighboring kingdom has returned with revised terms for the trade agreement.",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 6.0,
+            "choices": [
+                {
+                    "text": "Accept the improved terms",
+                    "result": "You accept the new terms, which offer better protections for your merchants and lower import duties.",
+                    "wealthEffect": 80,
+                    "productionEffect": 15,
+                    "laborEffect": 5,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Demand even better conditions",
+                    "result": "You press for even more favorable terms, risking the collapse of negotiations.",
+                    "wealthEffect": -20,
+                    "productionEffect": -5,
+                    "laborEffect": 0,
+                    "nextEventId": "diplomatic_incident"
+                },
+                {
+                    "text": "Walk away from negotiations",
+                    "result": "You decide that even the improved terms don't serve your interests and end negotiations.",
+                    "wealthEffect": -10,
+                    "productionEffect": 0,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "guild_politics",
+            "title": "Guild Politics",
+            "description": "The recently established merchant guild has become a powerful political force, and now they're demanding special privileges.",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 8.0,
+            "choices": [
+                {
+                    "text": "Grant special trading rights",
+                    "result": "You grant the guild exclusive rights to certain trade routes, strengthening their position.",
+                    "wealthEffect": 40,
+                    "productionEffect": 10,
+                    "laborEffect": -5,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Impose stricter regulations",
+                    "result": "You implement new regulations to limit the guild's power and ensure fair practices.",
+                    "wealthEffect": -20,
+                    "productionEffect": -5,
+                    "laborEffect": 10,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Mediate between guild and independent merchants",
+                    "result": "You work to balance the interests of the guild and independent merchants, seeking compromise.",
+                    "wealthEffect": 10,
+                    "productionEffect": 5,
+                    "laborEffect": 5,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "diplomatic_incident",
+            "title": "Diplomatic Incident",
+            "description": "Your aggressive negotiating tactics have caused offense. Representatives from the neighboring kingdom have left abruptly, and there are rumors of possible sanctions.",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 9.0,
+            "choices": [
+                {
+                    "text": "Send a formal apology",
+                    "result": "You dispatch diplomats with a formal apology to smooth relations and restart negotiations.",
+                    "wealthEffect": -30,
+                    "productionEffect": 0,
+                    "laborEffect": 0,
+                    "nextEventId": "trade_agreement_limited"
+                },
+                {
+                    "text": "Prepare for potential economic conflict",
+                    "result": "You instruct your advisors to prepare for potential sanctions by seeking alternative trade partners.",
+                    "wealthEffect": -50,
+                    "productionEffect": -10,
+                    "laborEffect": 5,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Ignore the diplomatic fallout",
+                    "result": "You dismiss the incident as routine diplomatic posturing and carry on with business as usual.",
+                    "wealthEffect": -80,
+                    "productionEffect": -20,
+                    "laborEffect": -5,
+                    "nextEventId": "trade_embargo"
+                }
+            ]
+        },
+        {
+            "id": "trade_agreement_limited",
+            "title": "Limited Trade Agreement",
+            "description": "After your apology, the neighboring kingdom has agreed to a limited trade deal, not as favorable as the original offer but better than nothing.",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 10.0,
+            "choices": [
+                {
+                    "text": "Accept the limited agreement",
+                    "result": "You sign the limited agreement, salvaging some economic benefits from the relationship.",
+                    "wealthEffect": 30,
+                    "productionEffect": 5,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Reject and seek trade elsewhere",
+                    "result": "You decide the terms are still not acceptable and direct your merchants to explore other markets.",
+                    "wealthEffect": -10,
+                    "productionEffect": -5,
+                    "laborEffect": 5,
+                    "nextEventId": "new_trade_routes"
+                },
+                {
+                    "text": "Accept but secretly plan to circumvent restrictions",
+                    "result": "You sign the agreement but encourage your merchants to find creative ways around its limitations.",
+                    "wealthEffect": 20,
+                    "productionEffect": 10,
+                    "laborEffect": 0,
+                    "nextEventId": "smuggling_operations"
+                }
+            ]
+        },
+        {
+            "id": "agricultural_innovation",
+            "title": "Agricultural Innovation",
+            "description": "Your farmers have discovered a new crop rotation technique that could significantly increase food production.",
+            "hasTriggered": false,
+            "conditionType": 2,
+            "conditionValue": 150.0,
+            "choices": [
+                {
+                    "text": "Implement the technique widely",
+                    "result": "You order the implementation of the new technique across all agricultural regions.",
+                    "wealthEffect": 20,
+                    "productionEffect": 30,
+                    "laborEffect": -10,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Test the technique in limited areas first",
+                    "result": "You establish test fields to verify the technique's effectiveness before wider implementation.",
+                    "wealthEffect": 5,
+                    "productionEffect": 10,
+                    "laborEffect": 0,
+                    "nextEventId": "agricultural_breakthrough"
+                },
+                {
+                    "text": "Ignore the innovation as unproven",
+                    "result": "You dismiss the technique as speculative and maintain traditional farming methods.",
+                    "wealthEffect": 0,
+                    "productionEffect": 0,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "labor_shortage",
+            "title": "Labor Shortage",
+            "description": "Your rapid economic growth has led to a shortage of skilled workers in key industries.",
+            "hasTriggered": false,
+            "conditionType": 1,
+            "conditionValue": 350.0,
+            "choices": [
+                {
+                    "text": "Establish training programs",
+                    "result": "You create apprenticeship and training programs to develop needed skills among your population.",
+                    "wealthEffect": -40,
+                    "productionEffect": -5,
+                    "laborEffect": 20,
+                    "nextEventId": ""
+                },
+                {
+                    "text": "Recruit foreign workers",
+                    "result": "You send agents to neighboring regions to recruit skilled workers with promises of good wages.",
+                    "wealthEffect": -30,
+                    "productionEffect": 15,
+                    "laborEffect": 25,
+                    "nextEventId": "cultural_tensions"
+                },
+                {
+                    "text": "Increase wages to attract workers",
+                    "result": "You encourage industries to raise wages to attract workers from other sectors.",
+                    "wealthEffect": -20,
+                    "productionEffect": 10,
+                    "laborEffect": 10,
+                    "nextEventId": ""
+                }
+            ]
+        },
+        {
+            "id": "event_638809585078295950",
+            "title": "New Event",
+            "description": "Event description goes here",
+            "hasTriggered": false,
+            "conditionType": 0,
+            "conditionValue": 1.0,
+            "choices": [
+                {
+                    "text": "Default choice",
+                    "result": "Result of this choice",
+                    "wealthEffect": 0,
+                    "productionEffect": 0,
+                    "laborEffect": 0,
+                    "nextEventId": ""
+                }
+            ]
+        }
+    ]
+}

@@ -46,6 +46,7 @@ public class EventManager : MonoBehaviour
     [SerializeField] private KeyCode option1Key = KeyCode.Alpha1;
     [SerializeField] private KeyCode option2Key = KeyCode.Alpha2;
     [SerializeField] private KeyCode option3Key = KeyCode.Alpha3;
+    [SerializeField] private bool useJsonEvents = true;
     
     // Core system references
     private EconomicSystem economicSystem;
@@ -81,10 +82,22 @@ public class EventManager : MonoBehaviour
             }
         }
         
-        // Create sample events if we don't have any
+        // Load events from JSON if selected
+        if (useJsonEvents)
+        {
+            LoadEventsFromJson();
+        }
+        
+        // Create sample events if we don't have any after attempting to load
         if (availableEvents.Count == 0)
         {
             CreateSampleEvents();
+            
+            // Optional: Save the sample events to JSON for future editing
+            if (useJsonEvents)
+            {
+                SaveEventsToJson();
+            }
         }
     }
     
@@ -134,6 +147,40 @@ public class EventManager : MonoBehaviour
             else if (Input.GetKeyDown(option3Key) && currentEvent.choices.Count >= 3)
             {
                 ProcessChoice(2);
+            }
+        }
+    }
+    
+    // Load events from JSON file
+    private void LoadEventsFromJson()
+    {
+        List<GameEvent> loadedEvents = EventLoader.LoadEventsFromJSON();
+        
+        if (loadedEvents.Count > 0)
+        {
+            availableEvents = loadedEvents;
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"Loaded {loadedEvents.Count} events from JSON");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("No events loaded from JSON, will use sample events instead");
+        }
+    }
+    
+    // Save current events to JSON file
+    private void SaveEventsToJson()
+    {
+        if (availableEvents.Count > 0)
+        {
+            EventLoader.SaveEventsToJSON(availableEvents);
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"Saved {availableEvents.Count} events to JSON");
             }
         }
     }
@@ -537,4 +584,96 @@ public class EventManager : MonoBehaviour
         
         Debug.Log("All events have been reset.");
     }
+    
+    #if UNITY_EDITOR
+    // Editor-only method to save events to JSON
+    public void SaveCurrentEventsToJson()
+    {
+        SaveEventsToJson();
+    }
+    #endif
+
+    #region Debug API
+    
+    /// <summary>
+    /// Get a copy of all available events for debugging
+    /// </summary>
+    public List<GameEvent> GetAvailableEvents()
+    {
+        return new List<GameEvent>(availableEvents);
+    }
+    
+    /// <summary>
+    /// Check if JSON events are being used
+    /// </summary>
+    public bool GetUseJsonEvents()
+    {
+        return useJsonEvents;
+    }
+    
+    /// <summary>
+    /// Set whether to use JSON events or hardcoded events
+    /// </summary>
+    public void SetUseJsonEvents(bool value)
+    {
+        if (value != useJsonEvents)
+        {
+            useJsonEvents = value;
+            
+            // Clear all events
+            availableEvents.Clear();
+            pendingEvents.Clear();
+            currentEvent = null;
+            
+            // Load appropriate events
+            if (useJsonEvents)
+            {
+                LoadEventsFromJson();
+            }
+            
+            // If we have no events after attempting to load, create sample events
+            if (availableEvents.Count == 0)
+            {
+                CreateSampleEvents();
+                
+                // Optional: Save the sample events to JSON for future editing
+                if (useJsonEvents)
+                {
+                    SaveEventsToJson();
+                }
+            }
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"Switched to {(useJsonEvents ? "JSON" : "hardcoded")} events. {availableEvents.Count} events loaded.");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Trigger a specific event for testing
+    /// </summary>
+    public void TriggerSpecificEvent(GameEvent evt)
+    {
+        if (evt == null) return;
+        
+        // Reset the event's triggered state to make sure it can be displayed
+        evt.hasTriggered = false;
+        
+        // Add to pending events
+        QueueEvent(evt);
+        
+        // Display immediately if no other event is active
+        if (currentEvent == null)
+        {
+            DisplayNextEvent();
+        }
+        
+        if (showDebugLogs)
+        {
+            Debug.Log($"Manually triggered event: {evt.title} (ID: {evt.id})");
+        }
+    }
+    
+    #endregion
 }
