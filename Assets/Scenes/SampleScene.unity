@@ -1559,11 +1559,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcf0e9d8eaaa049e38168e4796d22a08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  productionBase: 10
   productivityFactor: 1
   laborElasticity: 0.5
   capitalElasticity: 0.5
+  efficiencyModifier: 0.1
+  decayRate: 0.02
+  maintenanceCostFactor: 0.05
+  baseConsumptionRate: 0.2
+  wealthConsumptionExponent: 0.8
+  unmetDemandUnrestFactor: 0.05
+  cycleLength: 12
+  enableEconomicCycles: 1
+  resourceTypes:
+  - Food
+  - Luxury
+  - RawMaterial
+  - Manufacturing
   autoRunSimulation: 1
+  showDebugLogs: 0
 --- !u!1 &981029059
 GameObject:
   m_ObjectHideFlags: 0
