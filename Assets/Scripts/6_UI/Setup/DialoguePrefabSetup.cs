@@ -208,7 +208,7 @@ namespace UI
                 buttonText.margin = new Vector4(15, 5, 10, 5);
                 buttonText.textWrappingMode = TextWrappingModes.Normal;
                 
-                // Create indicator area
+                // Create indicator area - MAKE THIS ALWAYS VISIBLE
                 GameObject indicatorsObj = SetupChild(buttonObj.GetComponent<RectTransform>(), "EffectIndicators", 
                     new Vector2(0.85f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f),
                     Vector2.zero, Vector2.zero);
@@ -222,20 +222,25 @@ namespace UI
                 indicatorsLayout.childForceExpandHeight = false;
                 indicatorsLayout.childForceExpandWidth = false;
                 
-                // Create sample indicators (these are just templates that will be recreated at runtime)
-                CreateSampleIndicator(indicatorsObj.transform, "W", 100, positiveEffectColor);
-                CreateSampleIndicator(indicatorsObj.transform, "P", -50, negativeEffectColor);
-                CreateSampleIndicator(indicatorsObj.transform, "L", 25, positiveEffectColor);
+                // Add tooltip component to the button to show detailed effect description
+                TooltipHandler tooltipHandler = buttonObj.AddComponent<TooltipHandler>();
+                tooltipHandler.tooltipText = "This choice will affect:\nWealth: +100\nProduction: -50\nLabor: +25";
+                tooltipHandler.tooltipDelay = 0.5f;
                 
-                // Hide indicators by default - DialogueView will create them as needed
-                indicatorsObj.SetActive(false);
+                // Create sample indicators with better styling
+                CreateEffectIndicator(indicatorsObj.transform, "W", 100, positiveEffectColor);
+                CreateEffectIndicator(indicatorsObj.transform, "P", -50, negativeEffectColor);
+                CreateEffectIndicator(indicatorsObj.transform, "L", 25, positiveEffectColor);
+                
+                // KEEP INDICATORS VISIBLE in the template so they show up correctly
+                // indicatorsObj.SetActive(true);
                 
                 Debug.Log("Created response button template with effect indicators");
                 
                 // Initially hide the template - will be used to instantiate real buttons
                 buttonObj.SetActive(false);
             }
-            
+                    
             // Reference all components in DialogueView
             dialogueView.dialoguePanel = dialoguePanel;
             dialogueView.eventTitleText = eventTitleText;
@@ -250,7 +255,55 @@ namespace UI
             
             Debug.Log("Dialogue prefab setup complete!");
         }
-        
+
+        private void CreateEffectIndicator(Transform parent, string letter, int value, Color color)
+        {
+            // Create indicator object
+            GameObject indicator = new GameObject($"{letter}Indicator", typeof(RectTransform));
+            indicator.transform.SetParent(parent, false);
+            
+            // Set up the rect transform with proper size
+            RectTransform rect = indicator.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(40, 25); // Slightly wider for better readability
+            
+            // Add background image with rounded corners look
+            Image bg = indicator.AddComponent<Image>();
+            // Load a rounded rectangle sprite or use a default one
+            // If using default, we'll make it visually distinct with color
+            bg.color = new Color(color.r, color.g, color.b, 0.9f); // More opacity
+            
+            // Add a shadow effect for better visibility
+            Shadow shadow = indicator.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0, 0, 0, 0.5f);
+            shadow.effectDistance = new Vector2(2, -2);
+            
+            // Add text component
+            GameObject textObj = new GameObject("IndicatorText", typeof(RectTransform));
+            textObj.transform.SetParent(indicator.transform, false);
+            
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            
+            // Format text with appropriate style and sign
+            string valueText = value > 0 ? $"+{value}" : value.ToString();
+            tmp.text = $"{letter}:{valueText}";
+            tmp.fontSize = 14; // Slightly larger for readability
+            tmp.fontStyle = FontStyles.Bold; // Make it bold
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            
+            // Add tooltip component to each indicator
+            TooltipHandler tooltipHandler = indicator.AddComponent<TooltipHandler>();
+            string effectType = letter == "W" ? "Wealth" : (letter == "P" ? "Production" : "Labor");
+            tooltipHandler.tooltipText = $"{effectType}: {valueText}";
+            tooltipHandler.tooltipDelay = 0.3f;
+        }
+                
         private GameObject SetupChild(RectTransform parent, string name, 
             Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, 
             Vector2 sizeDelta, Vector2 anchoredPosition)
