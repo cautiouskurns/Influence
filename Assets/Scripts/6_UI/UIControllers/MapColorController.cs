@@ -15,6 +15,7 @@ namespace UI
         public Button positionColorButton;
         public Button wealthColorButton;
         public Button productionColorButton;
+        public Button nationColorButton; // New button for nation coloring
         
         [Header("Legend")]
         public GameObject legendPanel;
@@ -58,7 +59,8 @@ namespace UI
                          (defaultColorButton != null ? "Default✓ " : "Default✗ ") +
                          (positionColorButton != null ? "Position✓ " : "Position✗ ") +
                          (wealthColorButton != null ? "Wealth✓ " : "Wealth✗ ") +
-                         (productionColorButton != null ? "Production✓ " : "Production✗ "));
+                         (productionColorButton != null ? "Production✓ " : "Production✗ ") +
+                         (nationColorButton != null ? "Nation✓ " : "Nation✗ "));
             }
         }
         
@@ -69,6 +71,7 @@ namespace UI
             SetupButton(positionColorButton, () => OnColorButtonClick(RegionColorMode.Position), "Position");
             SetupButton(wealthColorButton, () => OnColorButtonClick(RegionColorMode.Wealth), "Wealth");
             SetupButton(productionColorButton, () => OnColorButtonClick(RegionColorMode.Production), "Production");
+            SetupButton(nationColorButton, () => OnColorButtonClick(RegionColorMode.Nation), "Nation");
         }
         
         private void SetupButton(Button button, UnityAction action, string name)
@@ -163,6 +166,16 @@ namespace UI
                     minValueText.text = "Low";
                     maxValueText.text = "High";
                     break;
+
+                case RegionColorMode.Nation:
+                    // Nation-based legend
+                    legendPanel.SetActive(true);
+                    legendTitle.text = "Nation";
+                    minColorImage.color = new Color(0.5f, 0.5f, 0.5f); // Example color for nation
+                    maxColorImage.color = new Color(1.0f, 0.5f, 0.5f); // Example color for nation
+                    minValueText.text = "Nation A";
+                    maxValueText.text = "Nation B";
+                    break;
             }
         }
         
@@ -171,6 +184,7 @@ namespace UI
         public void SetPositionColorMode() => OnColorButtonClick(RegionColorMode.Position);
         public void SetWealthColorMode() => OnColorButtonClick(RegionColorMode.Wealth);
         public void SetProductionColorMode() => OnColorButtonClick(RegionColorMode.Production);
+        public void SetNationColorMode() => OnColorButtonClick(RegionColorMode.Nation);
         
         // Call this method to manually refresh connections
         public void RefreshConnections()

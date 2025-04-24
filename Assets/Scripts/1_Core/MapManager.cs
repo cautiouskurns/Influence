@@ -12,7 +12,8 @@ namespace UI
         Default,
         Position,
         Wealth,
-        Production
+        Production,
+        Nation
     }
 
     public class MapManager : MonoBehaviour
@@ -36,6 +37,9 @@ namespace UI
         [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy regions
         [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f); // Blue for low production
         [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f); // Yellow for high production
+        
+        [Header("Nation Colors")]
+        [SerializeField] private Color nationDefaultColor = new Color(0.6f, 0.6f, 0.6f); // Gray for regions without a nation
         
         // Tracking variables
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
@@ -186,6 +190,9 @@ namespace UI
                 case RegionColorMode.Production:
                     return GetProductionBasedColor(regionId);
                     
+                case RegionColorMode.Nation:
+                    return GetNationBasedColor(regionId);
+                    
                 case RegionColorMode.Default:
                 default:
                     return defaultRegionColor;
@@ -252,6 +259,21 @@ namespace UI
             
             // Return color gradient based on production
             return Color.Lerp(productionMinColor, productionMaxColor, normalizedValue);
+        }
+        
+        // New method to get a color based on the region's nation
+        private Color GetNationBasedColor(string regionId)
+        {
+            // Find the nation manager
+            NationManager nationManager = NationManager.Instance;
+            if (nationManager == null) return nationDefaultColor;
+            
+            // Get the nation that owns this region
+            NationEntity nation = nationManager.GetRegionNation(regionId);
+            if (nation == null) return nationDefaultColor;
+            
+            // Return the nation's color (use NationColor property instead of Color)
+            return nation.NationColor;
         }
         
         private void ClearExistingRegions()

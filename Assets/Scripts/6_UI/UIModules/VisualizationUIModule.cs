@@ -17,6 +17,7 @@ namespace UI
         [SerializeField] private Button positionColorButton;
         [SerializeField] private Button wealthColorButton; 
         [SerializeField] private Button productionColorButton;
+        [SerializeField] private Button nationColorButton; // Added nation color button
         
         [Header("Legend")]
         [SerializeField] private GameObject legendPanel;
@@ -87,6 +88,11 @@ namespace UI
             if (productionColorButton == null)
             {
                 productionColorButton = CreateButton("ProductionColorButton", "Production");
+            }
+            
+            if (nationColorButton == null)
+            {
+                nationColorButton = CreateButton("NationColorButton", "Nation");
             }
             
             // Create legend panel if it doesn't exist
@@ -276,6 +282,7 @@ namespace UI
             colorController.positionColorButton = positionColorButton;
             colorController.wealthColorButton = wealthColorButton; 
             colorController.productionColorButton = productionColorButton;
+            colorController.nationColorButton = nationColorButton; // Pass our new button to the controller
             
             // Set legend references
             colorController.legendPanel = legendPanel;
