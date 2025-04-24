@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Managers;
 
 namespace Entities
 {
@@ -92,14 +93,28 @@ namespace Entities
             // Default production: 50
         }
 
+        // Get the nation this region belongs to
+        public NationEntity GetNation()
+        {
+            return NationManager.Instance.GetRegionNation(Name);
+        }
+
         public void ProcessTurn()
         {
             Debug.Log($"[Region: {Name}] Processing Turn...");
         }
 
+        // Include nation information in the region summary
         public string GetSummary()
         {
-            return $"[{Name}] Wealth: {Wealth}, Production: {Production}, Labor: {LaborAvailable}, Infrastructure: {InfrastructureLevel}";
+            NationEntity nation = GetNation();
+            string nationName = nation != null ? nation.Name : "No Nation";
+            
+            return $"Region: {Name}\n" +
+                   $"Nation: {nationName}\n" +
+                   $"Wealth: {Wealth}\n" +
+                   $"Production: {Production}\n" +
+                   $"Infrastructure: {InfrastructureLevel:F1}";
         }
     }
 }

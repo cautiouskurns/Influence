@@ -58,6 +58,22 @@ namespace Systems
         {
             InitializeCalculators();
             InitializeResourceData();
+            
+            // Create test regions in Awake instead of Start to ensure they exist early
+            if (regions.Count == 0)
+            {
+                //CreateTestRegions();
+            }
+            
+            Debug.Log($"[EconomicSystem] Initialized with {regions.Count} regions in Awake");
+        }
+        
+        private void Start()
+        {
+            Debug.Log($"[EconomicSystem] Starting with {regions.Count} regions");
+            
+            // Manually trigger a notification that regions exist
+            EventBus.Trigger("RegionsCreated", regions.Count);
         }
         
         private void InitializeCalculators()
@@ -427,6 +443,129 @@ namespace Systems
             return totalWealth;
         }
         
+        // Nation-level economic aggregation methods
+        public Dictionary<string, int> GetNationWealthData()
+        {
+            Dictionary<string, int> nationWealth = new Dictionary<string, int>();
+            NationManager nationManager = NationManager.Instance;
+            
+            if (nationManager == null)
+            {
+                Debug.LogWarning("NationManager not found when calculating nation wealth");
+                return nationWealth;
+            }
+            
+            foreach (string nationId in nationManager.GetAllNationIds())
+            {
+                NationEntity nation = nationManager.GetNation(nationId);
+                int totalWealth = 0;
+                
+                foreach (string regionId in nation.GetRegionIds())
+                {
+                    RegionEntity region = GetRegion(regionId);
+                    if (region != null)
+                    {
+                        totalWealth += region.Wealth;
+                    }
+                }
+                
+                nationWealth[nationId] = totalWealth;
+            }
+            
+            return nationWealth;
+        }
+        
+        public Dictionary<string, int> GetNationProductionData()
+        {
+            Dictionary<string, int> nationProduction = new Dictionary<string, int>();
+            NationManager nationManager = NationManager.Instance;
+            
+            if (nationManager == null)
+            {
+                Debug.LogWarning("NationManager not found when calculating nation production");
+                return nationProduction;
+            }
+            
+            foreach (string nationId in nationManager.GetAllNationIds())
+            {
+                NationEntity nation = nationManager.GetNation(nationId);
+                int totalProduction = 0;
+                
+                foreach (string regionId in nation.GetRegionIds())
+                {
+                    RegionEntity region = GetRegion(regionId);
+                    if (region != null)
+                    {
+                        totalProduction += region.Production;
+                    }
+                }
+                
+                nationProduction[nationId] = totalProduction;
+            }
+            
+            return nationProduction;
+        }
+        
+        public Dictionary<string, float> GetNationAverageInfrastructureData()
+        {
+            Dictionary<string, float> nationInfrastructure = new Dictionary<string, float>();
+            NationManager nationManager = NationManager.Instance;
+            
+            if (nationManager == null)
+            {
+                Debug.LogWarning("NationManager not found when calculating nation infrastructure");
+                return nationInfrastructure;
+            }
+            
+            foreach (string nationId in nationManager.GetAllNationIds())
+            {
+                NationEntity nation = nationManager.GetNation(nationId);
+                float totalInfrastructure = 0;
+                int regionCount = 0;
+                
+                foreach (string regionId in nation.GetRegionIds())
+                {
+                    RegionEntity region = GetRegion(regionId);
+                    if (region != null)
+                    {
+                        totalInfrastructure += region.InfrastructureLevel;
+                        regionCount++;
+                    }
+                }
+                
+                float averageInfrastructure = regionCount > 0 ? totalInfrastructure / regionCount : 0;
+                nationInfrastructure[nationId] = averageInfrastructure;
+            }
+            
+            return nationInfrastructure;
+        }
+        
+        // Get a summary of the strongest nation based on wealth
+        public string GetStrongestNationSummary()
+        {
+            var nationWealth = GetNationWealthData();
+            if (nationWealth.Count == 0) return "No nations available";
+            
+            string strongestNationId = nationWealth
+                .OrderByDescending(x => x.Value)
+                .First().Key;
+                
+            NationManager nationManager = NationManager.Instance;
+            if (nationManager == null) return "Nation manager not available";
+            
+            NationEntity strongestNation = nationManager.GetNation(strongestNationId);
+            if (strongestNation == null) return "Nation data not available";
+            
+            var nationProduction = GetNationProductionData();
+            var nationInfrastructure = GetNationAverageInfrastructureData();
+            
+            return $"Strongest Nation: {strongestNation.Name}\n" +
+                   $"Total Wealth: {nationWealth[strongestNationId]}\n" +
+                   $"Total Production: {nationProduction[strongestNationId]}\n" +
+                   $"Average Infrastructure: {nationInfrastructure[strongestNationId]:F1}\n" +
+                   $"Regions: {strongestNation.GetRegionIds().Count}";
+        }
+        
         // Inspector debug helpers
         [ContextMenu("Debug Current Economic Cycle")]
         public void DebugEconomicCycle()
@@ -444,6 +583,32 @@ namespace Systems
             {
                 Debug.Log($"- {resource.Key}: {resource.Value:F2}");
             }
+        }
+        
+        private void CreateTestRegions()
+        {
+            // Create some test regions
+            CreateTestRegion("Northern Province", 120, 60);
+            CreateTestRegion("Eastern Hills", 80, 40);
+            CreateTestRegion("Western Plains", 150, 70);
+            CreateTestRegion("Southern Coast", 100, 50);
+            CreateTestRegion("Central Valley", 200, 90);
+            
+            Debug.Log("[EconomicSystem] Created test regions");
+        }
+        
+        private void CreateTestRegion(string name, int wealth, int production)
+        {
+            RegionEntity region = new RegionEntity(name, wealth, production);
+            RegisterRegion(region);
+            
+            // Also set as test region if none is set
+            if (testRegion == null)
+            {
+                testRegion = region;
+            }
+            
+            Debug.Log($"[EconomicSystem] Created test region: {name}");
         }
     }
 }
