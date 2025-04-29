@@ -38,6 +38,12 @@ namespace Managers
         // Reference to the economic system for region access
         private EconomicSystem economicSystem;
         
+        // Dictionary to cache regions from the economic system
+        private Dictionary<string, RegionEntity> regionCache = new Dictionary<string, RegionEntity>();
+        
+        // Policy modifier defaults
+        private const float DEFAULT_POLICY_VALUE = 0.5f;
+        
         private void Awake()
         {
             // Singleton pattern
@@ -58,12 +64,18 @@ namespace Managers
         {
             // Subscribe to the RegionsCreated event
             EventBus.Subscribe("RegionsCreated", OnRegionsCreated);
+            
+            // Subscribe to turn processing events
+            EventBus.Subscribe("TurnProcessed", OnTurnProcessed);
         }
         
         private void OnDisable()
         {
             // Unsubscribe from the RegionsCreated event
             EventBus.Unsubscribe("RegionsCreated", OnRegionsCreated);
+            
+            // Unsubscribe from turn processing events
+            EventBus.Unsubscribe("TurnProcessed", OnTurnProcessed);
         }
         
         private void Start()
@@ -80,7 +92,7 @@ namespace Managers
             // Check if we have access to the economic system
             if (economicSystem == null)
             {
-                economicSystem = FindObjectOfType<EconomicSystem>();
+                economicSystem = FindFirstObjectByType<EconomicSystem>();
                 Debug.Log($"[NationManager] EconomicSystem found: {(economicSystem != null ? "Yes" : "No")}");
             }
             
@@ -111,6 +123,13 @@ namespace Managers
             StartCoroutine(AssignRegionsWithDelay(0.5f));
         }
         
+        // Event handler for when a turn is processed
+        private void OnTurnProcessed(object data)
+        {
+            Debug.Log("[NationManager] Turn processed, updating nation statistics");
+            UpdateAllNationStatistics();
+        }
+        
         // Coroutine to wait and find EconomicSystem
         private IEnumerator FindEconomicSystemWithDelay()
         {
@@ -118,7 +137,7 @@ namespace Managers
             
             yield return new WaitForSeconds(0.5f);
             
-            economicSystem = FindObjectOfType<EconomicSystem>();
+            economicSystem = FindFirstObjectByType<EconomicSystem>();
             Debug.Log($"[NationManager] EconomicSystem found after delay: {(economicSystem != null ? "Yes" : "No")}");
             
             if (economicSystem != null)
@@ -152,6 +171,12 @@ namespace Managers
             {
                 // Make sure regions are assigned to nations
                 AssignRegionsToNations();
+                
+                // Update the region cache
+                UpdateRegionCache();
+                
+                // After region assignment, update nation statistics
+                UpdateAllNationStatistics();
             }
             else
             {
@@ -278,6 +303,81 @@ namespace Managers
             
             Debug.Log("[NationManager] Created sample nations");
         }
+        
+        // Update all nation statistics based on their owned regions
+        public void UpdateAllNationStatistics()
+        {
+            if (regionCache.Count == 0)
+            {
+                UpdateRegionCache();
+            }
+            
+            foreach (var nation in nations.Values)
+            {
+                nation.UpdateStatistics(regionCache);
+            }
+            
+            Debug.Log("[NationManager] Updated statistics for all nations");
+            
+            // Trigger an event for UI updates
+            EventBus.Trigger("NationStatisticsUpdated", null);
+        }
+        
+        // Update the cache of regions from the economic system
+        private void UpdateRegionCache()
+        {
+            if (economicSystem == null)
+            {
+                Debug.LogError("[NationManager] Can't update region cache - EconomicSystem not found");
+                return;
+            }
+            
+            // Clear the existing cache
+            regionCache.Clear();
+            
+            // Get all regions from the economic system
+            var regions = economicSystem.GetAllRegions();
+            foreach (var region in regions)
+            {
+                regionCache[region.Name] = region;
+            }
+            
+            Debug.Log($"[NationManager] Updated region cache with {regionCache.Count} regions");
+        }
+        
+        // Get basic information about all nations for UI display
+        public List<string> GetNationSummaries()
+        {
+            List<string> summaries = new List<string>();
+            
+            foreach (var nation in nations.Values)
+            {
+                summaries.Add(nation.GetSummary());
+            }
+            
+            return summaries;
+        }
+        
+        // Set a policy for a nation
+        public void SetNationPolicy(string nationId, NationEntity.PolicyType policyType, float value)
+        {
+            if (nations.TryGetValue(nationId, out NationEntity nation))
+            {
+                nation.SetPolicy(policyType, value);
+                Debug.Log($"[NationManager] Set {policyType} policy for {nationId} to {value:F2}");
+                
+                // Trigger an event for UI updates
+                EventBus.Trigger("NationPolicyUpdated", new NationPolicyChangedData { 
+                    NationId = nationId, 
+                    PolicyType = policyType, 
+                    Value = value 
+                });
+            }
+            else
+            {
+                Debug.LogWarning($"[NationManager] Nation with ID {nationId} not found!");
+            }
+        }
     }
     
     // Data structure for region assignment events
@@ -285,5 +385,13 @@ namespace Managers
     {
         public string RegionId { get; set; }
         public string NationId { get; set; }
+    }
+    
+    // Data structure for nation policy change events
+    public class NationPolicyChangedData
+    {
+        public string NationId { get; set; }
+        public NationEntity.PolicyType PolicyType { get; set; }
+        public float Value { get; set; }
     }
 }

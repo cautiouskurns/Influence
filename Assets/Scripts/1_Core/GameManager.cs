@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float populationGrowthRate = 0.02f;
     [SerializeField] private float migrationRate = 0.01f;
     
-    private bool _isInitialized = false;
+    // private bool _isInitialized = false;
     
     private void Awake()
     {
@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
             turnManager.SetTimeScale(baseSimulationSpeed);
         }
         
-        _isInitialized = true;
+        // _isInitialized = true;
         Debug.Log("GameManager initialized successfully");
     }
     
