@@ -155,25 +155,24 @@ namespace UI
             GameObject panel = new GameObject("LegendPanel");
             legendPanel = panel;
             
-            // Find the UIManager and get the right panel as parent
-            UIManager uiManager = FindFirstObjectByType<UIManager>();
-            if (uiManager != null)
+            // Position the panel directly in the main canvas to ensure it's in the top-right
+            Canvas mainCanvas = FindFirstObjectByType<Canvas>();
+            if (mainCanvas != null)
             {
-                // The legend will be positioned by the UIManager later
-                panel.transform.SetParent(transform.parent, false);
+                panel.transform.SetParent(mainCanvas.transform, false);
             }
             else
             {
-                // If no UIManager, we'll position it ourselves
-                panel.transform.SetParent(transform.parent, false);
-                
-                RectTransform panelRect = panel.AddComponent<RectTransform>();
-                panelRect.anchorMin = new Vector2(1, 0.5f);
-                panelRect.anchorMax = new Vector2(1, 0.5f);
-                panelRect.pivot = new Vector2(1, 0.5f);
-                panelRect.sizeDelta = new Vector2(160, 200);
-                panelRect.anchoredPosition = new Vector2(-20, 0);
+                panel.transform.SetParent(transform.root, false);
             }
+            
+            // Configure the panel with correct anchoring for top-right corner
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(1, 1);
+            panelRect.anchorMax = new Vector2(1, 1);
+            panelRect.pivot = new Vector2(1, 1);
+            panelRect.sizeDelta = new Vector2(180, 200);
+            panelRect.anchoredPosition = new Vector2(-20, -20);
             
             // Add panel components
             Image panelImage = panel.AddComponent<Image>();
