@@ -759,6 +759,12 @@ MonoBehaviour:
   nameText: {fileID: 5148228246991168295}
   wealthText: {fileID: 7405833994623718977}
   productionText: {fileID: 289097587991939758}
+  hexagonSprite: {fileID: 0}
+  hexScale: 0.7
+  nameFontSize: 6
+  statsFontSize: 8
+  nameTextY: 0.25
+  statsTextY: -0.15
 --- !u!114 &621196161905794701
 MonoBehaviour:
   m_ObjectHideFlags: 0

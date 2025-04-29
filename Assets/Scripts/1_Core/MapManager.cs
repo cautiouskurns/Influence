@@ -4,6 +4,8 @@ using UnityEngine;
 using Managers;
 using Entities;
 using Systems;
+using UI.MapComponents;
+using Controllers;
 
 namespace UI
 {
@@ -16,6 +18,17 @@ namespace UI
         Nation
     }
 
+    /// <summary>
+    /// CLASS PURPOSE:
+    /// MapManager coordinates the different components of the map system.
+    /// It follows the Single Responsibility Principle by delegating specific tasks
+    /// to specialized components.
+    /// 
+    /// CORE RESPONSIBILITIES:
+    /// - Initialize and coordinate map components
+    /// - Handle global events related to the map
+    /// - Manage high-level map state and configuration
+    /// </summary>
     public class MapManager : MonoBehaviour
     {
         [Header("Map Settings")]
@@ -23,39 +36,47 @@ namespace UI
         [SerializeField] private Transform regionsContainer;
         [SerializeField] private int gridWidth = 8;
         [SerializeField] private int gridHeight = 8;
-        [SerializeField] private float hexSize = 1.0f; // Set to 1.0 as per current settings
+        [SerializeField] private float hexSize = 1.0f;
         
         [Header("Hex Grid Settings")]
-        [SerializeField] private bool pointyTopHexes = false; // False = flat-top, True = pointy-top orientation
-        [SerializeField] [Range(0.7f, 1.3f)] private float horizontalSpacingAdjust = 1.0f; // Adjust x-spacing
-        [SerializeField] [Range(0.7f, 1.3f)] private float verticalSpacingAdjust = 1.0f; // Adjust y-spacing
+        [SerializeField] private bool pointyTopHexes = false;
+        [SerializeField] [Range(0.7f, 1.3f)] private float horizontalSpacingAdjust = 1.0f;
+        [SerializeField] [Range(0.7f, 1.3f)] private float verticalSpacingAdjust = 1.0f;
         
         [Header("Color Settings")]
         [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
         [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
-        [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f); // Red for poor regions
-        [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy regions
-        [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f); // Blue for low production
-        [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f); // Yellow for high production
+        [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f);
+        [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f);
+        [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f);
+        [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f);
         
         [Header("Nation Colors")]
-        [SerializeField] private Color nationDefaultColor = new Color(0.6f, 0.6f, 0.6f); // Gray for regions without a nation
+        [SerializeField] private Color nationDefaultColor = new Color(0.6f, 0.6f, 0.6f);
         
-        // Tracking variables
+        // Component references
+        private HexGridGenerator gridGenerator;
+        private RegionColorCalculator colorCalculator;
+        private RegionFactory regionFactory;
+        private MapSelectionManager selectionManager;
+        
+        // State
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
-        private string selectedRegionId;
+        
+        // Dependencies
         private EconomicSystem economicSystem;
         private RegionControllerManager controllerManager;
         
-        // Constants for hex grid calculations
-        private readonly float SQRT_3 = Mathf.Sqrt(3);
-        
         private void Awake()
         {
+            // Get dependencies
             economicSystem = FindFirstObjectByType<EconomicSystem>();
             
-            // Set up the controller manager
+            // Initialize the controller manager
             InitializeControllerManager();
+            
+            // Initialize components
+            InitializeComponents();
         }
         
         private void Start()
@@ -80,79 +101,71 @@ namespace UI
             EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
             EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
         }
-
+        
+        /// <summary>
+        /// Initialize specialized component classes
+        /// </summary>
+        private void InitializeComponents()
+        {
+            // Create the hex grid generator
+            gridGenerator = new HexGridGenerator(
+                gridWidth, 
+                gridHeight, 
+                hexSize, 
+                pointyTopHexes, 
+                horizontalSpacingAdjust, 
+                verticalSpacingAdjust
+            );
+            
+            // Create the color calculator
+            colorCalculator = new RegionColorCalculator(
+                defaultRegionColor,
+                wealthMinColor,
+                wealthMaxColor,
+                productionMinColor,
+                productionMaxColor,
+                nationDefaultColor,
+                economicSystem,
+                NationManager.Instance
+            );
+            
+            // Create the region factory
+            regionFactory = new RegionFactory(
+                regionPrefab,
+                regionsContainer,
+                economicSystem,
+                controllerManager
+            );
+            
+            // Create the selection manager
+            selectionManager = new MapSelectionManager(regionViews);
+            
+            Debug.Log("MapManager: Initialized all components");
+        }
+        
+        /// <summary>
+        /// Create the hexagonal grid of regions
+        /// </summary>
         private void CreateHexGrid()
         {
             ClearExistingRegions();
             
-            // Calculate the exact size of a hex sprite in the grid
-            float width, height, horizontalSpacing, verticalSpacing, xStart, yStart;
+            // Generate the grid cells
+            var cells = gridGenerator.GenerateGrid();
             
-            if (pointyTopHexes)
+            // Create regions for each cell
+            foreach (var cell in cells)
             {
-                // Pointy-top hex grid layout (hexes pointing up/down)
-                width = hexSize * 2.0f; // Width of a hex (point to point)
-                height = hexSize * SQRT_3; // Height of a hex (flat to flat)
+                // Get the color for this region
+                Color regionColor = colorCalculator.GetRegionColor(
+                    cell.Id, cell.Q, cell.R, gridWidth, gridHeight, colorMode);
                 
-                // For a perfectly tight grid with pointy-top hexes:
-                horizontalSpacing = width * 0.75f * horizontalSpacingAdjust; // Can adjust to fix overlap
-                verticalSpacing = height * verticalSpacingAdjust; // Can adjust to fix spacing
+                // Create the region with entity
+                RegionView regionView = regionFactory.CreateRegionWithEntity(
+                    cell.Id, cell.Name, cell.Position, cell.Rotation, regionColor);
                 
-                xStart = -(gridWidth * horizontalSpacing) / 2 + horizontalSpacing/2;
-                yStart = -(gridHeight * verticalSpacing) / 2 + verticalSpacing/2;
-                
-                for (int r = 0; r < gridHeight; r++)
-                {
-                    for (int q = 0; q < gridWidth; q++)
-                    {
-                        // Calculate position based on hex grid coordinates
-                        float xPos = xStart + q * horizontalSpacing;
-                        float yPos = yStart + r * verticalSpacing;
-                        
-                        // Offset every other row
-                        if (r % 2 != 0)
-                        {
-                            xPos += horizontalSpacing / 2;
-                        }
-                        
-                        Vector3 position = new Vector3(xPos, yPos, 0);
-                        // Create the hex with no rotation for pointy-top
-                        CreateHexWithRotation(q, r, position, Quaternion.identity);
-                    }
-                }
-            }
-            else
-            {
-                // Flat-top hex grid layout (hexes pointing sideways)
-                width = hexSize * SQRT_3; // Width of a hex (flat to flat)
-                height = hexSize * 2.0f; // Height of a hex (point to point)
-                
-                // For a perfectly tight grid with flat-top hexes:
-                horizontalSpacing = width * horizontalSpacingAdjust;
-                verticalSpacing = height * 0.75f * verticalSpacingAdjust;
-                
-                xStart = -(gridWidth * horizontalSpacing) / 2 + horizontalSpacing/2;
-                yStart = -(gridHeight * verticalSpacing) / 2 + verticalSpacing/2;
-                
-                for (int r = 0; r < gridHeight; r++)
-                {
-                    for (int q = 0; q < gridWidth; q++)
-                    {
-                        // Calculate position based on hex grid coordinates
-                        float xPos = xStart + q * horizontalSpacing;
-                        float yPos = yStart + r * verticalSpacing;
-                        
-                        // Offset every other column
-                        if (q % 2 != 0)
-                        {
-                            yPos += verticalSpacing / 2;
-                        }
-                        
-                        Vector3 position = new Vector3(xPos, yPos, 0);
-                        // Create the hex with 30-degree rotation for flat-top
-                        CreateHexWithRotation(q, r, position, Quaternion.Euler(0, 0, 30));
-                    }
-                }
+                // Store reference
+                regionViews[cell.Id] = regionView;
             }
             
             Debug.Log($"MapManager created {regionViews.Count} hexagonal regions in a tightly packed hex grid");
@@ -161,132 +174,9 @@ namespace UI
             EventBus.Trigger("RegionsCreated", regionViews.Count);
         }
         
-        private void CreateHexWithRotation(int q, int r, Vector3 position, Quaternion rotation)
-        {
-            // Create the hex with the proper orientation
-            GameObject regionObj = Instantiate(regionPrefab, position, rotation, regionsContainer);
-            
-            string regionId = $"Region_{q}_{r}";
-            string regionName = $"R{q},{r}";
-            
-            // Apply color based on the current color mode
-            Color regionColor = GetRegionColor(q, r, regionId);
-            
-            // Initialize the region
-            RegionView regionView = regionObj.GetComponent<RegionView>();
-            regionView.Initialize(regionId, regionName, regionColor);
-            
-            // Store reference
-            regionViews[regionId] = regionView;
-            
-            // Create an economic entity for this region
-            CreateRegionEntity(regionId);
-        }
-        
-        private Color GetRegionColor(int q, int r, string regionId)
-        {
-            switch (colorMode)
-            {
-                case RegionColorMode.Position:
-                    // Original position-based coloring
-                    return new Color(
-                        0.4f + (float)q/gridWidth * 0.6f,
-                        0.4f + (float)r/gridHeight * 0.6f,
-                        0.5f
-                    );
-                    
-                case RegionColorMode.Wealth:
-                    return GetWealthBasedColor(regionId);
-                    
-                case RegionColorMode.Production:
-                    return GetProductionBasedColor(regionId);
-                    
-                case RegionColorMode.Nation:
-                    return GetNationBasedColor(regionId);
-                    
-                case RegionColorMode.Default:
-                default:
-                    return defaultRegionColor;
-            }
-        }
-        
-        private Color GetWealthBasedColor(string regionId)
-        {
-            if (economicSystem == null) return defaultRegionColor;
-            
-            var region = economicSystem.GetRegion(regionId);
-            if (region == null) return defaultRegionColor;
-            
-            // Get min/max wealth values in the economy
-            int minWealth = int.MaxValue;
-            int maxWealth = int.MinValue;
-            
-            foreach (var entityId in economicSystem.GetAllRegionIds())
-            {
-                var entity = economicSystem.GetRegion(entityId);
-                if (entity != null)
-                {
-                    minWealth = Mathf.Min(minWealth, entity.Wealth);
-                    maxWealth = Mathf.Max(maxWealth, entity.Wealth);
-                }
-            }
-            
-            // Safeguard against division by zero
-            if (minWealth == maxWealth) return Color.Lerp(wealthMinColor, wealthMaxColor, 0.5f);
-            
-            // Normalize the value between 0 and 1
-            float normalizedValue = (float)(region.Wealth - minWealth) / (maxWealth - minWealth);
-            
-            // Return color gradient based on wealth
-            return Color.Lerp(wealthMinColor, wealthMaxColor, normalizedValue);
-        }
-        
-        private Color GetProductionBasedColor(string regionId)
-        {
-            if (economicSystem == null) return defaultRegionColor;
-            
-            var region = economicSystem.GetRegion(regionId);
-            if (region == null) return defaultRegionColor;
-            
-            // Get min/max production values in the economy
-            int minProduction = int.MaxValue;
-            int maxProduction = int.MinValue;
-            
-            foreach (var entityId in economicSystem.GetAllRegionIds())
-            {
-                var entity = economicSystem.GetRegion(entityId);
-                if (entity != null)
-                {
-                    minProduction = Mathf.Min(minProduction, entity.Production);
-                    maxProduction = Mathf.Max(maxProduction, entity.Production);
-                }
-            }
-            
-            // Safeguard against division by zero
-            if (minProduction == maxProduction) return Color.Lerp(productionMinColor, productionMaxColor, 0.5f);
-            
-            // Normalize the value between 0 and 1
-            float normalizedValue = (float)(region.Production - minProduction) / (maxProduction - minProduction);
-            
-            // Return color gradient based on production
-            return Color.Lerp(productionMinColor, productionMaxColor, normalizedValue);
-        }
-        
-        // New method to get a color based on the region's nation
-        private Color GetNationBasedColor(string regionId)
-        {
-            // Find the nation manager
-            NationManager nationManager = NationManager.Instance;
-            if (nationManager == null) return nationDefaultColor;
-            
-            // Get the nation that owns this region
-            NationEntity nation = nationManager.GetRegionNation(regionId);
-            if (nation == null) return nationDefaultColor;
-            
-            // Return the nation's color (using the correct property name)
-            return nation.Color;
-        }
-        
+        /// <summary>
+        /// Clear existing region game objects
+        /// </summary>
         private void ClearExistingRegions()
         {
             // Clear any existing regions before creating new ones
@@ -306,106 +196,9 @@ namespace UI
             }
         }
         
-        private void CreateRegionEntity(string regionId)
-        {
-            if (economicSystem == null) return;
-            
-            // Only create if the region doesn't already have an entity
-            RegionEntity existingEntity = economicSystem.GetRegion(regionId);
-            if (existingEntity == null)
-            {
-                // Create a new region entity with random initial values
-                int initialWealth = Random.Range(100, 300);
-                int initialProduction = Random.Range(50, 100);
-                RegionEntity regionEntity = new RegionEntity(regionId, initialWealth, initialProduction);
-                
-                // Set additional properties
-                regionEntity.LaborAvailable = Random.Range(50, 150);
-                regionEntity.InfrastructureLevel = Random.Range(1, 5);
-                
-                // Register with the economic system
-                economicSystem.RegisterRegion(regionEntity);
-                
-                // We don't need to directly update the view with the entity any more
-                // Controllers handle this relationship now
-                if (controllerManager != null && regionViews.TryGetValue(regionId, out RegionView regionView))
-                {
-                    controllerManager.RegisterRegionView(regionView);
-                }
-            }
-        }
-        
-        private void CreateRegion(string id, string name, Vector3 position, Color color)
-        {
-            // Instantiate the region prefab
-            GameObject regionObj = Instantiate(regionPrefab, position, Quaternion.identity, regionsContainer);
-            
-            // Get the RegionView component
-            RegionView regionView = regionObj.GetComponent<RegionView>();
-            
-            // Initialize with data
-            regionView.Initialize(id, name, color);
-            
-            // Store reference
-            regionViews[id] = regionView;
-        }
-        
-        private void OnRegionSelected(object data)
-        {
-            if (data is string regionId)
-            {
-                // Deselect previous region
-                if (!string.IsNullOrEmpty(selectedRegionId) && 
-                    regionViews.TryGetValue(selectedRegionId, out var previousRegion))
-                {
-                    previousRegion.SetHighlighted(false); // Use SetHighlighted instead of Deselect
-                }
-                
-                // Select new region
-                selectedRegionId = regionId;
-                if (regionViews.TryGetValue(regionId, out var currentRegion))
-                {
-                    currentRegion.SetHighlighted(true);
-                    Debug.Log($"Selected region: {regionId}");
-                }
-            }
-        }
-        
-        private void OnRegionUpdated(object data)
-        {
-            // This is handled directly by the RegionView components
-        }
-        
-        private void OnUpdateMapColors(object data)
-        {
-            // Update all region colors when triggered
-            UpdateRegionColors();
-        }
-        
-        private void OnRegionNationChanged(object data)
-        {
-            // If we're in nation color mode, update the colors
-            if (colorMode == RegionColorMode.Nation)
-            {
-                UpdateRegionColors();
-            }
-        }
-        
-        private void OnRegionsAssignedToNations(object data)
-        {
-            // When regions are assigned to nations, update to nation color mode
-            Debug.Log("MapManager: Regions were assigned to nations, updating to nation color mode");
-            SetColorMode((int)RegionColorMode.Nation);
-        }
-        
-        // Add a reset method that can be called from editor/inspector
-        [ContextMenu("Reset Hex Grid")]
-        public void ResetHexGrid()
-        {
-            CreateHexGrid();
-        }
-
-        // Ensure region colors update properly
+        /// <summary>
+        /// Update colors for all regions based on current color mode
+        /// </summary>
         public void UpdateRegionColors()
         {
             if (regionViews == null || regionViews.Count == 0)
@@ -428,27 +221,23 @@ namespace UI
                 
                 // Extract coordinates from region ID (format: "Region_X_Y")
                 string[] parts = regionId.Split('_');
-                if (parts.Length < 3)
-                {
-                    continue;
-                }
-                
-                if (!int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
+                if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
                 {
                     continue;
                 }
                 
                 // Calculate new color based on current mode
-                Color newColor = GetRegionColor(q, r, regionId);
+                Color newColor = colorCalculator.GetRegionColor(
+                    regionId, q, r, gridWidth, gridHeight, colorMode);
                 
                 // Force immediate update on the view
                 view.SetColor(newColor);
             }
-            
-//            Debug.Log($"MapManager: Finished updating region colors to {colorMode} mode");
         }
-
-        // Update the SetColorMode method to include better error handling
+        
+        /// <summary>
+        /// Set the color mode for the map
+        /// </summary>
         public void SetColorMode(int modeValue)
         {
             // Validate the input mode value
@@ -466,7 +255,10 @@ namespace UI
             // Update all region colors immediately
             UpdateRegionColors();
         }
-
+        
+        /// <summary>
+        /// Initialize or find the RegionControllerManager
+        /// </summary>
         private void InitializeControllerManager()
         {
             // Find or create the RegionControllerManager
@@ -477,6 +269,46 @@ namespace UI
                 controllerManager = managerObj.AddComponent<RegionControllerManager>();
                 Debug.Log("MapManager: Created new RegionControllerManager");
             }
+        }
+        
+        #region Event Handlers
+        
+        private void OnRegionSelected(object data)
+        {
+            selectionManager.OnRegionSelected(data);
+        }
+        
+        private void OnRegionUpdated(object data)
+        {
+            // This is handled by RegionControllers now
+        }
+        
+        private void OnUpdateMapColors(object data)
+        {
+            UpdateRegionColors();
+        }
+        
+        private void OnRegionNationChanged(object data)
+        {
+            if (colorMode == RegionColorMode.Nation)
+            {
+                UpdateRegionColors();
+            }
+        }
+        
+        private void OnRegionsAssignedToNations(object data)
+        {
+            Debug.Log("MapManager: Regions were assigned to nations, updating to nation color mode");
+            SetColorMode((int)RegionColorMode.Nation);
+        }
+        
+        #endregion
+        
+        // Add a reset method that can be called from editor/inspector
+        [ContextMenu("Reset Hex Grid")]
+        public void ResetHexGrid()
+        {
+            CreateHexGrid();
         }
     }
 }

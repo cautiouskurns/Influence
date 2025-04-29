@@ -120,7 +120,8 @@ namespace UI
                 string[] parts = RegionName.Split('_');
                 if (parts.Length >= 3)
                 {
-                    nameText.text = $"{parts[1]},{parts[2]}\n({nationName})";
+                    // nameText.text = $"{parts[1]},{parts[2]}\n ({nationName})";
+                    nameText.text = $"{parts[1]},{parts[2]}";
                 }
             }
         }
