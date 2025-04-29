@@ -172,9 +172,6 @@ namespace Managers
         // Assign a region to a nation
         public void AssignRegionToNation(string regionId, string nationId)
         {
-            // Get the region entity from the economic system
-            RegionEntity region = economicSystem?.GetRegion(regionId);
-            
             // First, remove the region from any existing nation
             foreach (var existingNation in nations.Values)
             {
@@ -184,15 +181,7 @@ namespace Managers
             // Then add it to the specified nation
             if (nations.TryGetValue(nationId, out NationEntity nation))
             {
-                // Update the nation's list of regions
                 nation.AddRegion(regionId);
-                
-                // Update the region's NationId property
-                if (region != null)
-                {
-                    region.NationId = nationId;
-                    Debug.Log($"[NationManager] Set Region {regionId} NationId property to {nationId}");
-                }
                 
                 // Trigger an event for visualization/processing
                 EventBus.Trigger("RegionNationChanged", new RegionNationChangedData { 
@@ -205,28 +194,10 @@ namespace Managers
         // Get the nation a region belongs to
         public NationEntity GetRegionNation(string regionId)
         {
-            // First, try to get the region entity to access its NationId directly
-            RegionEntity region = economicSystem?.GetRegion(regionId);
-            if (region != null && !string.IsNullOrEmpty(region.NationId))
-            {
-                // Use the stored NationId for direct lookup
-                if (nations.TryGetValue(region.NationId, out NationEntity nation))
-                {
-                    return nation;
-                }
-            }
-            
-            // Fallback to the old method - search through all nations' region lists
             foreach (var nation in nations.Values)
             {
                 if (nation.GetRegionIds().Contains(regionId))
                 {
-                    // If we found it this way, update the region's NationId for next time
-                    if (region != null)
-                    {
-                        region.NationId = nation.Id;
-                        Debug.Log($"[NationManager] Updated Region {regionId} with NationId {nation.Id} during lookup");
-                    }
                     return nation;
                 }
             }

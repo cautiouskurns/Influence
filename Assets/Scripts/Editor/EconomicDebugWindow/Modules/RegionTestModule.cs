@@ -92,7 +92,7 @@ namespace Editor.DebugWindow.Modules
             
             // Sync values
             regionParams.laborAvailable = region.Population;
-            // regionParams.infrastructureLevel = Mathf.RoundToInt(region.InfrastructureQuality * 10);
+            regionParams.infrastructureLevel = Mathf.RoundToInt(region.InfrastructureQuality * 10);
             // Other values don't typically sync from the system
         }
         

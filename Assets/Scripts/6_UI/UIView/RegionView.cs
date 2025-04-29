@@ -113,33 +113,10 @@ namespace UI
         {
             if (RegionEntity == null) return;
             
-            // Update basic economic information
             UpdateUI(
                 RegionEntity.Wealth,
                 RegionEntity.Production
             );
-            
-            // Also update the name with nation information if available
-            if (!string.IsNullOrEmpty(RegionEntity.NationId))
-            {
-                NationManager nationManager = NationManager.Instance;
-                if (nationManager != null)
-                {
-                    NationEntity nation = nationManager.GetNation(RegionEntity.NationId);
-                    if (nation != null && nameText != null)
-                    {
-                        // Show both region name and nation name for clarity
-                        nameText.text = $"{RegionName.Split('_')[1]},{RegionName.Split('_')[2]}\n({nation.Name})";
-                        
-                        // If in Nation color mode, make sure the color is updated
-                        MapManager mapManager = FindFirstObjectByType<MapManager>();
-                        if (mapManager != null && mapManager.CurrentColorMode == RegionColorMode.Nation)
-                        {
-                            UpdateColor(nation.Color);
-                        }
-                    }
-                }
-            }
         }
         
         private void UpdateUI(int wealth, int production)
