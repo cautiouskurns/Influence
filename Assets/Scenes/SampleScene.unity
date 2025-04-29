@@ -546,6 +546,8 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
+  - component: {fileID: 519420034}
+  - component: {fileID: 519420033}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -671,6 +673,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &519420033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c39fb97781394c479c515d8f807e2b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cameraController: {fileID: 519420034}
+  mapManager: {fileID: 1395318621}
+  boundaryPadding: 2
+  autoFitOnStart: 0
+--- !u!114 &519420034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991d0261c3173492094583a7c998d364, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 519420031}
+  panSpeed: 20
+  dragPanSpeed: 2
+  edgePanThreshold: 20
+  enableEdgePanning: 0
+  invertDrag: 0
+  zoomSpeed: 10
+  minZoom: 2
+  maxZoom: 15
+  zoomDampening: 5
+  enableBoundaries: 1
+  boundaryPadding: 2
+  minBoundary: {x: -20, y: -20}
+  maxBoundary: {x: 20, y: 20}
+  useMiddleMouseToPan: 1
+  useRightMouseToPan: 0
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -1703,8 +1749,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   regionPrefab: {fileID: 8375452562509670778, guid: 68fe0b6a55b2b4c0696b3962ee6c7340, type: 3}
   regionsContainer: {fileID: 1983520340}
-  gridWidth: 3
-  gridHeight: 3
+  gridWidth: 5
+  gridHeight: 5
   hexSize: 1.9
   pointyTopHexes: 1
   horizontalSpacingAdjust: 1.25
@@ -1715,6 +1761,7 @@ MonoBehaviour:
   wealthMaxColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
   productionMinColor: {r: 0.2, g: 0.2, b: 0.8, a: 1}
   productionMaxColor: {r: 0.8, g: 0.8, b: 0.2, a: 1}
+  nationDefaultColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
 --- !u!1 &1455276063
 GameObject:
   m_ObjectHideFlags: 0
