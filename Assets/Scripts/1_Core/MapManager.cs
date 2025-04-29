@@ -32,6 +32,7 @@ namespace UI
         
         [Header("Color Settings")]
         [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
+        public RegionColorMode CurrentColorMode => colorMode; // Public property to access the current color mode
         [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
         [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f); // Red for poor regions
         [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy regions
@@ -273,14 +274,35 @@ namespace UI
         {
             // Find the nation manager
             NationManager nationManager = NationManager.Instance;
-            if (nationManager == null) return nationDefaultColor;
+            if (nationManager == null) 
+            {
+                Debug.LogWarning($"MapManager: Cannot get nation color - NationManager is null for region {regionId}");
+                return nationDefaultColor;
+            }
             
-            // Get the nation that owns this region
-            NationEntity nation = nationManager.GetRegionNation(regionId);
-            if (nation == null) return nationDefaultColor;
+            // Get the region entity to check its NationId directly
+            RegionEntity region = economicSystem?.GetRegion(regionId);
+            if (region != null && !string.IsNullOrEmpty(region.NationId))
+            {
+                // Use the NationId from the RegionEntity for a direct lookup
+                NationEntity nation = nationManager.GetNation(region.NationId);
+                if (nation != null)
+                {
+                    Debug.Log($"Region {regionId} has NationId {region.NationId}, using color from {nation.Name}");
+                    return nation.Color;
+                }
+            }
             
-            // Return the nation's color (using the correct property name)
-            return nation.Color;
+            // Fallback to the old lookup method
+            NationEntity fallbackNation = nationManager.GetRegionNation(regionId);
+            if (fallbackNation == null)
+            {
+                Debug.LogWarning($"MapManager: No nation found for region {regionId}");
+                return nationDefaultColor;
+            }
+            
+            // Return the nation's color
+            return fallbackNation.Color;
         }
         
         private void ClearExistingRegions()
@@ -313,7 +335,7 @@ namespace UI
                 // Create a new region entity with random initial values
                 int initialWealth = Random.Range(100, 300);
                 int initialProduction = Random.Range(50, 100);
-                RegionEntity regionEntity = new RegionEntity(regionId, initialWealth, initialProduction);
+                RegionEntity regionEntity = new RegionEntity(regionId, $"Region_{regionId}", initialWealth, initialProduction);
                 
                 // Set additional properties
                 regionEntity.LaborAvailable = Random.Range(50, 150);
@@ -379,10 +401,26 @@ namespace UI
         
         private void OnRegionNationChanged(object data)
         {
-            // If we're in nation color mode, update the colors
-            if (colorMode == RegionColorMode.Nation)
+            // If we're in nation color mode, update the specific region that changed
+            if (colorMode == RegionColorMode.Nation && data is RegionNationChangedData changeData)
             {
-                UpdateRegionColors();
+                string regionId = changeData.RegionId;
+                
+                // Update just this specific region's color instead of all regions
+                if (regionViews.TryGetValue(regionId, out RegionView view))
+                {
+                    // Extract coordinates from region ID (format: "Region_X_Y")
+                    string[] parts = regionId.Split('_');
+                    if (parts.Length >= 3 && int.TryParse(parts[1], out int q) && int.TryParse(parts[2], out int r))
+                    {
+                        // Get the nation color for this region
+                        Color nationColor = GetNationBasedColor(regionId);
+                        
+                        // Update the region view
+                        view.UpdateColor(nationColor);
+                        Debug.Log($"MapManager: Updated color for region {regionId} to its nation color");
+                    }
+                }
             }
         }
         

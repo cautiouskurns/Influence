@@ -2004,3 +2004,148 @@ classDiagram
     class EventManager,GameEvent,EventChoice,DialogueView event
     class EconomicDebugWindow debug
 ```
+
+
+```mermaid
+classDiagram
+    %% Entities
+    class RegionEntity {
+        +string Name
+        +int Wealth
+        +int Production
+        +float LaborAvailable
+        +float InfrastructureLevel
+        +RegionEntity(string name, int initialWealth, int initialProduction)
+        +RegionEntity(string name)
+        +NationEntity GetNation()
+        +void ProcessTurn()
+        +string GetSummary()
+    }
+    
+    class NationEntity {
+        +string Id
+        +string Name
+        +Color Color
+        -List~string~ regionIds
+        +float TotalWealth
+        +float TotalProduction
+        +float Stability
+        +enum PolicyType
+        +enum DiplomaticStatus
+        -Dictionary~PolicyType, float~ policies
+        -Dictionary~string, DiplomaticStatus~ diplomaticRelations
+        +NationEntity(string id, string name, Color color)
+        +void AddRegion(string regionId)
+        +void RemoveRegion(string regionId)
+        +List~string~ GetRegionIds()
+        +void SetPolicy(PolicyType type, float value)
+        +float GetPolicy(PolicyType type)
+        +void SetDiplomaticStatus(string otherNationId, DiplomaticStatus status)
+        +DiplomaticStatus GetDiplomaticStatus(string otherNationId)
+        +string GetSummary()
+    }
+    
+    %% Systems
+    class NationSystem {
+        -static NationSystem _instance
+        +static NationSystem Instance
+        -NationManager nationManager
+        -EconomicSystem economicSystem
+        -NationEconomicSubsystem economicSubsystem
+        -NationDiplomaticSubsystem diplomaticSubsystem
+        -NationStabilitySubsystem stabilitySubsystem
+        -NationEventSubsystem eventSubsystem
+        -NationPolicySubsystem policySubsystem
+        -Dictionary~string, RegionEntity~ regionCache
+        -void Awake()
+        -void Start()
+        -void OnEnable()
+        -void OnDisable()
+        -void OnTurnProcessed(object data)
+        -void OnRegionsAssignedToNations(object data)
+        -void OnRegionNationChanged(object data)
+        -void InitializeSubsystems()
+        -void UpdateRegionCache()
+        -void UpdateAllNationData()
+        -void UpdateNationData(string nationId)
+        +Dictionary~string, RegionEntity~ GetRegionCache()
+        +void SetNationPolicy(string nationId, NationEntity.PolicyType policyType, float value)
+        +float GetNationPolicy(string nationId, NationEntity.PolicyType policyType)
+    }
+    
+    %% Views
+    class RegionView {
+        +SpriteRenderer mainRenderer
+        +SpriteRenderer highlightRenderer
+        +TextMeshPro nameText
+        +TextMeshPro wealthText
+        +TextMeshPro productionText
+        +string RegionName
+        +RegionEntity RegionEntity
+        -EconomicSystem economicSystem
+        -void Awake()
+        -void Update()
+        +void Initialize(string id, string name, Color color)
+        -void OnDestroy()
+        -void TryGetRegionEntityFromSystem()
+        -void OnRegionUpdated(object data)
+        -void OnEconomicTick(object data)
+        +void SetHighlighted(bool highlighted)
+        +void SetRegionEntity(RegionEntity regionEntity)
+        -void UpdateUIFromEntity()
+        -void UpdateUI(int wealth, int production)
+        -void OnMouseDown()
+        +void Deselect()
+        +void UpdateColor(Color newColor)
+    }
+    
+    class NationView {
+        -string nationId
+        -TextMeshProUGUI nationNameText
+        -TextMeshProUGUI wealthText
+        -TextMeshProUGUI productionText
+        -TextMeshProUGUI stabilityText
+        -TextMeshProUGUI regionsText
+        -Image nationColorImage
+        -NationEntity nation
+        -NationManager nationManager
+        -void Start()
+        -void OnDestroy()
+        +void SetNation(string id)
+        -void UpdateUI()
+        -void OnNationStatisticsUpdated(object data)
+    }
+    
+    %% Relationships
+    RegionEntity --> NationEntity : references through GetNation()
+    NationEntity "1" *-- "*" RegionEntity : owns/contains
+    
+    NationSystem --> NationEntity : manages
+    NationSystem --> RegionEntity : caches
+    
+    RegionView --> RegionEntity : displays
+    NationView --> NationEntity : displays
+    
+    NationSystem ..> NationView : updates via events
+    NationSystem ..> RegionView : updates via events
+    
+    NationEntity "1" -- "*" RegionEntity : contains references to
+    
+    %% External dependencies represented as interfaces
+    class NationManager {
+        <<interface>>
+    }
+    class EconomicSystem {
+        <<interface>>
+    }
+    class EventBus {
+        <<interface>>
+    }
+    
+    NationSystem --> NationManager : uses
+    NationSystem --> EconomicSystem : uses
+    NationSystem --> EventBus : publishes/subscribes
+    RegionView --> EventBus : publishes/subscribes
+    NationView --> EventBus : publishes/subscribes
+    RegionEntity --> NationManager : uses to find nation
+```

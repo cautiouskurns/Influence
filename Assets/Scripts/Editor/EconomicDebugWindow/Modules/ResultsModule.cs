@@ -164,10 +164,10 @@ namespace Editor.DebugWindow.Modules
             currentWealth = region.Wealth;
             currentProduction = region.Production;
             currentPopulation = region.Population;
-            currentInfrastructure = region.InfrastructureQuality;
+            // currentInfrastructure = region.InfrastructureQuality;
             
             // Values not directly available from region
-            currentEfficiency = 1.0f + (region.InfrastructureQuality * 0.1f);
+            // currentEfficiency = 1.0f + (region.InfrastructureQuality * 0.1f);
             currentUnmetDemand = 0.2f; // Sample value
         }
         

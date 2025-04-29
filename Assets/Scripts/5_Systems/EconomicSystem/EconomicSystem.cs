@@ -599,7 +599,7 @@ namespace Systems
         
         private void CreateTestRegion(string name, int wealth, int production)
         {
-            RegionEntity region = new RegionEntity(name, wealth, production);
+            RegionEntity region = new RegionEntity(name, name.ToLower(), wealth, production);
             RegisterRegion(region);
             
             // Also set as test region if none is set
