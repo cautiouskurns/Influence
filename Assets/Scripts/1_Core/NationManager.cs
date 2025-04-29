@@ -116,6 +116,12 @@ namespace Managers
                 
                 // Trigger event for nation system to process
                 EventBus.Trigger("RegionsAssignedToNations", null);
+                
+                // Additional debug logging to confirm nations have regions
+                foreach (var nation in nations.Values)
+                {
+                    Debug.Log($"[NationManager] Nation {nation.Name} has {nation.GetRegionIds().Count} regions assigned");
+                }
             }
             else
             {

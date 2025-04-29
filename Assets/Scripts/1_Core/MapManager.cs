@@ -64,6 +64,8 @@ namespace UI
             EventBus.Subscribe("RegionSelected", OnRegionSelected);
             EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
             EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
+            EventBus.Subscribe("RegionNationChanged", OnRegionNationChanged);
+            EventBus.Subscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
         }
         
         private void OnDisable()
@@ -71,8 +73,10 @@ namespace UI
             EventBus.Unsubscribe("RegionSelected", OnRegionSelected);
             EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
             EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
+            EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
+            EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
         }
-        
+
         private void CreateHexGrid()
         {
             ClearExistingRegions();
@@ -148,6 +152,9 @@ namespace UI
             }
             
             Debug.Log($"MapManager created {regionViews.Count} hexagonal regions in a tightly packed hex grid");
+            
+            // Trigger the RegionsCreated event to notify NationManager that regions have been created
+            EventBus.Trigger("RegionsCreated", regionViews.Count);
         }
         
         private void CreateHexWithRotation(int q, int r, Vector3 position, Quaternion rotation)
@@ -272,7 +279,7 @@ namespace UI
             NationEntity nation = nationManager.GetRegionNation(regionId);
             if (nation == null) return nationDefaultColor;
             
-            // Return the nation's color (use NationColor property instead of Color)
+            // Return the nation's color (using the correct property name)
             return nation.Color;
         }
         
@@ -368,6 +375,22 @@ namespace UI
         {
             // Update all region colors when triggered
             UpdateRegionColors();
+        }
+        
+        private void OnRegionNationChanged(object data)
+        {
+            // If we're in nation color mode, update the colors
+            if (colorMode == RegionColorMode.Nation)
+            {
+                UpdateRegionColors();
+            }
+        }
+        
+        private void OnRegionsAssignedToNations(object data)
+        {
+            // When regions are assigned to nations, update to nation color mode
+            Debug.Log("MapManager: Regions were assigned to nations, updating to nation color mode");
+            SetColorMode((int)RegionColorMode.Nation);
         }
         
         // Add a reset method that can be called from editor/inspector
