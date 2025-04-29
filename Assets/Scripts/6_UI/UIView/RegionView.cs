@@ -7,7 +7,14 @@ using Managers;
 namespace UI
 {
     /// <summary>
-    /// RegionView represents a single region on the map, displaying its economic status.
+    /// CLASS PURPOSE:
+    /// RegionView focuses solely on displaying a region visually on the map.
+    /// It follows the Single Responsibility Principle by handling only visualization concerns.
+    /// 
+    /// CORE RESPONSIBILITIES:
+    /// - Display visual elements (sprite colors, highlighting)
+    /// - Update text components with provided data
+    /// - Forward click events to the event system
     /// </summary>
     public class RegionView : MonoBehaviour
     {
@@ -20,107 +27,68 @@ namespace UI
         public TextMeshPro wealthText;
         public TextMeshPro productionText;
         
-        // Region data
+        // Region identifier
         public string RegionName { get; private set; }
-        public RegionEntity RegionEntity { get; private set; }
         
-        // Cache for economic system
-        private EconomicSystem economicSystem;
-        
-        private void Awake()
-        {
-            economicSystem = FindFirstObjectByType<EconomicSystem>();
-        }
-        
-        private void Update()
-        {
-            if (RegionEntity != null)
-            {
-                UpdateUIFromEntity();
-            }
-        }
-        
+        /// <summary>
+        /// Initialize the view with basic data
+        /// </summary>
         public void Initialize(string id, string name, Color color)
         {
             RegionName = id;
-            nameText.text = name;
-            mainRenderer.color = color;
-            highlightRenderer.enabled = false;
+            SetNameText(name);
+            SetColor(color);
+            SetHighlighted(false);
             
             // Initialize with zeros
-            UpdateUI(0, 0);
-            
-            // Subscribe to events
-            EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
-            EventBus.Subscribe("EconomicTick", OnEconomicTick);
-            
-            // Immediately try to find our entity
-            TryGetRegionEntityFromSystem();
+            UpdateEconomicDisplay(0, 0);
         }
         
-        private void OnDestroy()
+        /// <summary>
+        /// Set the display name of the region
+        /// </summary>
+        public void SetNameText(string name)
         {
-            EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
-            EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
-        }
-        
-        private void TryGetRegionEntityFromSystem()
-        {
-            if (economicSystem != null && !string.IsNullOrEmpty(RegionName))
+            if (nameText != null)
             {
-                RegionEntity existingEntity = economicSystem.GetRegion(RegionName);
-                if (existingEntity != null)
-                {
-//                    Debug.Log($"RegionView {RegionName}: Found economic entity");
-                    RegionEntity = existingEntity;
-                    UpdateUIFromEntity();
-                }
+                nameText.text = name;
             }
         }
         
-        private void OnRegionUpdated(object data)
+        /// <summary>
+        /// Set the base color of the region
+        /// </summary>
+        public void SetColor(Color color)
         {
-            if (data is RegionEntity region && region.Name == RegionName)
+            if (mainRenderer != null)
             {
-                RegionEntity = region;
-                UpdateUIFromEntity();
+                mainRenderer.color = color;
             }
         }
         
-        private void OnEconomicTick(object data)
-        {
-            // Refresh our entity reference and force update
-            TryGetRegionEntityFromSystem();
-        }
-        
+        /// <summary>
+        /// Toggle the highlight state
+        /// </summary>
         public void SetHighlighted(bool highlighted)
         {
             if (highlightRenderer != null)
             {
                 highlightRenderer.enabled = highlighted;
             }
-        }
-        
-        public void SetRegionEntity(RegionEntity regionEntity)
-        {
-            if (regionEntity == null) return;
             
-            RegionEntity = regionEntity;
-            UpdateUIFromEntity();
+            // Update text style based on highlight state
+            if (nameText != null)
+            {
+                nameText.fontStyle = highlighted ? FontStyles.Bold : FontStyles.Normal;
+            }
         }
         
-        private void UpdateUIFromEntity()
+        /// <summary>
+        /// Update economic data display
+        /// </summary>
+        public void UpdateEconomicDisplay(int wealth, int production)
         {
-            if (RegionEntity == null) return;
-            
-            UpdateUI(
-                RegionEntity.Wealth,
-                RegionEntity.Production
-            );
-        }
-        
-        private void UpdateUI(int wealth, int production)
-        {
+            // Update wealth text
             if (wealthText != null)
             {
                 // Use more compact format for better fit
@@ -129,7 +97,8 @@ namespace UI
                 // Color-code wealth text based on value
                 wealthText.color = wealth > 200 ? Color.green : (wealth < 100 ? Color.red : Color.white);
             }
-                
+            
+            // Update production text
             if (productionText != null)
             {
                 // Use more compact format for better fit
@@ -140,52 +109,29 @@ namespace UI
             }
         }
         
-        private void OnMouseDown()
+        /// <summary>
+        /// Update the region name to include nation information
+        /// </summary>
+        public void UpdateNationInfo(string nationName)
         {
-            SetHighlighted(true);
-            EventBus.Trigger("RegionSelected", RegionName);
-            
-            // Display additional info when selected
-            if (RegionEntity != null)
+            if (nameText != null && !string.IsNullOrEmpty(nationName))
             {
-                // Make the name text slightly larger when selected for emphasis
-                if (nameText != null)
+                // Extract coordinates from region name
+                string[] parts = RegionName.Split('_');
+                if (parts.Length >= 3)
                 {
-                    nameText.fontStyle = FontStyles.Bold;
+                    nameText.text = $"{parts[1]},{parts[2]}\n({nationName})";
                 }
-                
-                Debug.Log($"Region {RegionName} - Wealth: {RegionEntity.Wealth}, " +
-                         $"Production: {RegionEntity.Production}, " +
-                         $"Labor: {RegionEntity.LaborAvailable}, " +
-                         $"Infrastructure: {RegionEntity.InfrastructureLevel}");
             }
         }
         
-        // Add a method to handle deselection
-        public void Deselect()
+        /// <summary>
+        /// Handle mouse click on the region
+        /// </summary>
+        private void OnMouseDown()
         {
-            SetHighlighted(false);
-            
-            // Reset text styling
-            if (nameText != null)
-            {
-                nameText.fontStyle = FontStyles.Normal;
-            }
-        }
-
-        // Add method to update the region's color (called when color mode changes)
-        public void UpdateColor(Color newColor)
-        {
-            if (mainRenderer != null)
-            {
-                // Set the new color on the renderer
-                mainRenderer.color = newColor;
-//                Debug.Log($"RegionView {RegionName}: Updated color to {newColor}");
-            }
-            else
-            {
-                Debug.LogError($"RegionView {RegionName}: Cannot update color - mainRenderer is null");
-            }
+            // Just trigger the event - business logic belongs in controller
+            EventBus.Trigger("RegionSelected", RegionName);
         }
     }
 }

@@ -45,6 +45,7 @@ namespace UI
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
         private string selectedRegionId;
         private EconomicSystem economicSystem;
+        private RegionControllerManager controllerManager;
         
         // Constants for hex grid calculations
         private readonly float SQRT_3 = Mathf.Sqrt(3);
@@ -52,6 +53,9 @@ namespace UI
         private void Awake()
         {
             economicSystem = FindFirstObjectByType<EconomicSystem>();
+            
+            // Set up the controller manager
+            InitializeControllerManager();
         }
         
         private void Start()
@@ -322,10 +326,11 @@ namespace UI
                 // Register with the economic system
                 economicSystem.RegisterRegion(regionEntity);
                 
-                // Update the region view if available
-                if (regionViews.TryGetValue(regionId, out RegionView regionView))
+                // We don't need to directly update the view with the entity any more
+                // Controllers handle this relationship now
+                if (controllerManager != null && regionViews.TryGetValue(regionId, out RegionView regionView))
                 {
-                    regionView.SetRegionEntity(regionEntity);
+                    controllerManager.RegisterRegionView(regionView);
                 }
             }
         }
@@ -353,7 +358,7 @@ namespace UI
                 if (!string.IsNullOrEmpty(selectedRegionId) && 
                     regionViews.TryGetValue(selectedRegionId, out var previousRegion))
                 {
-                    previousRegion.Deselect(); // Use the new Deselect method
+                    previousRegion.SetHighlighted(false); // Use SetHighlighted instead of Deselect
                 }
                 
                 // Select new region
@@ -437,7 +442,7 @@ namespace UI
                 Color newColor = GetRegionColor(q, r, regionId);
                 
                 // Force immediate update on the view
-                view.UpdateColor(newColor);
+                view.SetColor(newColor);
             }
             
 //            Debug.Log($"MapManager: Finished updating region colors to {colorMode} mode");
@@ -460,6 +465,18 @@ namespace UI
             
             // Update all region colors immediately
             UpdateRegionColors();
+        }
+
+        private void InitializeControllerManager()
+        {
+            // Find or create the RegionControllerManager
+            controllerManager = FindFirstObjectByType<RegionControllerManager>();
+            if (controllerManager == null)
+            {
+                GameObject managerObj = new GameObject("RegionControllerManager");
+                controllerManager = managerObj.AddComponent<RegionControllerManager>();
+                Debug.Log("MapManager: Created new RegionControllerManager");
+            }
         }
     }
 }
