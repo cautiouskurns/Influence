@@ -273,7 +273,7 @@ namespace UI
             if (nation == null) return nationDefaultColor;
             
             // Return the nation's color (use NationColor property instead of Color)
-            return nation.NationColor;
+            return nation.Color;
         }
         
         private void ClearExistingRegions()

@@ -126,7 +126,7 @@ namespace Editor
                     // Nation color indicator
                     GUILayout.Box("", GUILayout.Width(20), GUILayout.Height(20));
                     Rect colorRect = GUILayoutUtility.GetLastRect();
-                    EditorGUI.DrawRect(colorRect, nation.NationColor);
+                    EditorGUI.DrawRect(colorRect, nation.Color);
                     
                     // Nation name
                     GUILayout.Label($"{nation.Name} (ID: {nation.Id})", EditorStyles.boldLabel);
@@ -222,7 +222,7 @@ namespace Editor
                 
                 // Color indicator
                 EditorGUILayout.LabelField(new GUIContent("■"), GUILayout.Width(20));
-                GUI.color = nation.NationColor;
+                GUI.color = nation.Color;
                 GUILayout.Box("", GUILayout.Width(10), GUILayout.Height(10));
                 GUI.color = Color.white;
                 

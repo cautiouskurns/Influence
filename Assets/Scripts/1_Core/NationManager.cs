@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Entities;
 using Systems;
-using Managers;
-using System.Collections;
 
 namespace Managers
 {
@@ -38,12 +36,6 @@ namespace Managers
         // Reference to the economic system for region access
         private EconomicSystem economicSystem;
         
-        // Dictionary to cache regions from the economic system
-        private Dictionary<string, RegionEntity> regionCache = new Dictionary<string, RegionEntity>();
-        
-        // Policy modifier defaults
-        private const float DEFAULT_POLICY_VALUE = 0.5f;
-        
         private void Awake()
         {
             // Singleton pattern
@@ -64,18 +56,12 @@ namespace Managers
         {
             // Subscribe to the RegionsCreated event
             EventBus.Subscribe("RegionsCreated", OnRegionsCreated);
-            
-            // Subscribe to turn processing events
-            EventBus.Subscribe("TurnProcessed", OnTurnProcessed);
         }
         
         private void OnDisable()
         {
             // Unsubscribe from the RegionsCreated event
             EventBus.Unsubscribe("RegionsCreated", OnRegionsCreated);
-            
-            // Unsubscribe from turn processing events
-            EventBus.Unsubscribe("TurnProcessed", OnTurnProcessed);
         }
         
         private void Start()
@@ -89,22 +75,10 @@ namespace Managers
             // Debug output to check the setup
             Debug.Log($"[NationManager] Nation system initialized with {nations.Count} nations");
             
-            // Check if we have access to the economic system
-            if (economicSystem == null)
-            {
-                economicSystem = FindFirstObjectByType<EconomicSystem>();
-                Debug.Log($"[NationManager] EconomicSystem found: {(economicSystem != null ? "Yes" : "No")}");
-            }
-            
             // Check if regions already exist
             if (economicSystem != null)
             {
                 CheckAndAssignRegions();
-            }
-            else
-            {
-                // No economic system found, try to find it after a short delay
-                StartCoroutine(FindEconomicSystemWithDelay());
             }
         }
 
@@ -119,39 +93,7 @@ namespace Managers
             
             Debug.Log($"[NationManager] Received RegionsCreated event with {regionCount} regions");
             
-            // Try to assign regions after a short delay
-            StartCoroutine(AssignRegionsWithDelay(0.5f));
-        }
-        
-        // Event handler for when a turn is processed
-        private void OnTurnProcessed(object data)
-        {
-            Debug.Log("[NationManager] Turn processed, updating nation statistics");
-            UpdateAllNationStatistics();
-        }
-        
-        // Coroutine to wait and find EconomicSystem
-        private IEnumerator FindEconomicSystemWithDelay()
-        {
-            Debug.Log("[NationManager] Waiting to find EconomicSystem...");
-            
-            yield return new WaitForSeconds(0.5f);
-            
-            economicSystem = FindFirstObjectByType<EconomicSystem>();
-            Debug.Log($"[NationManager] EconomicSystem found after delay: {(economicSystem != null ? "Yes" : "No")}");
-            
-            if (economicSystem != null)
-            {
-                CheckAndAssignRegions();
-            }
-        }
-        
-        // Coroutine to wait and assign regions
-        private IEnumerator AssignRegionsWithDelay(float delay)
-        {
-            yield return new WaitForSeconds(delay);
-            
-            Debug.Log("[NationManager] Assigning regions after delay...");
+            // Assign regions to nations
             CheckAndAssignRegions();
         }
         
@@ -172,21 +114,12 @@ namespace Managers
                 // Make sure regions are assigned to nations
                 AssignRegionsToNations();
                 
-                // Update the region cache
-                UpdateRegionCache();
-                
-                // After region assignment, update nation statistics
-                UpdateAllNationStatistics();
+                // Trigger event for nation system to process
+                EventBus.Trigger("RegionsAssignedToNations", null);
             }
             else
             {
                 Debug.LogWarning("[NationManager] No regions found yet, will wait for RegionsCreated event");
-            }
-            
-            // Output the final state of nations and regions
-            foreach (var nation in nations.Values)
-            {
-                Debug.Log($"[NationManager] Nation: {nation.Name}, Regions: {nation.GetRegionIds().Count}");
             }
         }
 
@@ -224,6 +157,12 @@ namespace Managers
             return new List<string>(nations.Keys);
         }
         
+        // Get all nations
+        public List<NationEntity> GetAllNations()
+        {
+            return new List<NationEntity>(nations.Values);
+        }
+        
         // Assign a region to a nation
         public void AssignRegionToNation(string regionId, string nationId)
         {
@@ -238,9 +177,11 @@ namespace Managers
             {
                 nation.AddRegion(regionId);
                 
-                // Update the region's display if needed
-                // This could trigger an event that MapManager listens to
-                EventBus.Trigger("RegionNationChanged", new RegionNationChangedData { RegionId = regionId, NationId = nationId });
+                // Trigger an event for visualization/processing
+                EventBus.Trigger("RegionNationChanged", new RegionNationChangedData { 
+                    RegionId = regionId, 
+                    NationId = nationId 
+                });
             }
         }
         
@@ -290,7 +231,6 @@ namespace Managers
                 string nationId = nationIds[nationIndex];
                 
                 AssignRegionToNation(regions[i], nationId);
-                Debug.Log($"[NationManager] Assigned region {regions[i]} to nation {nationId}");
             }
         }
         
@@ -303,81 +243,6 @@ namespace Managers
             
             Debug.Log("[NationManager] Created sample nations");
         }
-        
-        // Update all nation statistics based on their owned regions
-        public void UpdateAllNationStatistics()
-        {
-            if (regionCache.Count == 0)
-            {
-                UpdateRegionCache();
-            }
-            
-            foreach (var nation in nations.Values)
-            {
-                nation.UpdateStatistics(regionCache);
-            }
-            
-            Debug.Log("[NationManager] Updated statistics for all nations");
-            
-            // Trigger an event for UI updates
-            EventBus.Trigger("NationStatisticsUpdated", null);
-        }
-        
-        // Update the cache of regions from the economic system
-        private void UpdateRegionCache()
-        {
-            if (economicSystem == null)
-            {
-                Debug.LogError("[NationManager] Can't update region cache - EconomicSystem not found");
-                return;
-            }
-            
-            // Clear the existing cache
-            regionCache.Clear();
-            
-            // Get all regions from the economic system
-            var regions = economicSystem.GetAllRegions();
-            foreach (var region in regions)
-            {
-                regionCache[region.Name] = region;
-            }
-            
-            Debug.Log($"[NationManager] Updated region cache with {regionCache.Count} regions");
-        }
-        
-        // Get basic information about all nations for UI display
-        public List<string> GetNationSummaries()
-        {
-            List<string> summaries = new List<string>();
-            
-            foreach (var nation in nations.Values)
-            {
-                summaries.Add(nation.GetSummary());
-            }
-            
-            return summaries;
-        }
-        
-        // Set a policy for a nation
-        public void SetNationPolicy(string nationId, NationEntity.PolicyType policyType, float value)
-        {
-            if (nations.TryGetValue(nationId, out NationEntity nation))
-            {
-                nation.SetPolicy(policyType, value);
-                Debug.Log($"[NationManager] Set {policyType} policy for {nationId} to {value:F2}");
-                
-                // Trigger an event for UI updates
-                EventBus.Trigger("NationPolicyUpdated", new NationPolicyChangedData { 
-                    NationId = nationId, 
-                    PolicyType = policyType, 
-                    Value = value 
-                });
-            }
-            else
-            {
-                Debug.LogWarning($"[NationManager] Nation with ID {nationId} not found!");
-            }
-        }
     }
     
     // Data structure for region assignment events
@@ -385,13 +250,5 @@ namespace Managers
     {
         public string RegionId { get; set; }
         public string NationId { get; set; }
-    }
-    
-    // Data structure for nation policy change events
-    public class NationPolicyChangedData
-    {
-        public string NationId { get; set; }
-        public NationEntity.PolicyType PolicyType { get; set; }
-        public float Value { get; set; }
     }
 }

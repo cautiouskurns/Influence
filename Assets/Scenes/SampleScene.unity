@@ -1183,6 +1183,7 @@ GameObject:
   - component: {fileID: 890069360}
   - component: {fileID: 890069361}
   - component: {fileID: 890069362}
+  - component: {fileID: 890069363}
   m_Layer: 0
   m_Name: SimulationSystems
   m_TagString: Untagged
@@ -1250,6 +1251,18 @@ MonoBehaviour:
   - Manufacturing
   autoRunSimulation: 1
   showDebugLogs: 0
+--- !u!114 &890069363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890069359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 555a968297d4e4f0d903b2a42e610208, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &946969353
 GameObject:
   m_ObjectHideFlags: 0
@@ -1773,6 +1786,7 @@ GameObject:
   - component: {fileID: 1455276064}
   - component: {fileID: 1455276065}
   - component: {fileID: 1455276066}
+  - component: {fileID: 1455276067}
   m_Layer: 0
   m_Name: UISystem
   m_TagString: Untagged
@@ -1833,6 +1847,25 @@ MonoBehaviour:
   simulationControlsPosition: 1
   visualizationControlsPosition: 0
   statsDisplayPosition: 3
+--- !u!114 &1455276067
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1455276063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00441ba1fb8f84073aaf24edebfae600, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nationId: 
+  nationNameText: {fileID: 0}
+  wealthText: {fileID: 0}
+  productionText: {fileID: 0}
+  stabilityText: {fileID: 0}
+  regionsText: {fileID: 0}
+  nationColorImage: {fileID: 0}
 --- !u!1 &1491049999
 GameObject:
   m_ObjectHideFlags: 0
