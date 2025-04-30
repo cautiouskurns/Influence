@@ -161,10 +161,10 @@ namespace Controllers
                     // This region was selected
                     view.SetHighlighted(true);
                     
-                    // Log debug info
+                    // Print detailed region information to console
                     if (regionEntity != null)
                     {
-                        Debug.Log($"Region {view.RegionName}: {regionEntity.GetSummary()}");
+                        PrintRegionDetails();
                     }
                 }
                 else
@@ -173,6 +173,50 @@ namespace Controllers
                     view.SetHighlighted(false);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Print detailed region information to the console
+        /// </summary>
+        private void PrintRegionDetails()
+        {
+            if (regionEntity == null) return;
+            
+            // Create a formatted string with all the important region details
+            string details = 
+                $"=== REGION DETAILS: {regionEntity.Name} ===\n" +
+                $"ID: {regionEntity.Id}\n" +
+                $"Nation: {(string.IsNullOrEmpty(regionEntity.NationId) ? "Independent" : regionEntity.GetNation()?.Name ?? "Unknown")}\n\n" +
+                
+                $"--- ECONOMY ---\n" +
+                $"Wealth: {regionEntity.Wealth}\n" +
+                $"Production: {regionEntity.Production}\n\n" +
+                
+                $"--- POPULATION ---\n" +
+                $"Population: {regionEntity.Population}\n" +
+                $"Labor Available: {regionEntity.LaborAvailable}\n\n" +
+                
+                $"--- INFRASTRUCTURE ---\n" +
+                $"Level: {regionEntity.InfrastructureLevel}\n" +
+                $"Quality: {regionEntity.InfrastructureQuality:F2}\n\n" +
+                
+                $"--- RESOURCES ---\n";
+            
+            // Add resources if available
+            if (regionEntity.Resources != null)
+            {
+                // Get common resource types and add them to the details
+                string[] resourceTypes = { "Food", "Materials", "Fuel" };
+                foreach (string resourceType in resourceTypes)
+                {
+                    float amount = regionEntity.Resources.GetResourceAmount(resourceType);
+                    float rate = regionEntity.Resources.GetProductionRate(resourceType);
+                    details += $"{resourceType}: {amount:F1} (Producing: {rate:F1}/turn)\n";
+                }
+            }
+            
+            // Print to console with a distinctive format
+            Debug.Log(details);
         }
         
         #endregion
