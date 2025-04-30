@@ -16,11 +16,13 @@ namespace Entities
         
         // Components
         public NationEconomyComponent Economy { get; private set; }
+        public NationPolicyComponent Policy { get; private set; }
+        public NationDiplomacyComponent Diplomacy { get; private set; }
         
         // Legacy properties - redirected to components for backward compatibility
         public float TotalWealth { 
             get => Economy.TotalWealth; 
-            set => Debug.LogWarning("TotalWealth is now managed by Economy component") ; 
+            set => Debug.LogWarning("TotalWealth is now managed by Economy component"); 
         }
         public float TotalProduction { 
             get => Economy.TotalProduction; 
@@ -28,15 +30,9 @@ namespace Entities
         }
         public float Stability { get; set; } = 0.5f; // This will move to a StabilityComponent later
         
-        // Policy system
-        public enum PolicyType { Economic, Diplomatic, Military, Social }
-        private Dictionary<PolicyType, float> policies = new Dictionary<PolicyType, float>();
-        
         // Basic diplomatic status (can be expanded later)
+        public enum PolicyType { Economic, Diplomatic, Military, Social }
         public enum DiplomaticStatus { Allied, Neutral, Hostile }
-        
-        // Dictionary to track diplomatic relations with other nations
-        private Dictionary<string, DiplomaticStatus> diplomaticRelations = new Dictionary<string, DiplomaticStatus>();
 
         public NationEntity(string id, string name, Color color)
         {
@@ -46,6 +42,8 @@ namespace Entities
             
             // Initialize components
             Economy = new NationEconomyComponent();
+            Policy = new NationPolicyComponent();
+            Diplomacy = new NationDiplomacyComponent();
             
             // Initialize policies with default values (0.5 = balanced)
             SetPolicy(PolicyType.Economic, 0.5f);
@@ -76,42 +74,79 @@ namespace Entities
             return new List<string>(regionIds);
         }
         
-        // Policy methods
+        // Policy methods - now delegated to Policy component
         public void SetPolicy(PolicyType type, float value)
         {
-            // Clamp value between 0 and 1
-            value = Mathf.Clamp01(value);
-            policies[type] = value;
+            Policy.SetPolicy(type, value);
         }
         
         public float GetPolicy(PolicyType type)
         {
-            if (policies.TryGetValue(type, out float value))
-            {
-                return value;
-            }
-            return 0.5f; // Default to balanced
+            return Policy.GetPolicy(type);
         }
         
-        // Diplomacy methods
+        /// <summary>
+        /// Implement a new policy/reform
+        /// </summary>
+        public bool ImplementPolicy(Policy policy)
+        {
+            return Policy.ImplementPolicy(policy, Economy.TreasuryBalance);
+        }
+        
+        /// <summary>
+        /// Apply policy effects to all regions
+        /// </summary>
+        public void ApplyPolicyEffects(List<RegionEntity> regions)
+        {
+            Policy.ApplyPolicyEffects(regions);
+        }
+        
+        // Diplomacy methods - delegated to Diplomacy component
         public void SetDiplomaticStatus(string otherNationId, DiplomaticStatus status)
         {
-            diplomaticRelations[otherNationId] = status;
+            Diplomacy.SetDiplomaticStatus(otherNationId, status);
         }
         
         public DiplomaticStatus GetDiplomaticStatus(string otherNationId)
         {
-            if (diplomaticRelations.TryGetValue(otherNationId, out DiplomaticStatus status))
-            {
-                return status;
-            }
-            return DiplomaticStatus.Neutral; // Default to neutral
+            return Diplomacy.GetDiplomaticStatus(otherNationId);
+        }
+        
+        public DiplomaticRelation GetDiplomaticRelation(string otherNationId)
+        {
+            return Diplomacy.GetDiplomaticRelation(otherNationId);
+        }
+        
+        public void ApplyDiplomaticEvent(string otherNationId, float reputationChange, string description = "")
+        {
+            Diplomacy.ApplyDiplomaticEvent(otherNationId, reputationChange, description);
+        }
+        
+        public bool CanPerformDiplomaticAction(string otherNationId, DiplomaticActionType actionType)
+        {
+            return Diplomacy.CanPerformAction(otherNationId, actionType);
+        }
+        
+        /// <summary>
+        /// Process a turn for this nation
+        /// </summary>
+        public void ProcessTurn(List<RegionEntity> regions)
+        {
+            // Process economy
+            Economy.ProcessTurn(regions);
+            
+            // Process policy effects
+            Policy.ProcessTurn();
+            Policy.ApplyPolicyEffects(regions);
+            
+            // Process diplomacy
+            Diplomacy.ProcessTurn();
         }
         
         // Basic nation summary
         public string GetSummary()
         {
-            return $"Nation: {Name}\n" +
+            string summary = $"Nation: {Name}\n" +
                    $"Regions: {regionIds.Count}\n" +
                    $"Wealth: {Economy.TotalWealth}\n" +
                    $"Production: {Economy.TotalProduction}\n" +
@@ -119,7 +154,25 @@ namespace Entities
                    $"Growth: {Economy.GDPGrowthRate:P1}\n" +
                    $"Treasury: {Economy.TreasuryBalance:F0}\n" +
                    $"Stability: {Stability:P0}\n" +
-                   $"Diplomatic Relations: {diplomaticRelations.Count}";
+                   $"Diplomatic Relations: {Diplomacy.GetDiplomaticRelationCount()}\n\n";
+            
+            // Add policy summary   
+            summary += Policy.GetSummary() + "\n\n";
+            
+            // Add diplomacy summary
+            summary += Diplomacy.GetSummary();
+            
+            return summary;
+        }
+        
+        /// <summary>
+        /// Create a standard policy
+        /// </summary>
+        public static Policy CreateStandardPolicy(string name, string description, int cost, int duration,
+                                                float wealthEffect, float productionEffect, float stabilityEffect)
+        {
+            return NationPolicyComponent.CreateStandardPolicy(name, description, cost, duration, 
+                                                            wealthEffect, productionEffect, stabilityEffect);
         }
     }
 }
