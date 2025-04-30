@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Entities.Components;
 
 namespace Entities
 {
@@ -8,15 +9,24 @@ namespace Entities
         // Basic properties
         public string Id { get; private set; }
         public string Name { get; private set; }
-        public Color Color { get; private set; } // Changed from NationColor to match usage in NationView
+        public Color Color { get; private set; }
         
         // List of regions that belong to this nation
         private List<string> regionIds = new List<string>();
         
-        // Nation-level statistics - these are stored here but calculated by NationSystem
-        public float TotalWealth { get; set; }
-        public float TotalProduction { get; set; }
-        public float Stability { get; set; } = 0.5f; // 0.0 to 1.0 scale, default is neutral
+        // Components
+        public NationEconomyComponent Economy { get; private set; }
+        
+        // Legacy properties - redirected to components for backward compatibility
+        public float TotalWealth { 
+            get => Economy.TotalWealth; 
+            set => Debug.LogWarning("TotalWealth is now managed by Economy component") ; 
+        }
+        public float TotalProduction { 
+            get => Economy.TotalProduction; 
+            set => Debug.LogWarning("TotalProduction is now managed by Economy component"); 
+        }
+        public float Stability { get; set; } = 0.5f; // This will move to a StabilityComponent later
         
         // Policy system
         public enum PolicyType { Economic, Diplomatic, Military, Social }
@@ -33,6 +43,9 @@ namespace Entities
             Id = id;
             Name = name;
             Color = color;
+            
+            // Initialize components
+            Economy = new NationEconomyComponent();
             
             // Initialize policies with default values (0.5 = balanced)
             SetPolicy(PolicyType.Economic, 0.5f);
@@ -100,8 +113,11 @@ namespace Entities
         {
             return $"Nation: {Name}\n" +
                    $"Regions: {regionIds.Count}\n" +
-                   $"Wealth: {TotalWealth}\n" +
-                   $"Production: {TotalProduction}\n" +
+                   $"Wealth: {Economy.TotalWealth}\n" +
+                   $"Production: {Economy.TotalProduction}\n" +
+                   $"GDP: {Economy.GDP:F0}\n" +
+                   $"Growth: {Economy.GDPGrowthRate:P1}\n" +
+                   $"Treasury: {Economy.TreasuryBalance:F0}\n" +
                    $"Stability: {Stability:P0}\n" +
                    $"Diplomatic Relations: {diplomaticRelations.Count}";
         }
