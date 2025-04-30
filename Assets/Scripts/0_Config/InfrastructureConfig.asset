@@ -14,4 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialLevel: 5
   initialQuality: 0.5
-  aspects: []
+  aspects:
+  - aspectName: 
+    initialValue: 0

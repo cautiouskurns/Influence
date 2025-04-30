@@ -11,13 +11,34 @@ namespace Entities.ScriptableObjects
     [CreateAssetMenu(fileName = "RegionConfig", menuName = "Influence/Region/Region Configuration")]
     public class RegionConfig : ScriptableObject
     {
+        public enum RegionType
+        {
+            Desert,
+            Plains,
+            Forest,
+            Mountains,
+            Coastal,
+            Tundra,
+            Jungle
+        }
+
         [Header("Region Identity")]
+        [Tooltip("Type of region")]
+        public RegionType regionType;
+        
         [Tooltip("Region type name (Desert, Forest, Plains, etc)")]
         public string regionTypeName;
         
         [Tooltip("Description of this region type")]
         [TextArea(3, 5)]
         public string description;
+
+        [Header("Visual Representation")]
+        [Tooltip("Color to represent this region type on maps")]
+        public Color regionColor = Color.gray;
+
+        [Tooltip("Optional prefab for this region type")]
+        public GameObject regionPrefab;
         
         [Header("Component Configurations")]
         [Tooltip("Resource configuration")]

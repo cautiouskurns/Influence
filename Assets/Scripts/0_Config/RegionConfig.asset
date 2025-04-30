@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cece6de25f6254c169b8a7a297e3cc02, type: 3}
   m_Name: RegionConfig
   m_EditorClassIdentifier: 
+  regionType: 0
   regionTypeName: 
   description: 
-  resourceConfig: {fileID: 0}
-  productionConfig: {fileID: 0}
-  economyConfig: {fileID: 0}
-  populationConfig: {fileID: 0}
-  infrastructureConfig: {fileID: 0}
+  regionColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  regionPrefab: {fileID: 0}
+  resourceConfig: {fileID: 11400000, guid: 637118c7450814ca0bafab4e1005ee3f, type: 2}
+  productionConfig: {fileID: 11400000, guid: 01b14f06822914242b82ba26115b26a4, type: 2}
+  economyConfig: {fileID: 11400000, guid: 3f500496da8954ef78c9f7ef29de11c1, type: 2}
+  populationConfig: {fileID: 11400000, guid: 46b30261d2ab14ad6a181e6cf7eff21a, type: 2}
+  infrastructureConfig: {fileID: 11400000, guid: 189852b1b5be7489a8a2fec41af273b2, type: 2}

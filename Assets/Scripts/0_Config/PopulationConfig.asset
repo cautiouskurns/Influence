@@ -16,5 +16,7 @@ MonoBehaviour:
   initialLabor: 100
   defaultGrowthRate: 0.01
   initialSatisfaction: 0.7
-  resourceNeeds: []
+  resourceNeeds:
+  - resourceType: 
+    amountPerPopulationUnit: 0
   needsSatisfaction: []
