@@ -47,6 +47,15 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Set the production value directly (for use by the EconomicSystem)
+        /// </summary>
+        public void SetProduction(int value)
+        {
+            Production = Mathf.Max(0, value);
+            baseProduction = value; // Update base production to match
+        }
+        
+        /// <summary>
         /// Calculate total production with all modifiers applied
         /// </summary>
         public float CalculateTotalProduction()

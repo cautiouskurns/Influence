@@ -95,7 +95,7 @@ namespace UI
                 wealthText.text = wealth < 1000 ? $"W:{wealth}" : $"W:{wealth/1000}k";
                 
                 // Color-code wealth text based on value
-                wealthText.color = wealth > 200 ? Color.green : (wealth < 100 ? Color.red : Color.white);
+                wealthText.color = wealth > 200 ? new Color(0.2f, 0.8f, 0.2f) : (wealth < 100 ? new Color(0.8f, 0.2f, 0.2f) : Color.white);
             }
             
             // Update production text
@@ -104,8 +104,13 @@ namespace UI
                 // Use more compact format for better fit
                 productionText.text = production < 1000 ? $"P:{production}" : $"P:{production/1000}k";
                 
-                // Color-code production text based on value
-                productionText.color = production > 80 ? Color.green : (production < 40 ? Color.red : Color.white);
+                // Color-code production text based on value with more distinct colors
+                if (production > 80)
+                    productionText.color = new Color(0.1f, 0.9f, 0.1f); // Brighter green
+                else if (production < 40)
+                    productionText.color = new Color(0.9f, 0.1f, 0.1f); // Brighter red
+                else
+                    productionText.color = new Color(0.9f, 0.9f, 0.2f); // Yellow for middle values
             }
         }
         

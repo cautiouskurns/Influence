@@ -228,8 +228,8 @@ namespace Systems
                 // Calculate final production with all factors
                 float finalProduction = baseProduction * efficiencyBoost * cycleFactor;
                 
-                // Update region production
-                region.Production = Mathf.RoundToInt(finalProduction);
+                // Update region production using the component
+                region.ProductionComp.SetProduction(Mathf.RoundToInt(finalProduction));
                 
                 // Contribute to global supply based on production
                 // Simplified: assume equal distribution across resource types
@@ -264,7 +264,7 @@ namespace Systems
                 {
                     // Simplified: proportional share of global supply based on region's wealth
                     float totalWealth = GetTotalWealth();
-                    float wealthShare = totalWealth > 0 ? region.Wealth / (float)totalWealth : 0;
+                    float wealthShare = totalWealth > 0 ? region.Economy.Wealth / (float)totalWealth : 0;
                     availableResources[resourceType] = globalSupply[resourceType] * wealthShare;
                 }
                 
@@ -279,14 +279,13 @@ namespace Systems
                     unrest = cycleCalculator.ApplyCycleEffect(unrest, "Unrest");
                 }
                 
-                // Update region wealth based on consumption
-                region.Wealth -= Mathf.RoundToInt(consumption);
+                // Update region wealth based on consumption - using Economy component now
+                region.Economy.UpdateWealth(-Mathf.RoundToInt(consumption));
                 
-                // Ensure wealth doesn't go negative
-                region.Wealth = Mathf.Max(0, region.Wealth);
+                // Ensure wealth doesn't go negative - handled by Economy component internally
                 
                 // Add wealth from production (simplified)
-                region.Wealth += Mathf.RoundToInt(region.Production * 0.1f);
+                region.Economy.UpdateWealth(Mathf.RoundToInt(region.Production * 0.1f));
                 
                 // Update unrest from unmet demand
                 //region.Unrest += Mathf.RoundToInt(unrest);
@@ -297,7 +296,7 @@ namespace Systems
                     // Adjust demand by income for each resource type
                     float baseDemand = consumption * defaultResourceAllocation[resourceType];
                     float adjustedDemand = priceCalculator.AdjustDemandByIncome(
-                        baseDemand, region.Wealth, resourceType);
+                        baseDemand, region.Economy.Wealth, resourceType);
                     
                     globalDemand[resourceType] += adjustedDemand;
                 }
@@ -436,7 +435,7 @@ namespace Systems
             {
                 if (region != null)
                 {
-                    totalWealth += region.Wealth;
+                    totalWealth += region.Economy.Wealth;
                 }
             }
             
@@ -465,7 +464,7 @@ namespace Systems
                     RegionEntity region = GetRegion(regionId);
                     if (region != null)
                     {
-                        totalWealth += region.Wealth;
+                        totalWealth += region.Economy.Wealth;
                     }
                 }
                 
@@ -496,7 +495,7 @@ namespace Systems
                     RegionEntity region = GetRegion(regionId);
                     if (region != null)
                     {
-                        totalProduction += region.Production;
+                        totalProduction += region.ProductionComp.Production;
                     }
                 }
                 
@@ -528,7 +527,7 @@ namespace Systems
                     RegionEntity region = GetRegion(regionId);
                     if (region != null)
                     {
-                        totalInfrastructure += region.InfrastructureLevel;
+                        totalInfrastructure += region.Infrastructure.Level;
                         regionCount++;
                     }
                 }

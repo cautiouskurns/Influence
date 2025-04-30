@@ -47,6 +47,24 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Adjust the wealth value by the specified amount (can be positive or negative)
+        /// </summary>
+        public void UpdateWealth(int amount)
+        {
+            Wealth += amount;
+            // Ensure wealth doesn't go negative
+            Wealth = Mathf.Max(0, Wealth);
+        }
+        
+        /// <summary>
+        /// Set wealth to a specific value directly
+        /// </summary>
+        public void SetWealth(int value)
+        {
+            Wealth = Mathf.Max(0, value);
+        }
+        
+        /// <summary>
         /// Set economic factor value
         /// </summary>
         public void SetEconomicFactor(string factorName, float value)
