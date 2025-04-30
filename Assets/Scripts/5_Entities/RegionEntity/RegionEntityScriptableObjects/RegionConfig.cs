@@ -34,11 +34,15 @@ namespace Entities.ScriptableObjects
         public string description;
 
         [Header("Visual Representation")]
-        [Tooltip("Color to represent this region type on maps")]
+        [Tooltip("Custom color override (leave as gray to use default terrain color)")]
         public Color regionColor = Color.gray;
 
         [Tooltip("Optional prefab for this region type")]
         public GameObject regionPrefab;
+        
+        // Property that returns terrain color or custom override if specified
+        public Color TerrainColor => regionColor != Color.gray ? 
+            regionColor : TerrainColors.GetColor(regionType);
         
         [Header("Component Configurations")]
         [Tooltip("Resource configuration")]

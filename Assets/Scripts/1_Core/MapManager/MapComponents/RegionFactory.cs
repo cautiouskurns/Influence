@@ -144,8 +144,11 @@ namespace UI.MapComponents
         /// </summary>
         public RegionView CreateRegionWithConfig(string id, string name, Vector3 position, Quaternion rotation, Color color, RegionConfig config)
         {
+            // Use the region's terrain color from the config instead of the passed parameter if available
+            Color regionColor = config != null ? config.TerrainColor : color;
+            
             // Create the view
-            RegionView view = CreateRegion(id, name, position, rotation, color);
+            RegionView view = CreateRegion(id, name, position, rotation, regionColor);
             
             // Create the entity with config
             CreateRegionEntityWithConfig(id, config);
