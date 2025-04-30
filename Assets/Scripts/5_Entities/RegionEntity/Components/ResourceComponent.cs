@@ -45,6 +45,19 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Set the amount of a specific resource
+        /// </summary>
+        public void SetResourceAmount(string resourceType, float amount)
+        {
+            amount = Mathf.Max(0, amount); // Ensure non-negative value
+            
+            if (resources.ContainsKey(resourceType))
+                resources[resourceType] = amount;
+            else
+                resources.Add(resourceType, amount);
+        }
+        
+        /// <summary>
         /// Get production rate of a specific resource
         /// </summary>
         public float GetProductionRate(string resourceType)
