@@ -18,6 +18,7 @@ namespace Entities
         public NationEconomyComponent Economy { get; private set; }
         public NationPolicyComponent Policy { get; private set; }
         public NationDiplomacyComponent Diplomacy { get; private set; }
+        public NationStabilityComponent Stability { get; private set; }
         
         // Legacy properties - redirected to components for backward compatibility
         public float TotalWealth { 
@@ -28,7 +29,6 @@ namespace Entities
             get => Economy.TotalProduction; 
             set => Debug.LogWarning("TotalProduction is now managed by Economy component"); 
         }
-        public float Stability { get; set; } = 0.5f; // This will move to a StabilityComponent later
         
         // Basic diplomatic status (can be expanded later)
         public enum PolicyType { Economic, Diplomatic, Military, Social }
@@ -44,6 +44,7 @@ namespace Entities
             Economy = new NationEconomyComponent();
             Policy = new NationPolicyComponent();
             Diplomacy = new NationDiplomacyComponent();
+            Stability = new NationStabilityComponent();
             
             // Initialize policies with default values (0.5 = balanced)
             SetPolicy(PolicyType.Economic, 0.5f);
@@ -127,6 +128,27 @@ namespace Entities
             return Diplomacy.CanPerformAction(otherNationId, actionType);
         }
         
+        // Stability methods - delegated to Stability component
+        public void ApplyStabilityEvent(float impact, string source, string description = "")
+        {
+            Stability.ApplyStabilityEvent(impact, source, description);
+        }
+        
+        public void SetUnrestFactor(string factorId, string description, float severity)
+        {
+            Stability.SetUnrestFactor(factorId, description, severity);
+        }
+        
+        public void RemoveUnrestFactor(string factorId)
+        {
+            Stability.RemoveUnrestFactor(factorId);
+        }
+        
+        public bool IsRevoltOccurring()
+        {
+            return Stability.IsRevoltOccurring();
+        }
+        
         /// <summary>
         /// Process a turn for this nation
         /// </summary>
@@ -141,6 +163,17 @@ namespace Entities
             
             // Process diplomacy
             Diplomacy.ProcessTurn();
+            
+            // Process stability
+            Stability.ProcessTurn();
+            Stability.ApplyPolicyEffects(Policy.GetAllPolicies());
+            
+            // Calculate wealth per capita (simple approximation)
+            float population = regions.Count * 10; // Simplified: 10 population per region
+            float wealthPerCapita = population > 0 ? Economy.TotalWealth / population : 0;
+            
+            // Apply economic conditions to stability
+            Stability.ApplyEconomicEffects(Economy.GDPGrowthRate, wealthPerCapita);
         }
         
         // Basic nation summary
@@ -153,13 +186,21 @@ namespace Entities
                    $"GDP: {Economy.GDP:F0}\n" +
                    $"Growth: {Economy.GDPGrowthRate:P1}\n" +
                    $"Treasury: {Economy.TreasuryBalance:F0}\n" +
-                   $"Stability: {Stability:P0}\n" +
+                   $"Stability: {Stability.Stability:P0}\n" +
+                   $"Unrest: {Stability.UnrestLevel:P0}\n" +
                    $"Diplomatic Relations: {Diplomacy.GetDiplomaticRelationCount()}\n\n";
             
-            // Add policy summary   
+            // Add component summaries
+            summary += "=== POLICY ===\n";
             summary += Policy.GetSummary() + "\n\n";
             
-            // Add diplomacy summary
+            summary += "=== ECONOMY ===\n";
+            summary += Economy.GetSummary() + "\n\n";
+            
+            summary += "=== STABILITY ===\n";
+            summary += Stability.GetSummary() + "\n\n";
+            
+            summary += "=== DIPLOMACY ===\n";
             summary += Diplomacy.GetSummary();
             
             return summary;

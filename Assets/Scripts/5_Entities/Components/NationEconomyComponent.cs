@@ -203,5 +203,50 @@ namespace Entities.Components
                 region.Wealth -= Mathf.RoundToInt(wealthReduction);
             }
         }
+        
+        /// <summary>
+        /// Get a summary of the economic situation
+        /// </summary>
+        public string GetSummary()
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            
+            // Economic status descriptions
+            string growthDesc = GDPGrowthRate > 0.05f ? "Strong Growth" :
+                               GDPGrowthRate > 0.02f ? "Moderate Growth" :
+                               GDPGrowthRate > 0.0f ? "Slow Growth" :
+                               GDPGrowthRate > -0.02f ? "Stagnation" :
+                               GDPGrowthRate > -0.05f ? "Recession" : "Depression";
+                               
+            string treasuryDesc = TreasuryBalance > 1000 ? "Well-Funded" :
+                                 TreasuryBalance > 500 ? "Adequate" :
+                                 TreasuryBalance > 200 ? "Limited" :
+                                 TreasuryBalance > 50 ? "Strained" : "Empty";
+            
+            // Basic economic stats
+            sb.AppendLine($"GDP: {GDP:F0} ({growthDesc}, {GDPGrowthRate:P1})");
+            sb.AppendLine($"Treasury: {TreasuryBalance:F0} ({treasuryDesc})");
+            sb.AppendLine($"Tax Rate: {TaxRate:P0}");
+            sb.AppendLine($"Inflation: {Inflation:P1}");
+            sb.AppendLine($"Infrastructure Investment: {InfrastructureInvestment:P0} of Treasury");
+            
+            // Wealth and production
+            sb.AppendLine($"Total Wealth: {TotalWealth:F0}");
+            sb.AppendLine($"Total Production: {TotalProduction:F0}");
+            
+            // GDP history if available
+            if (gdpHistory.Count > 1)
+            {
+                sb.AppendLine("\nGDP Trend:");
+                float[] gdpArray = gdpHistory.ToArray();
+                for (int i = Mathf.Max(0, gdpArray.Length - 5); i < gdpArray.Length; i++)
+                {
+                    string year = (i - gdpArray.Length).ToString();
+                    sb.AppendLine($"  Year {year}: {gdpArray[i]:F0}");
+                }
+            }
+            
+            return sb.ToString();
+        }
     }
 }
