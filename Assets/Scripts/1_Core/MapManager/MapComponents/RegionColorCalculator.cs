@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Entities;
 using Systems;
 using Managers;
+using Controllers;
 
 namespace UI.MapComponents
 {
@@ -14,6 +15,7 @@ namespace UI.MapComponents
     /// - Calculate colors based on economic data (wealth, production)
     /// - Calculate colors based on nation ownership
     /// - Calculate colors based on position/coordinate data
+    /// - Calculate colors based on terrain type
     /// </summary>
     public class RegionColorCalculator
     {
@@ -70,6 +72,9 @@ namespace UI.MapComponents
                     
                 case RegionColorMode.Nation:
                     return GetNationBasedColor(regionId);
+                    
+                case RegionColorMode.Terrain:
+                    return GetTerrainBasedColor(regionId);
                     
                 case RegionColorMode.Default:
                 default:
@@ -171,6 +176,50 @@ namespace UI.MapComponents
             
             // Return the nation's color
             return nation.Color;
+        }
+        
+        /// <summary>
+        /// Get a color based on the region's terrain type
+        /// </summary>
+        private Color GetTerrainBasedColor(string regionId)
+        {
+            // Extract coordinates from region ID (format: "Region_X_Y")
+            string[] parts = regionId.Split('_');
+            if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
+            {
+                return defaultColor;
+            }
+            
+            // Use a combination of coordinates to create terrain "zones"
+            // This creates a natural-looking terrain distribution pattern
+            float noiseValue = Mathf.PerlinNoise(q * 0.3f, r * 0.3f);
+            
+            // Map noise value to terrain types
+            if (noiseValue < 0.3f)
+            {
+                // Desert
+                return new Color(0.95f, 0.85f, 0.6f);
+            }
+            else if (noiseValue < 0.5f)
+            {
+                // Plains
+                return new Color(0.7f, 0.85f, 0.5f);
+            }
+            else if (noiseValue < 0.7f)
+            {
+                // Forest
+                return new Color(0.2f, 0.55f, 0.3f);
+            }
+            else if (noiseValue < 0.85f)
+            {
+                // Mountains
+                return new Color(0.6f, 0.6f, 0.6f);
+            }
+            else
+            {
+                // Tundra
+                return new Color(0.9f, 0.95f, 0.95f);
+            }
         }
     }
 }

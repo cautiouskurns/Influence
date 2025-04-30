@@ -16,6 +16,7 @@ namespace UI
         public Button wealthColorButton;
         public Button productionColorButton;
         public Button nationColorButton; // New button for nation coloring
+        public Button terrainColorButton; // New button for terrain coloring
         
         [Header("Legend")]
         public GameObject legendPanel;
@@ -72,6 +73,7 @@ namespace UI
             SetupButton(wealthColorButton, () => OnColorButtonClick(RegionColorMode.Wealth), "Wealth");
             SetupButton(productionColorButton, () => OnColorButtonClick(RegionColorMode.Production), "Production");
             SetupButton(nationColorButton, () => OnColorButtonClick(RegionColorMode.Nation), "Nation");
+            SetupButton(terrainColorButton, () => OnColorButtonClick(RegionColorMode.Terrain), "Terrain");
         }
         
         private void SetupButton(Button button, UnityAction action, string name)
@@ -176,6 +178,17 @@ namespace UI
                     minValueText.text = "Nation A";
                     maxValueText.text = "Nation B";
                     break;
+                    
+                case RegionColorMode.Terrain:
+                    // Terrain-based legend
+                    legendPanel.SetActive(true);
+                    legendTitle.text = "Terrain Type";
+                    // Sample terrain colors
+                    minColorImage.color = new Color(0.7f, 0.85f, 0.5f); // Plains green
+                    maxColorImage.color = new Color(0.95f, 0.85f, 0.6f); // Desert yellow
+                    minValueText.text = "Plains";
+                    maxValueText.text = "Desert";
+                    break;
             }
         }
         
@@ -185,6 +198,7 @@ namespace UI
         public void SetWealthColorMode() => OnColorButtonClick(RegionColorMode.Wealth);
         public void SetProductionColorMode() => OnColorButtonClick(RegionColorMode.Production);
         public void SetNationColorMode() => OnColorButtonClick(RegionColorMode.Nation);
+        public void SetTerrainColorMode() => OnColorButtonClick(RegionColorMode.Terrain);
         
         // Call this method to manually refresh connections
         public void RefreshConnections()

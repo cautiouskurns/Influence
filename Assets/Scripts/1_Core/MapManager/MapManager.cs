@@ -15,7 +15,8 @@ namespace UI
         Position,
         Wealth,
         Production,
-        Nation
+        Nation,
+        Terrain  // New terrain view mode
     }
 
     /// <summary>
