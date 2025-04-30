@@ -4,6 +4,7 @@ using Entities;
 using Systems;
 using Controllers;
 using Managers;
+using Entities.ScriptableObjects;
 
 namespace UI.MapComponents
 {
@@ -23,6 +24,7 @@ namespace UI.MapComponents
         private readonly Transform regionsContainer;
         private readonly EconomicSystem economicSystem;
         private readonly RegionControllerManager controllerManager;
+        private RegionConfig defaultRegionConfig;
         
         /// <summary>
         /// Constructor with required dependencies
@@ -37,6 +39,15 @@ namespace UI.MapComponents
             this.regionsContainer = regionsContainer;
             this.economicSystem = economicSystem;
             this.controllerManager = controllerManager;
+            
+            // Try to load a default region config from Resources
+            defaultRegionConfig = Resources.Load<RegionConfig>("DefaultConfigs/DefaultRegionConfig");
+            
+            // If no default config is found, debug a warning
+            if (defaultRegionConfig == null)
+            {
+                Debug.LogWarning("No default RegionConfig found in Resources/DefaultConfigs/. Using fallback values.");
+            }
         }
         
         /// <summary>
@@ -67,14 +78,40 @@ namespace UI.MapComponents
             RegionEntity existingEntity = economicSystem.GetRegion(regionId);
             if (existingEntity != null) return existingEntity;
             
-            // Create a new region entity with random initial values
-            int initialWealth = Random.Range(100, 300);
-            int initialProduction = Random.Range(50, 100);
-            RegionEntity regionEntity = new RegionEntity(regionId, initialWealth, initialProduction);
+            RegionEntity regionEntity;
             
-            // Set additional properties
-            regionEntity.LaborAvailable = Random.Range(50, 150);
-            regionEntity.InfrastructureLevel = Random.Range(1, 5);
+            // If we have a default config, use it
+            if (defaultRegionConfig != null)
+            {
+                regionEntity = RegionEntity.CreateFromConfig(regionId, regionId, defaultRegionConfig);
+            }
+            else
+            {
+                // Fallback to direct constructor with random values
+                int initialWealth = Random.Range(100, 300);
+                int initialProduction = Random.Range(50, 100);
+                regionEntity = new RegionEntity(regionId, regionId, initialWealth, initialProduction);
+            }
+            
+            // Register with the economic system
+            economicSystem.RegisterRegion(regionEntity);
+            
+            return regionEntity;
+        }
+        
+        /// <summary>
+        /// Create a region entity with a specific configuration
+        /// </summary>
+        public RegionEntity CreateRegionEntityWithConfig(string regionId, RegionConfig config)
+        {
+            if (economicSystem == null) return null;
+            
+            // Only create if the region doesn't already have an entity
+            RegionEntity existingEntity = economicSystem.GetRegion(regionId);
+            if (existingEntity != null) return existingEntity;
+            
+            // Create entity from config
+            RegionEntity regionEntity = RegionEntity.CreateFromConfig(regionId, regionId, config);
             
             // Register with the economic system
             economicSystem.RegisterRegion(regionEntity);
@@ -92,6 +129,26 @@ namespace UI.MapComponents
             
             // Create the entity
             CreateRegionEntity(id);
+            
+            // Register with controller manager if available
+            if (controllerManager != null)
+            {
+                controllerManager.RegisterRegionView(view);
+            }
+            
+            return view;
+        }
+        
+        /// <summary>
+        /// Create both a region view and its entity with specific configuration
+        /// </summary>
+        public RegionView CreateRegionWithConfig(string id, string name, Vector3 position, Quaternion rotation, Color color, RegionConfig config)
+        {
+            // Create the view
+            RegionView view = CreateRegion(id, name, position, rotation, color);
+            
+            // Create the entity with config
+            CreateRegionEntityWithConfig(id, config);
             
             // Register with controller manager if available
             if (controllerManager != null)

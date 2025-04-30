@@ -599,7 +599,8 @@ namespace Systems
         
         private void CreateTestRegion(string name, int wealth, int production)
         {
-            RegionEntity region = new RegionEntity(name, wealth, production);
+            // Updated to match the new constructor signature - using name as both id and name
+            RegionEntity region = new RegionEntity(name, name, wealth, production);
             RegisterRegion(region);
             
             // Also set as test region if none is set

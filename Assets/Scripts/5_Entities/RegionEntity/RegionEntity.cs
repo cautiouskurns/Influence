@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Managers;
 using Entities.Components;
+using Entities.ScriptableObjects;
 
 namespace Entities
 {
@@ -65,31 +66,94 @@ namespace Entities
         public PopulationComponent PopulationComp { get; private set; }
         public InfrastructureComponent Infrastructure { get; private set; }
         
-        // Constructor with required parameters
-        public RegionEntity(string id, string name, int initialWealth, int initialProduction)
+        // Default constructor - use minimal initialization and rely on ConfigureFromAssets
+        public RegionEntity(string id, string name)
         {
             Id = id;
             Name = name;
             
-            // Initialize components
+            // Initialize with empty components that will be replaced by configuration
             Resources = new ResourceComponent();
-            ProductionComp = new ProductionComponent(initialProduction);
+            ProductionComp = new ProductionComponent(0);
+            Economy = new RegionEconomyComponent(0, 0);
+            PopulationComp = new PopulationComponent(0, 0);
+            Infrastructure = new InfrastructureComponent(0, 0);
+        }
+
+        // Backwards compatibility constructor
+        public RegionEntity(string id, string name, int initialWealth, int initialProduction) 
+            : this(id, name)
+        {
+            // If called directly, set up some basic values
+            // This would typically be overridden by ConfigureFromAssets
             Economy = new RegionEconomyComponent(initialWealth + initialProduction * 2, initialWealth);
+            ProductionComp = new ProductionComponent(initialProduction);
             PopulationComp = new PopulationComponent(1000, 100);
             Infrastructure = new InfrastructureComponent(5.0f, 0.5f);
         }
-
+        
         // Additional constructor with default values
-        public RegionEntity(string name) : this(name, name, 100, 50)
+        public RegionEntity(string name) : this(name, name)
         {
-            // This calls the main constructor with default values
+            // This calls the main constructor - config will need to be applied separately
+        }
+
+        /// <summary>
+        /// Configure this region entity with components from configuration assets
+        /// </summary>
+        public void ConfigureFromAssets(RegionConfig config)
+        {
+            if (config == null)
+            {
+                Debug.LogWarning($"No RegionConfig provided for {Name}. Using default values.");
+                return;
+            }
+                
+            // Replace components with configured versions
+            if (config.resourceConfig != null)
+                Resources = config.resourceConfig.CreateComponent();
+            else
+                Debug.LogWarning($"No ResourceConfig provided for {Name}. Using default values.");
+                
+            if (config.productionConfig != null)
+                ProductionComp = config.productionConfig.CreateComponent();
+            else
+                Debug.LogWarning($"No ProductionConfig provided for {Name}. Using default values.");
+                
+            if (config.economyConfig != null) 
+                Economy = config.economyConfig.CreateComponent();
+            else
+                Debug.LogWarning($"No EconomyConfig provided for {Name}. Using default values.");
+                
+            if (config.populationConfig != null)
+                PopulationComp = config.populationConfig.CreateComponent();
+            else
+                Debug.LogWarning($"No PopulationConfig provided for {Name}. Using default values.");
+                
+            if (config.infrastructureConfig != null)
+                Infrastructure = config.infrastructureConfig.CreateComponent();
+            else
+                Debug.LogWarning($"No InfrastructureConfig provided for {Name}. Using default values.");
         }
         
-        // Backwards compatibility constructor
-        public RegionEntity(string name, int initialWealth, int initialProduction) 
-            : this(name, name, initialWealth, initialProduction)
+        /// <summary>
+        /// Creates a new RegionEntity from a configuration asset
+        /// </summary>
+        public static RegionEntity CreateFromConfig(string id, string name, RegionConfig config)
         {
-            // This provides compatibility with existing code using the old constructor
+            if (config == null)
+            {
+                Debug.LogError($"Attempted to create RegionEntity {name} without a configuration. Using default values.");
+                return new RegionEntity(id, name, 100, 50); // Fallback to defaults
+            }
+            
+            // Create a minimal region
+            RegionEntity region = new RegionEntity(id, name);
+            
+            // Configure it from the assets
+            region.ConfigureFromAssets(config);
+            
+            return region;
         }
 
         // Basic summary of the region
