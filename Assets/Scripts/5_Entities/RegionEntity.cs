@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Managers;
+using Entities.Components;
 
 namespace Entities
 {
@@ -36,6 +37,9 @@ namespace Entities
         // Population
         public int Population { get; set; }
         
+        // Component references
+        public ResourceComponent Resources { get; private set; }
+        
         // Constructor with required parameters
         public RegionEntity(string id, string name, int initialWealth, int initialProduction)
         {
@@ -46,6 +50,9 @@ namespace Entities
             LaborAvailable = 100;  // Default labor value
             InfrastructureLevel = 5;  // Default infrastructure level
             Population = 1000;     // Default population
+            
+            // Initialize components
+            Resources = new ResourceComponent();
         }
 
         // Additional constructor with default values
@@ -64,11 +71,25 @@ namespace Entities
         // Basic summary of the region
         public string GetSummary()
         {
-            return $"Region: {Name}\n" +
+            string summary = $"Region: {Name}\n" +
                    $"Nation ID: {NationId ?? "None"}\n" +
                    $"Wealth: {Wealth}\n" +
                    $"Production: {Production}\n" +
-                   $"Infrastructure: {InfrastructureLevel:F1}";
+                   $"Infrastructure: {InfrastructureLevel:F1}\n";
+                   
+            // Add resource summary
+            summary += Resources.GetSummary();
+            
+            return summary;
+        }
+        
+        // Process all production for one turn
+        public void ProcessTurn()
+        {
+            // Process resource production
+            Resources.ProcessProduction();
+            
+            // Rest of turn processing logic can be added here
         }
         
         // Convenience method for backward compatibility
