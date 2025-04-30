@@ -18,6 +18,9 @@ namespace Entities.Components
         // Base production value
         private float baseProduction;
         
+        // Current production - now properly encapsulated
+        public int Production { get; private set; }
+        
         // Modifiers that affect production
         private Dictionary<string, float> productionModifiers = new Dictionary<string, float>();
         
@@ -30,6 +33,7 @@ namespace Entities.Components
         public ProductionComponent(float initialProduction = 50)
         {
             baseProduction = initialProduction;
+            Production = Mathf.RoundToInt(initialProduction);
             
             // Add default modifiers
             productionModifiers.Add("Infrastructure", 1.0f);
@@ -59,6 +63,23 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Update the Production property based on current modifiers
+        /// </summary>
+        public void UpdateProduction()
+        {
+            Production = Mathf.RoundToInt(CalculateTotalProduction());
+        }
+        
+        /// <summary>
+        /// Set the base production value
+        /// </summary>
+        public void SetBaseProduction(float value)
+        {
+            baseProduction = Mathf.Max(0, value);
+            UpdateProduction();
+        }
+        
+        /// <summary>
         /// Get production amount allocated to a specific sector
         /// </summary>
         public float GetSectorProduction(string sector)
@@ -79,6 +100,9 @@ namespace Entities.Components
                 productionModifiers[modifierName] = value;
             else
                 productionModifiers.Add(modifierName, value);
+            
+            // Update production after modifiers change
+            UpdateProduction();
         }
         
         /// <summary>
@@ -130,6 +154,7 @@ namespace Entities.Components
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.AppendLine("Production:");
             sb.AppendLine($"  Base Production: {baseProduction:F1}");
+            sb.AppendLine($"  Current Production: {Production}");
             sb.AppendLine($"  Total Production: {CalculateTotalProduction():F1}");
             
             sb.AppendLine("Modifiers:");
@@ -146,6 +171,17 @@ namespace Entities.Components
             }
             
             return sb.ToString();
+        }
+        
+        /// <summary>
+        /// Process production for one turn
+        /// </summary>
+        public void ProcessTurn()
+        {
+            // Update the production value based on current modifiers
+            UpdateProduction();
+            
+            // Additional turn processing logic can be added here
         }
     }
 }

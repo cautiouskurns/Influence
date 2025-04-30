@@ -29,7 +29,12 @@ namespace Entities
             get => Economy.Wealth; 
             set => Debug.LogWarning("Direct setting of Wealth is deprecated. Use Economy component instead."); 
         }
-        public int Production { get; set; }
+        
+        // Production - Now redirected to ProductionComponent
+        public int Production { 
+            get => ProductionComp.Production; 
+            set => Debug.LogWarning("Direct setting of Production is deprecated. Use ProductionComp component instead.");
+        }
         
         // Core resources - Now redirecting to components
         public float LaborAvailable { 
@@ -65,7 +70,6 @@ namespace Entities
         {
             Id = id;
             Name = name;
-            Production = initialProduction;
             
             // Initialize components
             Resources = new ResourceComponent();
@@ -92,8 +96,7 @@ namespace Entities
         public string GetSummary()
         {
             string summary = $"Region: {Name}\n" +
-                   $"Nation ID: {NationId ?? "None"}\n" +
-                   $"Production: {Production}\n";
+                   $"Nation ID: {NationId ?? "None"}\n";
                    
             // Add component summaries
             summary += Resources.GetSummary();
@@ -122,8 +125,8 @@ namespace Entities
             ProductionComp.SetProductionModifier("Workforce", PopulationComp.LaborAvailable / 100f);
             ProductionComp.SetProductionModifier("Efficiency", PopulationComp.LaborEfficiency);
             
-            // Update main Production property based on ProductionComponent calculations
-            Production = Mathf.RoundToInt(ProductionComp.CalculateTotalProduction());
+            // Update production (now handled by the component itself)
+            ProductionComp.ProcessTurn();
             
             // Get all resource amounts for population needs calculation
             Dictionary<string, float> availableResources = new Dictionary<string, float>
