@@ -232,12 +232,16 @@ namespace Entities
             if (amount <= 0 || amount > Economy.Wealth)
                 return 0;
                 
-            // Update economy to reflect spending
-            // This is a simplified approach - a real implementation might use Economy methods
+            // Calculate actual investment amount
             float actualAmount = Mathf.Min(amount, Economy.Wealth);
             
             // Apply the investment to infrastructure
-            return Infrastructure.Invest(actualAmount);
+            float infrastructureImprovement = Infrastructure.Invest(actualAmount);
+            
+            // Deduct the investment from the region's wealth
+            Economy.UpdateWealth(-Mathf.RoundToInt(actualAmount));
+            
+            return infrastructureImprovement;
         }
         
         // Convenience method for backward compatibility

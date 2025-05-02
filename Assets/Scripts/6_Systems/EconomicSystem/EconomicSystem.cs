@@ -382,11 +382,11 @@ namespace Systems
         {
             if (region == null) return;
             
-            if (!regions.ContainsKey(region.Name))
+            if (!regions.ContainsKey(region.Id))
             {
-                regions.Add(region.Name, region);
+                regions.Add(region.Id, region);
                 if (showDebugLogs)
-                    Debug.Log($"Region registered: {region.Name}");
+                    Debug.Log($"Region registered: {region.Name} with ID: {region.Id}");
             }
         }
         
@@ -413,9 +413,9 @@ namespace Systems
         {
             if (region == null) return;
             
-            if (regions.ContainsKey(region.Name))
+            if (regions.ContainsKey(region.Id))
             {
-                regions[region.Name] = region;
+                regions[region.Id] = region;
                 
                 // Trigger an event to notify listeners of the update
                 EventBus.Trigger("RegionUpdated", region);
