@@ -10,21 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
-  m_Name: TestScenario
+  m_Name: NewScenario
   m_EditorClassIdentifier: 
-  scenarioName: Test Scenario
-  description: Description of this test scenario
+  scenarioName: New Test Scenario
+  description: Description of the test scenario
   turnLimit: 10
-  regionStartConditions: []
-  nationStartConditions: []
-  events: []
+  regionStartConditions:
+  - regionId: 1
+    regionName: 1
+    initialWealth: 100
+    initialProduction: 50
+    initialInfrastructureLevel: 10
+    initialPopulation: 1000
+    initialSatisfaction: 0.7
+  nationStartConditions:
+  - nationId: 2
+    nationName: 2
+    controlledRegionIds:
+    - 1
   victoryCondition:
     type: 0
     targetRegionId: 
     requiredWealth: 500
     requiredInfrastructure: 20
     requiredSatisfaction: 0.8
-    minWealth: 300
-    minInfrastructure: 15
-    minSatisfaction: 0.7
     requiredConsecutiveTurns: 1

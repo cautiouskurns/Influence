@@ -8,18 +8,18 @@ namespace Scenarios
     public class ScenarioUI : MonoBehaviour
     {
         [Header("Panels")]
-        [SerializeField] private GameObject scenarioInfoPanel;
-        [SerializeField] private GameObject victoryPanel;
-        [SerializeField] private GameObject defeatPanel;
+        public GameObject scenarioInfoPanel;
+        public GameObject victoryPanel;
+        public GameObject defeatPanel;
         
         [Header("Info Panel")]
-        [SerializeField] private TMP_Text scenarioNameText;
-        [SerializeField] private TMP_Text descriptionText;
-        [SerializeField] private TMP_Text turnCounterText;
-        [SerializeField] private TMP_Text objectiveText;
+        public TextMeshProUGUI scenarioNameText;
+        public TextMeshProUGUI descriptionText;
+        public TextMeshProUGUI turnCounterText;
+        public TextMeshProUGUI objectiveText;
         
         [Header("Result Panels")]
-        [SerializeField] private Button continueButton;
+        public Button continueButton;
 
         private ScenarioManager scenarioManager;
         
