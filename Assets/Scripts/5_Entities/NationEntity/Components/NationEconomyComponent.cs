@@ -35,6 +35,14 @@ namespace Entities.Components
         private readonly int maxHistoryLength = 10;
         
         /// <summary>
+        /// Set the treasury balance - intended for testing purposes
+        /// </summary>
+        public void SetTreasuryBalance(float value)
+        {
+            TreasuryBalance = Mathf.Max(0, value); // Ensure balance is never negative
+        }
+        
+        /// <summary>
         /// Update economic metrics based on region data
         /// </summary>
         public void UpdateFromRegions(List<RegionEntity> regions)
