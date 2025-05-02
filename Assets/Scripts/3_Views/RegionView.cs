@@ -30,6 +30,9 @@ namespace UI
         // Region identifier
         public string RegionName { get; private set; }
         
+        // Cache the last production value to detect changes
+        private int lastProductionValue = 0;
+        
         /// <summary>
         /// Initialize the view with basic data
         /// </summary>
@@ -104,10 +107,29 @@ namespace UI
                 // Use more compact format for better fit
                 productionText.text = production < 1000 ? $"P:{production}" : $"P:{production/1000}k";
                 
+                // Cache the production value
+                lastProductionValue = production;
+                
                 // Color-code production text based on value with more distinct colors
                 if (production > 80)
                     productionText.color = new Color(0.1f, 0.9f, 0.1f); // Brighter green
                 else if (production < 40)
+                    productionText.color = new Color(0.9f, 0.1f, 0.1f); // Brighter red
+                else
+                    productionText.color = new Color(0.9f, 0.9f, 0.2f); // Yellow for middle values
+            }
+        }
+        
+        // Update text colors when the object becomes visible or re-enabled
+        private void OnEnable()
+        {
+            // Re-apply the color based on last known production value
+            if (productionText != null && lastProductionValue > 0)
+            {
+                // Re-apply the color logic
+                if (lastProductionValue > 80)
+                    productionText.color = new Color(0.1f, 0.9f, 0.1f); // Brighter green
+                else if (lastProductionValue < 40)
                     productionText.color = new Color(0.9f, 0.1f, 0.1f); // Brighter red
                 else
                     productionText.color = new Color(0.9f, 0.9f, 0.2f); // Yellow for middle values

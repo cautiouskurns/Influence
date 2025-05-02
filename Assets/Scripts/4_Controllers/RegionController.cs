@@ -79,8 +79,13 @@ namespace Controllers
         {
             if (regionEntity == null) return;
             
-            // Update economic display
-            view.UpdateEconomicDisplay(regionEntity.Wealth, regionEntity.Production);
+            // Update economic display - ensure production colors are updated every tick
+            // This ensures the color logic in RegionView is consistently applied
+            int production = regionEntity.Production;
+            int wealth = regionEntity.Wealth;
+            
+            // Forcing the values to be re-applied during every update
+            view.UpdateEconomicDisplay(wealth, production);
             
             // Update nation information if available
             if (!string.IsNullOrEmpty(regionEntity.NationId) && nationManager != null)
@@ -125,6 +130,12 @@ namespace Controllers
         {
             // Refresh entity data from system
             TryGetRegionEntityFromSystem();
+            
+            // Ensure view is updated with latest data after each tick
+            if (regionEntity != null)
+            {
+                UpdateViewWithEntityData();
+            }
         }
         
         /// <summary>
