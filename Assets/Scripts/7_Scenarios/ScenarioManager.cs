@@ -107,6 +107,9 @@ namespace Scenarios
             currentTurn = 0;
             consecutiveVictoryTurns = 0;
             
+            // Trigger event to notify other systems (like MapScenarioController)
+            EventBus.Trigger("ScenarioStarted", scenario);
+            
             // Setup regions and nations
             SetupRegions();
             SetupNations();

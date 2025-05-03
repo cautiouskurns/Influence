@@ -158,5 +158,63 @@ namespace UI.MapComponents
             
             return cells;
         }
+
+        /// <summary>
+        /// Calculate the position for a single hex cell based on its grid coordinates
+        /// </summary>
+        public Vector3 GetHexPosition(int q, int r)
+        {
+            // Calculate hex position based on grid parameters
+            float width, height, horizontalSpacing, verticalSpacing, xStart, yStart;
+            
+            if (pointyTopHexes)
+            {
+                // Pointy-top hex grid layout (hexes pointing up/down)
+                width = hexSize * 2.0f; // Width of a hex (point to point)
+                height = hexSize * SQRT_3; // Height of a hex (flat to flat)
+                
+                // For a perfectly tight grid with pointy-top hexes:
+                horizontalSpacing = width * 0.75f * horizontalSpacingAdjust;
+                verticalSpacing = height * verticalSpacingAdjust;
+                
+                xStart = -(gridWidth * horizontalSpacing) / 2 + horizontalSpacing/2;
+                yStart = -(gridHeight * verticalSpacing) / 2 + verticalSpacing/2;
+                
+                float xPos = xStart + q * horizontalSpacing;
+                float yPos = yStart + r * verticalSpacing;
+                
+                // Offset every other row
+                if (r % 2 != 0)
+                {
+                    xPos += horizontalSpacing / 2;
+                }
+                
+                return new Vector3(xPos, yPos, 0);
+            }
+            else
+            {
+                // Flat-top hex grid layout (hexes pointing sideways)
+                width = hexSize * SQRT_3; // Width of a hex (flat to flat)
+                height = hexSize * 2.0f; // Height of a hex (point to point)
+                
+                // For a perfectly tight grid with flat-top hexes:
+                horizontalSpacing = width * horizontalSpacingAdjust;
+                verticalSpacing = height * 0.75f * verticalSpacingAdjust;
+                
+                xStart = -(gridWidth * horizontalSpacing) / 2 + horizontalSpacing/2;
+                yStart = -(gridHeight * verticalSpacing) / 2 + verticalSpacing/2;
+                
+                float xPos = xStart + q * horizontalSpacing;
+                float yPos = yStart + r * verticalSpacing;
+                
+                // Offset every other column
+                if (q % 2 != 0)
+                {
+                    yPos += verticalSpacing / 2;
+                }
+                
+                return new Vector3(xPos, yPos, 0);
+            }
+        }
     }
 }

@@ -6,6 +6,7 @@ using Entities;
 using Systems;
 using UI.MapComponents;
 using Controllers;
+using Scenarios; // Added this namespace for RegionStartCondition
 
 namespace UI
 {
@@ -82,7 +83,11 @@ namespace UI
         
         private void Start()
         {
-            CreateHexGrid();
+            // Only create the default hex grid if not being controlled by a scenario
+            if (!gameObject.TryGetComponent<MapScenarioController>(out _))
+            {
+                CreateHexGrid();
+            }
         }
         
         private void OnEnable()
@@ -170,6 +175,60 @@ namespace UI
             }
             
             Debug.Log($"MapManager created {regionViews.Count} hexagonal regions in a tightly packed hex grid");
+            
+            // Trigger the RegionsCreated event to notify NationManager that regions have been created
+            EventBus.Trigger("RegionsCreated", regionViews.Count);
+        }
+        
+        /// <summary>
+        /// Creates custom regions based on scenario data instead of the default hex grid
+        /// </summary>
+        public void CreateCustomMap(List<Scenarios.RegionStartCondition> regionStartConditions)
+        {
+            ClearExistingRegions();
+            
+            Debug.Log($"MapManager: Creating custom map with {regionStartConditions.Count} predefined regions");
+            
+            // Create regions based on scenario data
+            foreach (var regionCondition in regionStartConditions)
+            {
+                // Calculate position based on ID or other logic
+                string[] idParts = regionCondition.regionId.Split('_');
+                int q = 0, r = 0;
+                
+                // Try to extract coordinates from region ID if possible (format "Region_X_Y")
+                if (idParts.Length >= 3)
+                {
+                    int.TryParse(idParts[1], out q);
+                    int.TryParse(idParts[2], out r);
+                }
+                
+                // Calculate position using hex grid layout
+                Vector3 position = gridGenerator.GetHexPosition(q, r);
+                Quaternion rotation = Quaternion.identity;
+                
+                // Get appropriate color
+                Color regionColor = colorCalculator.GetRegionColor(
+                    regionCondition.regionId, q, r, gridWidth, gridHeight, colorMode);
+                
+                // Create the region with entity and custom properties
+                RegionView regionView = regionFactory.CreateCustomRegion(
+                    regionCondition.regionId,
+                    regionCondition.regionName,
+                    position, 
+                    rotation,
+                    regionColor,
+                    regionCondition.initialWealth,
+                    regionCondition.initialProduction,
+                    regionCondition.initialPopulation,
+                    regionCondition.initialSatisfaction,
+                    regionCondition.initialInfrastructureLevel);
+                
+                // Store reference
+                regionViews[regionCondition.regionId] = regionView;
+            }
+            
+            Debug.Log($"MapManager created {regionViews.Count} custom regions from scenario data");
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
             EventBus.Trigger("RegionsCreated", regionViews.Count);

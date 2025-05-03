@@ -5,6 +5,7 @@ using Systems;
 using Controllers;
 using Managers;
 using Entities.ScriptableObjects;
+using Entities.Components; // Added this namespace for PopulationComponent
 
 namespace UI.MapComponents
 {
@@ -100,7 +101,7 @@ namespace UI.MapComponents
         }
         
         /// <summary>
-        /// Create a region entity with a specific configuration
+        /// Create an economic entity for a region and register it with systems
         /// </summary>
         public RegionEntity CreateRegionEntityWithConfig(string regionId, RegionConfig config)
         {
@@ -152,6 +153,75 @@ namespace UI.MapComponents
             
             // Create the entity with config
             CreateRegionEntityWithConfig(id, config);
+            
+            // Register with controller manager if available
+            if (controllerManager != null)
+            {
+                controllerManager.RegisterRegionView(view);
+            }
+            
+            return view;
+        }
+
+        /// <summary>
+        /// Create a region view and entity with specific custom properties from scenario
+        /// </summary>
+        public RegionView CreateCustomRegion(string id, string name, Vector3 position, Quaternion rotation, 
+                                           Color color, int wealth, int production, 
+                                           int population = 100, float satisfaction = 0.5f, float infrastructure = 1f)
+        {
+            // Create the view
+            RegionView view = CreateRegion(id, name, position, rotation, color);
+            
+            // Create custom entity with specific properties instead of random or config values
+            if (economicSystem != null)
+            {
+                // Only create if the region doesn't already have an entity
+                RegionEntity existingEntity = economicSystem.GetRegion(id);
+                if (existingEntity == null)
+                {
+                    // Create entity with custom properties
+                    RegionEntity regionEntity = new RegionEntity(id, name, wealth, production);
+                    
+                    // Set additional properties if available
+                    // Use Invest() method to set infrastructure level instead of direct assignment
+                    if (infrastructure > 1f) {
+                        float currentLevel = regionEntity.Infrastructure.Level;
+                        float levelDifference = infrastructure - currentLevel;
+                        if (levelDifference > 0) {
+                            // Use a high enough investment amount to reach the desired level
+                            // The exact formula will depend on the Invest() implementation
+                            regionEntity.Infrastructure.Invest(levelDifference * 100);
+                        }
+                    }
+                    
+                    // For population, we need to create a new PopulationComponent with the desired initial population
+                    // since there's no direct setter method for Population
+                    if (population > 0) {
+                        // Preserve the existing labor available ratio when recreating the component
+                        float laborRatio = regionEntity.PopulationComp.LaborAvailable / 
+                                        (regionEntity.PopulationComp.Population > 0 ? 
+                                         regionEntity.PopulationComp.Population : 1);
+                        float newLaborAvailable = population * laborRatio;
+                        
+                        // Create new component with desired population
+                        PopulationComponent newPopComp = new PopulationComponent(population, newLaborAvailable);
+                        
+                        // Replace the existing component (assuming this is allowed in the architecture)
+                        // If not possible, we may need to use reflection or another approach
+                        typeof(RegionEntity)
+                            .GetProperty("PopulationComp")
+                            .SetValue(regionEntity, newPopComp);
+                    }
+                    
+                    // For satisfaction, use UpdateNeedSatisfaction to set satisfaction values
+                    // Set a general "Overall" need with the desired satisfaction
+                    regionEntity.PopulationComp.UpdateNeedSatisfaction("Overall", satisfaction);
+                    
+                    // Register with the economic system
+                    economicSystem.RegisterRegion(regionEntity);
+                }
+            }
             
             // Register with controller manager if available
             if (controllerManager != null)

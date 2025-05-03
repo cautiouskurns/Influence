@@ -16,8 +16,22 @@ MonoBehaviour:
   description: Description of the test scenario
   turnLimit: 10
   regionStartConditions:
-  - regionId: 1
-    regionName: 1
+  - regionId: Region_2_3
+    regionName: Region_2_3
+    initialWealth: 100
+    initialProduction: 50
+    initialInfrastructureLevel: 10
+    initialPopulation: 1000
+    initialSatisfaction: 0.7
+  - regionId: Region_2_4
+    regionName: Region_2_4
+    initialWealth: 100
+    initialProduction: 50
+    initialInfrastructureLevel: 10
+    initialPopulation: 1000
+    initialSatisfaction: 0.7
+  - regionId: Region_3_4
+    regionName: Region_3_4
     initialWealth: 100
     initialProduction: 50
     initialInfrastructureLevel: 10
@@ -27,7 +41,12 @@ MonoBehaviour:
   - nationId: 2
     nationName: 2
     controlledRegionIds:
-    - 1
+    - Region_2_3
+    - Region_2_4
+  - nationId: 3
+    nationName: 3
+    controlledRegionIds:
+    - Region_3_4
   victoryCondition:
     type: 0
     targetRegionId: 

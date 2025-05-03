@@ -1134,6 +1134,7 @@ GameObject:
   m_Component:
   - component: {fileID: 771388975}
   - component: {fileID: 771388976}
+  - component: {fileID: 771388977}
   m_Layer: 0
   m_Name: ScenarioManager
   m_TagString: Untagged
@@ -1173,6 +1174,23 @@ MonoBehaviour:
   nationManager: {fileID: 1802490351}
   turnManager: {fileID: 890069361}
   scenarioUI: {fileID: 0}
+--- !u!114 &771388977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771388974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e04337ff967734c3b8a05c520f874fad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultScenario: {fileID: 11400000, guid: c5a3a3328257a4e3f83fa68606d29db1, type: 2}
+  autoLoadScenario: 1
+  attachMapScenarioController: 1
+  scenarioManager: {fileID: 771388976}
+  mapManager: {fileID: 1395318621}
 --- !u!1 &798012496
 GameObject:
   m_ObjectHideFlags: 0
