@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
+  m_Name: GeneratedScenario2
+  m_EditorClassIdentifier: 
+  scenarioName: Generated Scenario
+  description: Procedurally generated scenario with 15 regions and 3 nations.
+  turnLimit: 15
+  regionStartConditions:
+  - regionId: Region_1_3
+    regionName: FoxRidge
+    initialWealth: 235
+    initialProduction: 40
+    initialInfrastructureLevel: 13.697379
+    initialPopulation: 829
+    initialSatisfaction: 0.56494665
+  - regionId: Region_2_4
+    regionName: PineHighlands
+    initialWealth: 195
+    initialProduction: 69
+    initialInfrastructureLevel: 5.1155634
+    initialPopulation: 1895
+    initialSatisfaction: 0.45574543
+  - regionId: Region_1_1
+    regionName: Central Gold
+    initialWealth: 175
+    initialProduction: 51
+    initialInfrastructureLevel: 7.556444
+    initialPopulation: 538
+    initialSatisfaction: 0.37578684
+  - regionId: Region_0_0
+    regionName: Lake Point
+    initialWealth: 170
+    initialProduction: 45
+    initialInfrastructureLevel: 5.156741
+    initialPopulation: 1353
+    initialSatisfaction: 0.42184854
+  - regionId: Region_4_0
+    regionName: New Hills
+    initialWealth: 160
+    initialProduction: 68
+    initialInfrastructureLevel: 12.623869
+    initialPopulation: 1845
+    initialSatisfaction: 0.72123426
+  - regionId: Region_4_2
+    regionName: TigerHaven
+    initialWealth: 157
+    initialProduction: 76
+    initialInfrastructureLevel: 9.570024
+    initialPopulation: 1901
+    initialSatisfaction: 0.61759335
+  - regionId: Region_3_1
+    regionName: Tiger Cape
+    initialWealth: 151
+    initialProduction: 38
+    initialInfrastructureLevel: 11.675915
+    initialPopulation: 831
+    initialSatisfaction: 0.30730993
+  - regionId: Region_2_1
+    regionName: StagRidge
+    initialWealth: 139
+    initialProduction: 76
+    initialInfrastructureLevel: 5.8764424
+    initialPopulation: 508
+    initialSatisfaction: 0.33313215
+  - regionId: Region_0_1
+    regionName: North Cape
+    initialWealth: 133
+    initialProduction: 51
+    initialInfrastructureLevel: 6.1360197
+    initialPopulation: 1655
+    initialSatisfaction: 0.45627543
+  - regionId: Region_3_2
+    regionName: Boar Basin
+    initialWealth: 127
+    initialProduction: 69
+    initialInfrastructureLevel: 9.445021
+    initialPopulation: 769
+    initialSatisfaction: 0.31660736
+  - regionId: Region_3_3
+    regionName: Mountain Haven
+    initialWealth: 109
+    initialProduction: 36
+    initialInfrastructureLevel: 8.312509
+    initialPopulation: 1848
+    initialSatisfaction: 0.7256539
+  - regionId: Region_0_2
+    regionName: Wolf Hills
+    initialWealth: 105
+    initialProduction: 50
+    initialInfrastructureLevel: 14.597574
+    initialPopulation: 501
+    initialSatisfaction: 0.3805831
+  - regionId: Region_3_4
+    regionName: Cedar Highlands
+    initialWealth: 105
+    initialProduction: 79
+    initialInfrastructureLevel: 5.277163
+    initialPopulation: 1518
+    initialSatisfaction: 0.5868073
+  - regionId: Region_2_3
+    regionName: IronPlains
+    initialWealth: 102
+    initialProduction: 41
+    initialInfrastructureLevel: 8.304865
+    initialPopulation: 825
+    initialSatisfaction: 0.5732924
+  - regionId: Region_2_2
+    regionName: River Cape
+    initialWealth: 95
+    initialProduction: 52
+    initialInfrastructureLevel: 10.674641
+    initialPopulation: 1993
+    initialSatisfaction: 0.50727654
+  nationStartConditions:
+  - nationId: nation_1
+    nationName: Democratic Ravstan
+    controlledRegionIds:
+    - Region_1_3
+    - Region_0_0
+    - Region_3_1
+    - Region_3_2
+    - Region_3_4
+  - nationId: nation_2
+    nationName: Independent Casville
+    controlledRegionIds:
+    - Region_2_4
+    - Region_4_0
+    - Region_2_1
+    - Region_3_3
+    - Region_2_3
+  - nationId: nation_3
+    nationName: Casnia
+    controlledRegionIds:
+    - Region_1_1
+    - Region_4_2
+    - Region_0_1
+    - Region_0_2
+    - Region_2_2
+  victoryCondition:
+    type: 2
+    targetRegionId: 
+    requiredWealth: 500
+    requiredInfrastructure: 20
+    requiredSatisfaction: 0.90861326
+    requiredConsecutiveTurns: 1

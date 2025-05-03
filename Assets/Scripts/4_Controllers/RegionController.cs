@@ -145,16 +145,26 @@ namespace Controllers
         {
             if (data is RegionNationChangedData changeData && changeData.RegionId == view.RegionName)
             {
-                // Refresh entity data
-                TryGetRegionEntityFromSystem();
+                Debug.Log($"Region {view.RegionName} nation changed to {changeData.NationId}");
                 
-                // Update nation info if available
-                if (nationManager != null && !string.IsNullOrEmpty(changeData.NationId))
+                // Update the entity's NationId property directly
+                if (regionEntity != null)
                 {
-                    NationEntity nation = nationManager.GetNation(changeData.NationId);
-                    if (nation != null)
+                    regionEntity.NationId = changeData.NationId;
+                    
+                    // Force an update of the view with the new nation
+                    UpdateViewWithEntityData();
+                }
+                else
+                {
+                    // If regionEntity is null, try to get it from the system
+                    TryGetRegionEntityFromSystem();
+                    
+                    // If we now have an entity, update its NationId
+                    if (regionEntity != null)
                     {
-                        view.UpdateNationInfo(nation.Name);
+                        regionEntity.NationId = changeData.NationId;
+                        UpdateViewWithEntityData();
                     }
                 }
             }

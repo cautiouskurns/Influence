@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Entities;
 using Systems;
+using System.Collections;
 
 namespace Managers
 {
@@ -33,8 +34,15 @@ namespace Managers
         // Dictionary of nations by ID
         private Dictionary<string, NationEntity> nations = new Dictionary<string, NationEntity>();
         
+        // Dictionary to store region-to-nation assignments explicitly
+        private Dictionary<string, string> regionNationMap = new Dictionary<string, string>();
+        
         // Reference to the economic system for region access
         private EconomicSystem economicSystem;
+        
+        [SerializeField] private bool debugLogging = true;
+        [SerializeField] private int maxRetries = 5;
+        [SerializeField] private float retryDelay = 0.5f;
         
         private void Awake()
         {
@@ -49,7 +57,10 @@ namespace Managers
             DontDestroyOnLoad(gameObject);
             
             // Initialize references
-            economicSystem = FindFirstObjectByType<EconomicSystem>();
+            TryFindEconomicSystem();
+            
+            if (debugLogging)
+                Debug.Log("[NationManager] Awake completed - EconomicSystem found: " + (economicSystem != null));
         }
         
         private void OnEnable()
@@ -75,10 +86,55 @@ namespace Managers
             // Debug output to check the setup
             Debug.Log($"[NationManager] Nation system initialized with {nations.Count} nations");
             
-            // Check if regions already exist
-            if (economicSystem != null)
+            // Start coroutine to ensure we have economic system and regions
+            StartCoroutine(EnsureEconomicSystemAndAssignRegions());
+        }
+
+        // New method to try to find the economic system
+        private bool TryFindEconomicSystem()
+        {
+            if (economicSystem == null)
             {
-                CheckAndAssignRegions();
+                economicSystem = FindFirstObjectByType<EconomicSystem>();
+            }
+            return economicSystem != null;
+        }
+        
+        // Coroutine to ensure we have economic system and regions
+        private IEnumerator EnsureEconomicSystemAndAssignRegions()
+        {
+            int attempts = 0;
+            
+            while (economicSystem == null && attempts < maxRetries)
+            {
+                Debug.Log($"[NationManager] Trying to find EconomicSystem (attempt {attempts + 1}/{maxRetries})");
+                
+                if (TryFindEconomicSystem())
+                {
+                    Debug.Log("[NationManager] EconomicSystem found!");
+                    break;
+                }
+                
+                attempts++;
+                yield return new WaitForSeconds(retryDelay);
+            }
+            
+            if (economicSystem == null)
+            {
+                Debug.LogError("[NationManager] Failed to find EconomicSystem after multiple attempts. Region assignment will not work.");
+                yield break;
+            }
+            
+            // Now try to assign regions
+            var regions = economicSystem.GetAllRegionIds();
+            if (regions.Count > 0)
+            {
+                Debug.Log($"[NationManager] Found {regions.Count} regions, assigning to nations");
+                AssignRegionsToNations();
+            }
+            else
+            {
+                Debug.Log("[NationManager] No regions found yet, will wait for RegionsCreated event");
             }
         }
 
@@ -93,6 +149,14 @@ namespace Managers
             
             Debug.Log($"[NationManager] Received RegionsCreated event with {regionCount} regions");
             
+            // Ensure we have an economic system reference
+            if (!TryFindEconomicSystem())
+            {
+                Debug.LogError("[NationManager] Received RegionsCreated event but still can't find EconomicSystem");
+                StartCoroutine(EnsureEconomicSystemAndAssignRegions());
+                return;
+            }
+            
             // Assign regions to nations
             CheckAndAssignRegions();
         }
@@ -103,6 +167,7 @@ namespace Managers
             if (economicSystem == null)
             {
                 Debug.LogError("[NationManager] Can't check regions - EconomicSystem not found");
+                StartCoroutine(EnsureEconomicSystemAndAssignRegions());
                 return;
             }
             
@@ -157,6 +222,40 @@ namespace Managers
             return null;
         }
         
+        // Get the nation that owns a specific region
+        public NationEntity GetRegionNation(string regionId)
+        {
+            // First check the direct mapping
+            if (regionNationMap.TryGetValue(regionId, out string nationId))
+            {
+                if (nations.TryGetValue(nationId, out NationEntity mappedNation))
+                {
+                    if (debugLogging)
+                        Debug.Log($"[NationManager] Region {regionId} belongs to nation: {mappedNation.Name} (from map)");
+                    return mappedNation;
+                }
+            }
+            
+            // Fallback to traditional search if mapping fails
+            foreach (var nation in nations.Values)
+            {
+                if (nation.GetRegionIds().Contains(regionId))
+                {
+                    if (debugLogging)
+                        Debug.Log($"[NationManager] Region {regionId} belongs to nation: {nation.Name}");
+                    
+                    // Update the map for future lookups
+                    regionNationMap[regionId] = nation.Id;
+                    return nation;
+                }
+            }
+            
+            // If no nation owns this region, return null (it's "Independent")
+            if (debugLogging)
+                Debug.Log($"[NationManager] Region {regionId} belongs to no nation (Independent)");
+            return null;
+        }
+        
         // Get all nation IDs
         public List<string> GetAllNationIds()
         {
@@ -178,10 +277,19 @@ namespace Managers
                 existingNation.RemoveRegion(regionId);
             }
             
+            // Remove from the map as well
+            regionNationMap.Remove(regionId);
+            
             // Then add it to the specified nation
             if (nations.TryGetValue(nationId, out NationEntity nation))
             {
                 nation.AddRegion(regionId);
+                
+                // Update the map for quick lookups
+                regionNationMap[regionId] = nationId;
+                
+                if (debugLogging)
+                    Debug.Log($"[NationManager] Assigned region {regionId} to nation {nationId}");
                 
                 // Trigger an event for visualization/processing
                 EventBus.Trigger("RegionNationChanged", new RegionNationChangedData { 
@@ -189,20 +297,10 @@ namespace Managers
                     NationId = nationId 
                 });
             }
-        }
-        
-        // Get the nation a region belongs to
-        public NationEntity GetRegionNation(string regionId)
-        {
-            foreach (var nation in nations.Values)
+            else
             {
-                if (nation.GetRegionIds().Contains(regionId))
-                {
-                    return nation;
-                }
+                Debug.LogError($"[NationManager] Failed to assign region {regionId} - nation {nationId} not found!");
             }
-            
-            return null;
         }
         
         // Method to ensure regions are assigned to nations

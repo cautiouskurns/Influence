@@ -189,49 +189,190 @@ namespace UI
             
             Debug.Log($"MapManager: Creating custom map with {regionStartConditions.Count} predefined regions");
             
-            // Create regions based on scenario data
+            // First, get the nation manager
+            NationManager nationManager = NationManager.Instance;
+            if (nationManager == null)
+            {
+                Debug.LogError("MapManager: NationManager instance not found. Cannot organize regions by nation.");
+                return;
+            }
+            
+            // Group regions by nation for better organization
+            Dictionary<string, List<RegionStartCondition>> regionsByNation = new Dictionary<string, List<RegionStartCondition>>();
+            
+            // First pass - identify which nation each region belongs to
             foreach (var regionCondition in regionStartConditions)
             {
-                // Calculate position based on ID or other logic
-                string[] idParts = regionCondition.regionId.Split('_');
-                int q = 0, r = 0;
+                string nationId = "unassigned"; // Default if no nation is assigned
                 
-                // Try to extract coordinates from region ID if possible (format "Region_X_Y")
-                if (idParts.Length >= 3)
+                // Try to get the nation ID for this region from scenarios or other data
+                foreach (var nation in nationManager.GetAllNations())
                 {
-                    int.TryParse(idParts[1], out q);
-                    int.TryParse(idParts[2], out r);
+                    if (nation.GetRegionIds().Contains(regionCondition.regionId))
+                    {
+                        nationId = nation.Id;
+                        break;
+                    }
                 }
                 
-                // Calculate position using hex grid layout
-                Vector3 position = gridGenerator.GetHexPosition(q, r);
-                Quaternion rotation = Quaternion.identity;
+                // Add to the group for this nation
+                if (!regionsByNation.ContainsKey(nationId))
+                {
+                    regionsByNation[nationId] = new List<RegionStartCondition>();
+                }
                 
-                // Get appropriate color
-                Color regionColor = colorCalculator.GetRegionColor(
-                    regionCondition.regionId, q, r, gridWidth, gridHeight, colorMode);
+                regionsByNation[nationId].Add(regionCondition);
+            }
+            
+            // Keep track of already used positions
+            HashSet<Vector2Int> occupiedPositions = new HashSet<Vector2Int>();
+            
+            // Create starting positions for each nation as an anchor point
+            Dictionary<string, Vector2Int> nationStartPositions = new Dictionary<string, Vector2Int>();
+            int nationSpacing = 3; // Space between nation clusters
+            int currentX = 0;
+            
+            foreach (string nationId in regionsByNation.Keys)
+            {
+                nationStartPositions[nationId] = new Vector2Int(currentX, 0);
+                currentX += nationSpacing;
+            }
+            
+            // Now create regions nation by nation, placing them in clusters
+            foreach (var nationGroup in regionsByNation)
+            {
+                string nationId = nationGroup.Key;
+                List<RegionStartCondition> nationRegions = nationGroup.Value;
                 
-                // Create the region with entity and custom properties
-                RegionView regionView = regionFactory.CreateCustomRegion(
-                    regionCondition.regionId,
-                    regionCondition.regionName,
-                    position, 
-                    rotation,
-                    regionColor,
-                    regionCondition.initialWealth,
-                    regionCondition.initialProduction,
-                    regionCondition.initialPopulation,
-                    regionCondition.initialSatisfaction,
-                    regionCondition.initialInfrastructureLevel);
+                Vector2Int nationAnchor = nationStartPositions[nationId];
+                Queue<Vector2Int> availablePositions = new Queue<Vector2Int>();
                 
-                // Store reference
-                regionViews[regionCondition.regionId] = regionView;
+                // Start with the anchor position
+                Vector2Int startPos = nationAnchor;
+                if (!occupiedPositions.Contains(startPos))
+                {
+                    availablePositions.Enqueue(startPos);
+                    occupiedPositions.Add(startPos);
+                }
+                
+                // Process each region in this nation
+                foreach (var regionCondition in nationRegions)
+                {
+                    // If we ran out of pre-computed positions, find new ones
+                    if (availablePositions.Count == 0)
+                    {
+                        // Search for positions adjacent to any existing region from this nation
+                        foreach (Vector2Int pos in occupiedPositions)
+                        {
+                            AddAdjacentPositions(pos, occupiedPositions, availablePositions);
+                        }
+                        
+                        // If still no positions, create a new one further out
+                        if (availablePositions.Count == 0)
+                        {
+                            Vector2Int newPos = new Vector2Int(nationAnchor.x + Random.Range(-5, 5), 
+                                                              nationAnchor.y + Random.Range(-5, 5));
+                            while (occupiedPositions.Contains(newPos))
+                            {
+                                newPos = new Vector2Int(nationAnchor.x + Random.Range(-5, 5), 
+                                                      nationAnchor.y + Random.Range(-5, 5));
+                            }
+                            availablePositions.Enqueue(newPos);
+                            occupiedPositions.Add(newPos);
+                        }
+                    }
+                    
+                    // Get next available position
+                    Vector2Int coords = availablePositions.Dequeue();
+                    
+                    // Convert grid coordinates to hex coordinates (q, r)
+                    int q = coords.x;
+                    int r = coords.y;
+                    
+                    // Calculate position using hex grid layout
+                    Vector3 position = gridGenerator.GetHexPosition(q, r);
+                    Quaternion rotation = Quaternion.identity;
+                    
+                    // Get appropriate color
+                    Color regionColor = colorCalculator.GetRegionColor(
+                        regionCondition.regionId, q, r, gridWidth, gridHeight, colorMode);
+                    
+                    // Create the region with entity and custom properties
+                    RegionView regionView = regionFactory.CreateCustomRegion(
+                        regionCondition.regionId,
+                        regionCondition.regionName,
+                        position, 
+                        rotation,
+                        regionColor,
+                        regionCondition.initialWealth,
+                        regionCondition.initialProduction,
+                        regionCondition.initialPopulation,
+                        regionCondition.initialSatisfaction,
+                        regionCondition.initialInfrastructureLevel);
+                    
+                    // Store reference
+                    regionViews[regionCondition.regionId] = regionView;
+                    
+                    // Queue up adjacent positions for future regions from same nation
+                    AddAdjacentPositions(coords, occupiedPositions, availablePositions);
+                }
             }
             
             Debug.Log($"MapManager created {regionViews.Count} custom regions from scenario data");
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
             EventBus.Trigger("RegionsCreated", regionViews.Count);
+        }
+        
+        /// <summary>
+        /// Adds adjacent hex grid positions to the queue if they aren't already occupied
+        /// </summary>
+        private void AddAdjacentPositions(Vector2Int center, HashSet<Vector2Int> occupied, Queue<Vector2Int> available)
+        {
+            // Define the six adjacent hex positions
+            // For odd-q hex grid:
+            Vector2Int[] adjacentOffsets;
+            
+            // For even rows, the offsets are different than odd rows
+            if (center.y % 2 == 0)
+            {
+                adjacentOffsets = new Vector2Int[] {
+                    new Vector2Int(0, 1),   // North
+                    new Vector2Int(1, 1),   // Northeast
+                    new Vector2Int(1, 0),   // Southeast
+                    new Vector2Int(0, -1),  // South
+                    new Vector2Int(-1, 0),  // Southwest
+                    new Vector2Int(-1, 1)   // Northwest
+                };
+            }
+            else
+            {
+                adjacentOffsets = new Vector2Int[] {
+                    new Vector2Int(0, 1),   // North
+                    new Vector2Int(1, 0),   // Northeast
+                    new Vector2Int(1, -1),  // Southeast
+                    new Vector2Int(0, -1),  // South
+                    new Vector2Int(-1, -1), // Southwest
+                    new Vector2Int(-1, 0)   // Northwest
+                };
+            }
+            
+            // Randomize the order to avoid predictable layouts
+            System.Random rng = new System.Random();
+            Vector2Int[] shuffledOffsets = adjacentOffsets.OrderBy(x => rng.Next()).ToArray();
+            
+            // Check each adjacent position
+            foreach (var offset in shuffledOffsets)
+            {
+                Vector2Int adjacentPos = new Vector2Int(center.x + offset.x, center.y + offset.y);
+                
+                // If this position isn't already taken, add it to available positions
+                if (!occupied.Contains(adjacentPos))
+                {
+                    available.Enqueue(adjacentPos);
+                    occupied.Add(adjacentPos);
+                }
+            }
         }
         
         /// <summary>
@@ -279,10 +420,12 @@ namespace UI
                     continue;
                 }
                 
-                // Extract coordinates from region ID (format: "Region_X_Y")
+                // Extract coordinates from region ID (format: "Region_X_Y" or "region_X_Y")
                 string[] parts = regionId.Split('_');
                 if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
                 {
+                    Debug.LogWarning($"MapManager: Could not parse coordinates from region ID: {regionId}. Using default color.");
+                    view.SetColor(defaultRegionColor);
                     continue;
                 }
                 

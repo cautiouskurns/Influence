@@ -80,6 +80,12 @@ namespace Scenarios
         [Tooltip("Should the layout use pointy-top hexes (otherwise flat-top)")]
         public bool pointyTopHexes = false;
         
+        [Tooltip("X-axis (Q) offset for grid positioning")]
+        public int gridOffsetQ = 0;
+        
+        [Tooltip("Y-axis (R) offset for grid positioning")]
+        public int gridOffsetR = 0;
+        
         // Generate a full procedural scenario with regions and nations
         public TestScenario GenerateScenario()
         {
