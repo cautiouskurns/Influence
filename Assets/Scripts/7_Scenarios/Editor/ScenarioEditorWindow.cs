@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using Scenarios;
+using UnityEngine.UI;
 
 namespace Scenarios.Editor
 {
@@ -431,17 +433,44 @@ namespace Scenarios.Editor
             {
                 // Already in play mode, find manager
                 ScenarioManager manager = FindFirstObjectByType<ScenarioManager>();
-                if (manager != null)
-                {
-                    manager.StartScenario(currentScenario);
-                }
-                else
+                if (manager == null)
                 {
                     // Create a manager
                     GameObject scenarioObj = new GameObject("ScenarioManager");
                     manager = scenarioObj.AddComponent<ScenarioManager>();
-                    manager.StartScenario(currentScenario);
+                    Debug.Log("Created new ScenarioManager");
                 }
+
+                // Find or create ScenarioUI if needed
+                ScenarioUI ui = FindFirstObjectByType<ScenarioUI>();
+                if (ui == null)
+                {
+                    // Create UI
+                    Canvas canvas = FindFirstObjectByType<Canvas>();
+                    if (canvas == null)
+                    {
+                        GameObject canvasObj = new GameObject("Canvas");
+                        canvas = canvasObj.AddComponent<Canvas>();
+                        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                        canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                        canvasObj.AddComponent<GraphicRaycaster>();
+                        Debug.Log("Created Canvas");
+                    }
+
+                    GameObject uiObj = new GameObject("ScenarioUI");
+                    uiObj.transform.SetParent(canvas.transform, false);
+                    ui = uiObj.AddComponent<ScenarioUI>();
+                    Debug.Log("Created ScenarioUI");
+                }
+
+                // Connect UI to manager
+                var serializedManager = new SerializedObject(manager);
+                serializedManager.FindProperty("scenarioUI").objectReferenceValue = ui;
+                serializedManager.ApplyModifiedProperties();
+                
+                // Start the scenario
+                Debug.Log($"Starting scenario: {currentScenario.name}");
+                manager.StartScenario(currentScenario);
             }
         }
     }

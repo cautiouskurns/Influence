@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
-  m_Name: NewScenario
+  m_Name: NewScenario 1
   m_EditorClassIdentifier: 
-  scenarioName: New Test Scenario
+  scenarioName: New Test Scenario 1
   description: Description of the test scenario
-  turnLimit: 10
+  turnLimit: 20
   regionStartConditions:
   - regionId: 1
     regionName: 1

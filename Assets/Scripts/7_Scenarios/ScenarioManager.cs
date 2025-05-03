@@ -4,6 +4,7 @@ using Systems;
 using Managers;
 using Entities;
 using Core;
+using UI;   
 
 namespace Scenarios
 {
@@ -146,37 +147,45 @@ namespace Scenarios
             foreach (var nationCondition in activeScenario.nationStartConditions)
             {
                 // Create nation with basic properties
-                NationEntity nation = new NationEntity(
-                    nationCondition.nationId,
-                    nationCondition.nationName,
-                    new Color(Random.value, Random.value, Random.value)
-                );
-                
-                // Store and register the nation
-                scenarioNations[nation.Id] = nation;
+                NationEntity nation = null;
                 
                 // Register with nation manager
                 if (nationManager != null)
                 {
-                    // Use public methods if available, otherwise try reflection
                     try {
-                        // Attempt direct registration
-                        // nationManager.RegisterNation(nation);
+                        // Create and register the nation using the proper method
+                        nation = nationManager.CreateNation(
+                            nationCondition.nationId,
+                            nationCondition.nationName,
+                            new Color(Random.value, Random.value, Random.value)
+                        );
+                        
+                        // Store the nation
+                        if (nation != null) {
+                            scenarioNations[nation.Id] = nation;
+                            Debug.Log($"Created nation: {nation.Id}");
+                        }
                     }
-                    catch {
-                        Debug.LogWarning("Could not register nation using public method");
+                    catch (System.Exception ex) {
+                        Debug.LogWarning($"Could not create nation using nationManager.CreateNation: {ex.Message}");
                     }
                     
                     // Assign regions to nation
-                    foreach (string regionId in nationCondition.controlledRegionIds)
-                    {
-                        try {
-                            nationManager.AssignRegionToNation(regionId, nation.Id);
-                        }
-                        catch {
-                            Debug.LogWarning($"Could not assign region {regionId} to nation {nation.Id}");
+                    if (nation != null) {
+                        foreach (string regionId in nationCondition.controlledRegionIds)
+                        {
+                            try {
+                                nationManager.AssignRegionToNation(regionId, nation.Id);
+                            }
+                            catch (System.Exception ex) {
+                                Debug.LogWarning($"Could not assign region {regionId} to nation {nation.Id}: {ex.Message}");
+                            }
                         }
                     }
+                }
+                else
+                {
+                    Debug.LogError("NationManager is null! Cannot register nations.");
                 }
             }
         }

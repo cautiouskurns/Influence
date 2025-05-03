@@ -45,7 +45,7 @@ public class ScenarioTester : MonoBehaviour
         }
         
         // Generate UI if needed
-        if (autoGenerateUI && FindObjectOfType<ScenarioUI>() == null)
+        if (autoGenerateUI && FindFirstObjectByType<ScenarioUI>() == null)
         {
             StartCoroutine(GenerateUIAfterDelay());
         }
@@ -76,7 +76,7 @@ public class ScenarioTester : MonoBehaviour
             if (turnManager != null)
                 so.FindProperty("turnManager").objectReferenceValue = turnManager;
                 
-            ScenarioUI ui = FindObjectOfType<ScenarioUI>();
+            ScenarioUI ui = FindFirstObjectByType<ScenarioUI>();
             if (ui != null)
                 so.FindProperty("scenarioUI").objectReferenceValue = ui;
                 
@@ -91,7 +91,7 @@ public class ScenarioTester : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         
         // Find Canvas or create one
-        Canvas canvas = FindObjectOfType<Canvas>();
+        Canvas canvas = FindFirstObjectByType<Canvas>();
         if (canvas == null)
         {
             GameObject canvasObj = new GameObject("Canvas");
@@ -101,168 +101,14 @@ public class ScenarioTester : MonoBehaviour
             canvasObj.AddComponent<GraphicRaycaster>();
         }
         
-        // Create basic ScenarioUI
+        // Create simple ScenarioUI with just text
         GameObject scenarioUIObj = new GameObject("ScenarioUI");
         scenarioUIObj.transform.SetParent(canvas.transform, false);
-        RectTransform scenarioUIRect = scenarioUIObj.AddComponent<RectTransform>();
-        scenarioUIRect.anchorMin = Vector2.zero;
-        scenarioUIRect.anchorMax = Vector2.one;
-        scenarioUIRect.offsetMin = Vector2.zero;
-        scenarioUIRect.offsetMax = Vector2.zero;
-        
         ScenarioUI scenarioUI = scenarioUIObj.AddComponent<ScenarioUI>();
         
-        // Create info panel
-        GameObject infoPanel = new GameObject("ScenarioInfoPanel");
-        infoPanel.transform.SetParent(scenarioUIObj.transform, false);
-        RectTransform infoPanelRect = infoPanel.AddComponent<RectTransform>();
-        infoPanelRect.anchorMin = new Vector2(0, 0.8f);
-        infoPanelRect.anchorMax = new Vector2(1, 1);
-        infoPanelRect.offsetMin = Vector2.zero;
-        infoPanelRect.offsetMax = Vector2.zero;
+        // The ScenarioUI will create its own text in Awake if not assigned
         
-        Image infoBg = infoPanel.AddComponent<Image>();
-        infoBg.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
-        
-        // Create name text
-        GameObject nameTextObj = new GameObject("ScenarioNameText");
-        nameTextObj.transform.SetParent(infoPanel.transform, false);
-        RectTransform nameTextRect = nameTextObj.AddComponent<RectTransform>();
-        nameTextRect.anchorMin = new Vector2(0, 0.6f);
-        nameTextRect.anchorMax = new Vector2(1, 1);
-        nameTextRect.offsetMin = new Vector2(20, 0);
-        nameTextRect.offsetMax = new Vector2(-20, 0);
-        
-        TMPro.TextMeshProUGUI nameText = nameTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        nameText.text = "Scenario Name";
-        nameText.fontSize = 24;
-        nameText.alignment = TMPro.TextAlignmentOptions.Center;
-        
-        // Create description text
-        GameObject descTextObj = new GameObject("DescriptionText");
-        descTextObj.transform.SetParent(infoPanel.transform, false);
-        RectTransform descTextRect = descTextObj.AddComponent<RectTransform>();
-        descTextRect.anchorMin = new Vector2(0, 0);
-        descTextRect.anchorMax = new Vector2(1, 0.6f);
-        descTextRect.offsetMin = new Vector2(20, 10);
-        descTextRect.offsetMax = new Vector2(-20, 0);
-        
-        TMPro.TextMeshProUGUI descText = descTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        descText.text = "Scenario Description";
-        descText.fontSize = 18;
-        descText.alignment = TMPro.TextAlignmentOptions.Top;
-        
-        // Create objective text
-        GameObject objTextObj = new GameObject("ObjectiveText");
-        objTextObj.transform.SetParent(infoPanel.transform, false);
-        RectTransform objTextRect = objTextObj.AddComponent<RectTransform>();
-        objTextRect.anchorMin = new Vector2(0, 0);
-        objTextRect.anchorMax = new Vector2(1, 0.3f);
-        objTextRect.offsetMin = new Vector2(20, 10);
-        objTextRect.offsetMax = new Vector2(-20, 0);
-        
-        TMPro.TextMeshProUGUI objText = objTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        objText.text = "Objectives";
-        objText.fontSize = 16;
-        objText.color = new Color(1f, 0.8f, 0.2f);
-        objText.alignment = TMPro.TextAlignmentOptions.Bottom;
-        
-        // Create turn counter
-        GameObject turnTextObj = new GameObject("TurnCounterText");
-        turnTextObj.transform.SetParent(infoPanel.transform, false);
-        RectTransform turnTextRect = turnTextObj.AddComponent<RectTransform>();
-        turnTextRect.anchorMin = new Vector2(0.8f, 0.8f);
-        turnTextRect.anchorMax = new Vector2(1, 1);
-        turnTextRect.offsetMin = Vector2.zero;
-        turnTextRect.offsetMax = new Vector2(-20, -10);
-        
-        TMPro.TextMeshProUGUI turnText = turnTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        turnText.text = "Turn: 0 / 10";
-        turnText.fontSize = 18;
-        turnText.alignment = TMPro.TextAlignmentOptions.Right;
-        
-        // Create basic victory/defeat panels
-        CreateBasicPanel("VictoryPanel", scenarioUIObj.transform, new Color(0.1f, 0.4f, 0.1f, 0.9f), "Victory!");
-        CreateBasicPanel("DefeatPanel", scenarioUIObj.transform, new Color(0.4f, 0.1f, 0.1f, 0.9f), "Defeat!");
-        
-        // Wire up the references
-        scenarioUI.scenarioInfoPanel = infoPanel;
-        scenarioUI.victoryPanel = scenarioUIObj.transform.Find("VictoryPanel").gameObject;
-        scenarioUI.defeatPanel = scenarioUIObj.transform.Find("DefeatPanel").gameObject;
-        scenarioUI.scenarioNameText = nameText;
-        scenarioUI.descriptionText = descText;
-        scenarioUI.objectiveText = objText;
-        scenarioUI.turnCounterText = turnText;
-        
-        // Connect to ScenarioManager
-        if (scenarioManager != null)
-        {
-            var so = new UnityEditor.SerializedObject(scenarioManager);
-            so.FindProperty("scenarioUI").objectReferenceValue = scenarioUI;
-            so.ApplyModifiedProperties();
-        }
-        
-        // Hide result panels
-        scenarioUI.victoryPanel.SetActive(false);
-        scenarioUI.defeatPanel.SetActive(false);
-        
-        Debug.Log("Created basic ScenarioUI");
-    }
-    
-    private void CreateBasicPanel(string name, Transform parent, Color bgColor, string text)
-    {
-        GameObject panel = new GameObject(name);
-        panel.transform.SetParent(parent, false);
-        RectTransform panelRect = panel.AddComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.3f, 0.3f);
-        panelRect.anchorMax = new Vector2(0.7f, 0.7f);
-        panelRect.offsetMin = Vector2.zero;
-        panelRect.offsetMax = Vector2.zero;
-        
-        Image bg = panel.AddComponent<Image>();
-        bg.color = bgColor;
-        
-        GameObject textObj = new GameObject("ResultText");
-        textObj.transform.SetParent(panel.transform, false);
-        RectTransform textRect = textObj.AddComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-        
-        TMPro.TextMeshProUGUI tmpText = textObj.AddComponent<TMPro.TextMeshProUGUI>();
-        tmpText.text = text;
-        tmpText.fontSize = 36;
-        tmpText.alignment = TMPro.TextAlignmentOptions.Center;
-        
-        GameObject buttonObj = new GameObject("ContinueButton");
-        buttonObj.transform.SetParent(panel.transform, false);
-        RectTransform buttonRect = buttonObj.AddComponent<RectTransform>();
-        buttonRect.anchorMin = new Vector2(0.3f, 0.2f);
-        buttonRect.anchorMax = new Vector2(0.7f, 0.3f);
-        buttonRect.offsetMin = Vector2.zero;
-        buttonRect.offsetMax = Vector2.zero;
-        
-        Image buttonImage = buttonObj.AddComponent<Image>();
-        buttonImage.color = new Color(0.3f, 0.3f, 0.3f, 1);
-        
-        Button button = buttonObj.AddComponent<Button>();
-        ColorBlock colors = button.colors;
-        colors.highlightedColor = new Color(0.5f, 0.5f, 0.5f);
-        button.colors = colors;
-        
-        GameObject buttonTextObj = new GameObject("Text");
-        buttonTextObj.transform.SetParent(buttonObj.transform, false);
-        RectTransform buttonTextRect = buttonTextObj.AddComponent<RectTransform>();
-        buttonTextRect.anchorMin = Vector2.zero;
-        buttonTextRect.anchorMax = Vector2.one;
-        buttonTextRect.offsetMin = Vector2.zero;
-        buttonTextRect.offsetMax = Vector2.zero;
-        
-        TMPro.TextMeshProUGUI buttonText = buttonTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        buttonText.text = "Continue";
-        buttonText.fontSize = 18;
-        buttonText.alignment = TMPro.TextAlignmentOptions.Center;
+        Debug.Log("Created simplified ScenarioUI");
     }
     
     private TestScenario CreateTestScenario()
@@ -341,7 +187,7 @@ public class ScenarioTester : MonoBehaviour
     private T FindOrCreateComponent<T>(string name) where T : Component
     {
         // Try to find an existing component
-        T component = FindObjectOfType<T>();
+        T component = FindFirstObjectByType<T>();
         if (component != null)
             return component;
             
