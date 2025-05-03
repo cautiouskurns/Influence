@@ -1169,7 +1169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57e7c7311ed4949388ec914a5c782df7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeScenario: {fileID: 11400000, guid: c5a3a3328257a4e3f83fa68606d29db1, type: 2}
+  activeScenario: {fileID: 0}
   economicSystem: {fileID: 890069362}
   nationManager: {fileID: 1802490351}
   turnManager: {fileID: 890069361}
@@ -1186,8 +1186,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e04337ff967734c3b8a05c520f874fad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultScenario: {fileID: 11400000, guid: c5a3a3328257a4e3f83fa68606d29db1, type: 2}
-  autoLoadScenario: 1
+  defaultScenario: {fileID: 11400000, guid: fdb905e81bd6647a29e10314341275a0, type: 2}
+  autoLoadScenario: 0
   attachMapScenarioController: 1
   scenarioManager: {fileID: 771388976}
   mapManager: {fileID: 1395318621}
@@ -2286,6 +2286,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a028931d577d4edd9ffa86bb83f8791, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debugLogging: 1
+  maxRetries: 5
+  retryDelay: 0.5
 --- !u!4 &1802490352
 Transform:
   m_ObjectHideFlags: 0

@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
+  m_Name: GeneratedScenario3
+  m_EditorClassIdentifier: 
+  scenarioName: Generated Scenario
+  description: Procedurally generated scenario with 6 regions and 2 nations.
+  turnLimit: 15
+  regionStartConditions:
+  - regionId: Region_2_1
+    regionName: Forest Hills
+    initialWealth: 244
+    initialProduction: 31
+    initialInfrastructureLevel: 11.95158
+    initialPopulation: 614
+    initialSatisfaction: 0.55051935
+  - regionId: Region_0_0
+    regionName: Old Oak
+    initialWealth: 183
+    initialProduction: 40
+    initialInfrastructureLevel: 13.662847
+    initialPopulation: 1872
+    initialSatisfaction: 0.7329953
+  - regionId: Region_0_2
+    regionName: StoneCape
+    initialWealth: 154
+    initialProduction: 43
+    initialInfrastructureLevel: 6.05183
+    initialPopulation: 534
+    initialSatisfaction: 0.3618588
+  - regionId: Region_1_2
+    regionName: North Cape
+    initialWealth: 138
+    initialProduction: 39
+    initialInfrastructureLevel: 8.706038
+    initialPopulation: 1795
+    initialSatisfaction: 0.56260216
+  - regionId: Region_0_1
+    regionName: New Highlands
+    initialWealth: 137
+    initialProduction: 35
+    initialInfrastructureLevel: 13.909744
+    initialPopulation: 1651
+    initialSatisfaction: 0.5761148
+  - regionId: Region_2_2
+    regionName: North Point
+    initialWealth: 137
+    initialProduction: 70
+    initialInfrastructureLevel: 6.9264317
+    initialPopulation: 534
+    initialSatisfaction: 0.6116352
+  nationStartConditions:
+  - nationId: nation_1
+    nationName: Naradorond
+    controlledRegionIds:
+    - Region_2_1
+    - Region_0_2
+    - Region_0_1
+  - nationId: nation_2
+    nationName: Lorlinion
+    controlledRegionIds:
+    - Region_0_0
+    - Region_1_2
+    - Region_2_2
+  victoryCondition:
+    type: 0
+    targetRegionId: 
+    requiredWealth: 656
+    requiredInfrastructure: 20
+    requiredSatisfaction: 0.8
+    requiredConsecutiveTurns: 2
