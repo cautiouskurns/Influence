@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
+  m_Name: GeneratedScenario1
+  m_EditorClassIdentifier: 
+  scenarioName: Generated Scenario
+  description: Procedurally generated scenario with 15 regions and 3 nations.
+  turnLimit: 15
+  regionStartConditions:
+  - regionId: region_15
+    regionName: New Lily
+    initialWealth: 235
+    initialProduction: 59
+    initialInfrastructureLevel: 8.283526
+    initialPopulation: 1271
+    initialSatisfaction: 0.4162959
+  - regionId: region_14
+    regionName: Jade Plains
+    initialWealth: 214
+    initialProduction: 49
+    initialInfrastructureLevel: 13.360229
+    initialPopulation: 918
+    initialSatisfaction: 0.54876626
+  - regionId: region_6
+    regionName: Amber Fields
+    initialWealth: 193
+    initialProduction: 58
+    initialInfrastructureLevel: 8.573133
+    initialPopulation: 986
+    initialSatisfaction: 0.34858483
+  - regionId: region_2
+    regionName: Jade Basin
+    initialWealth: 177
+    initialProduction: 57
+    initialInfrastructureLevel: 10.693479
+    initialPopulation: 581
+    initialSatisfaction: 0.4700903
+  - regionId: region_13
+    regionName: East Bear
+    initialWealth: 133
+    initialProduction: 57
+    initialInfrastructureLevel: 5.367503
+    initialPopulation: 1923
+    initialSatisfaction: 0.78386116
+  - regionId: region_8
+    regionName: Lake Fields
+    initialWealth: 132
+    initialProduction: 42
+    initialInfrastructureLevel: 5.7075725
+    initialPopulation: 1407
+    initialSatisfaction: 0.33705878
+  - regionId: region_7
+    regionName: Wolf Point
+    initialWealth: 129
+    initialProduction: 69
+    initialInfrastructureLevel: 13.977216
+    initialPopulation: 1942
+    initialSatisfaction: 0.46150655
+  - regionId: region_5
+    regionName: North Haven
+    initialWealth: 127
+    initialProduction: 68
+    initialInfrastructureLevel: 13.455886
+    initialPopulation: 1921
+    initialSatisfaction: 0.5925396
+  - regionId: region_1
+    regionName: River Lily
+    initialWealth: 123
+    initialProduction: 69
+    initialInfrastructureLevel: 5.5404997
+    initialPopulation: 1605
+    initialSatisfaction: 0.67646396
+  - regionId: region_12
+    regionName: Old Plains
+    initialWealth: 122
+    initialProduction: 65
+    initialInfrastructureLevel: 12.173566
+    initialPopulation: 519
+    initialSatisfaction: 0.56708026
+  - regionId: region_4
+    regionName: North Highlands
+    initialWealth: 116
+    initialProduction: 50
+    initialInfrastructureLevel: 13.665413
+    initialPopulation: 1134
+    initialSatisfaction: 0.4787377
+  - regionId: region_3
+    regionName: Valley Fields
+    initialWealth: 112
+    initialProduction: 40
+    initialInfrastructureLevel: 11.883713
+    initialPopulation: 820
+    initialSatisfaction: 0.7732995
+  - regionId: region_10
+    regionName: Old Highlands
+    initialWealth: 109
+    initialProduction: 74
+    initialInfrastructureLevel: 6.4609704
+    initialPopulation: 1311
+    initialSatisfaction: 0.40901482
+  - regionId: region_9
+    regionName: PineHighlands
+    initialWealth: 107
+    initialProduction: 38
+    initialInfrastructureLevel: 7.2254863
+    initialPopulation: 717
+    initialSatisfaction: 0.6423414
+  - regionId: region_11
+    regionName: BearBasin
+    initialWealth: 100
+    initialProduction: 46
+    initialInfrastructureLevel: 5.770065
+    initialPopulation: 1970
+    initialSatisfaction: 0.49462512
+  nationStartConditions:
+  - nationId: nation_1
+    nationName: Azurpolis
+    controlledRegionIds:
+    - region_15
+    - region_2
+    - region_7
+    - region_12
+    - region_10
+  - nationId: nation_2
+    nationName: Galstan
+    controlledRegionIds:
+    - region_14
+    - region_13
+    - region_5
+    - region_4
+    - region_9
+  - nationId: nation_3
+    nationName: Belnia
+    controlledRegionIds:
+    - region_6
+    - region_8
+    - region_1
+    - region_3
+    - region_11
+  victoryCondition:
+    type: 2
+    targetRegionId: 
+    requiredWealth: 500
+    requiredInfrastructure: 20
+    requiredSatisfaction: 0.94196236
+    requiredConsecutiveTurns: 1

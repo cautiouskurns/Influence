@@ -18,6 +18,12 @@ namespace Scenarios.Editor
         private RegionStartCondition newRegion = new RegionStartCondition();
         private NationStartCondition newNation = new NationStartCondition();
         
+        // Procedural generation fields
+        private bool showProceduralOptions = false;
+        private int proceduralRegionCount = 5;
+        private int proceduralNationCount = 2;
+        private int proceduralSeed = 0;
+        
         [MenuItem("Influence/Test Scenario Editor")]
         public static void ShowWindow()
         {
@@ -38,9 +44,32 @@ namespace Scenarios.Editor
             {
                 EditorGUILayout.HelpBox("Select an existing scenario or create a new one.", MessageType.Info);
                 
-                if (GUILayout.Button("Create New Scenario"))
+                EditorGUILayout.Space(10);
+                EditorGUILayout.LabelField("Create New Scenario", EditorStyles.boldLabel);
+                
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Create Empty Scenario"))
                 {
                     CreateNewScenario();
+                }
+                
+                if (GUILayout.Button("Create Procedural Scenario"))
+                {
+                    CreateProceduralScenario();
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                // Show procedural settings when no scenario is selected
+                EditorGUILayout.Space(10);
+                EditorGUILayout.LabelField("Procedural Generation Settings", EditorStyles.boldLabel);
+                
+                proceduralRegionCount = EditorGUILayout.IntSlider("Region Count", proceduralRegionCount, 1, 30);
+                proceduralNationCount = Mathf.Min(proceduralRegionCount, EditorGUILayout.IntSlider("Nation Count", proceduralNationCount, 1, 10));
+                proceduralSeed = EditorGUILayout.IntField("Random Seed (0 for random)", proceduralSeed);
+                
+                if (GUILayout.Button("Open Full Procedural Generator"))
+                {
+                    ProceduralScenarioWindow.ShowWindow();
                 }
                 
                 EditorGUILayout.EndScrollView();
@@ -57,6 +86,9 @@ namespace Scenarios.Editor
             {
                 EditorUtility.SetDirty(currentScenario);
             }
+
+            // Draw procedural generation options
+            DrawBaseSettingsSection();
             
             // Regions section
             EditorGUILayout.Space(10);
@@ -472,6 +504,82 @@ namespace Scenarios.Editor
                 Debug.Log($"Starting scenario: {currentScenario.name}");
                 manager.StartScenario(currentScenario);
             }
+        }
+
+        private void DrawBaseSettingsSection()
+        {
+            // Add procedural generation fold-out section
+            EditorGUILayout.Space(10);
+            showProceduralOptions = EditorGUILayout.Foldout(showProceduralOptions, "Procedural Generation", true);
+            if (showProceduralOptions)
+            {
+                EditorGUI.indentLevel++;
+                
+                proceduralRegionCount = EditorGUILayout.IntSlider("Region Count", proceduralRegionCount, 1, 30);
+                proceduralNationCount = Mathf.Min(proceduralRegionCount, EditorGUILayout.IntSlider("Nation Count", proceduralNationCount, 1, 10));
+                proceduralSeed = EditorGUILayout.IntField("Random Seed (0 for random)", proceduralSeed);
+                
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Add Procedural Content"))
+                {
+                    if (currentScenario != null)
+                    {
+                        Undo.RecordObject(currentScenario, "Add Procedural Content");
+                        currentScenario.AddProceduralContent(proceduralRegionCount, proceduralNationCount);
+                        EditorUtility.SetDirty(currentScenario);
+                    }
+                }
+                if (GUILayout.Button("Replace with Procedural"))
+                {
+                    if (currentScenario != null && 
+                        EditorUtility.DisplayDialog("Replace Content?", 
+                            "This will replace all existing regions and nations with procedurally generated ones. Continue?", 
+                            "Replace", "Cancel"))
+                    {
+                        Undo.RecordObject(currentScenario, "Replace with Procedural Content");
+                        currentScenario.AddProceduralContent(proceduralRegionCount, proceduralNationCount, true);
+                        EditorUtility.SetDirty(currentScenario);
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+                
+                if (GUILayout.Button("Open Full Procedural Generator"))
+                {
+                    ProceduralScenarioWindow.ShowWindow();
+                }
+                
+                EditorGUI.indentLevel--;
+            }
+        }
+
+        private void CreateProceduralScenario()
+        {
+            string path = EditorUtility.SaveFilePanelInProject(
+                "Create New Procedural Scenario",
+                "NewProceduralScenario",
+                "asset",
+                "Create a new procedural scenario asset"
+            );
+
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            TestScenario newScenario = CreateInstance<TestScenario>();
+            newScenario.scenarioName = "New Procedural Scenario";
+            newScenario.description = "Description of the procedural scenario";
+            newScenario.turnLimit = 10;
+            newScenario.victoryCondition = new VictoryCondition();
+            newScenario.regionStartConditions = new List<RegionStartCondition>();
+            newScenario.nationStartConditions = new List<NationStartCondition>();
+
+            newScenario.AddProceduralContent(proceduralRegionCount, proceduralNationCount);
+
+            AssetDatabase.CreateAsset(newScenario, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            currentScenario = newScenario;
+            Debug.Log($"Created new procedural scenario at {path}");
         }
     }
 }
