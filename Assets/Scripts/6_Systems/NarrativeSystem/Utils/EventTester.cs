@@ -2,38 +2,41 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class EventTester : MonoBehaviour
+namespace NarrativeSystem
 {
-    [Header("Debug Controls")]
-    [SerializeField] private KeyCode triggerRandomEventKey = KeyCode.E;
-    [SerializeField] private KeyCode resetEventsKey = KeyCode.R;
-    
-    private EventManager eventManager;
-    
-    private void Start()
+    public class EventTester : MonoBehaviour
     {
-        eventManager = EventManager.Instance;
-        Debug.Log("Event Tester loaded. Press 'E' to trigger a random event, 'R' to reset all events.");
-        Debug.Log("When an event appears, press 1, 2, or 3 to select options.");
-    }
-    
-    private void Update()
-    {
-        // Trigger a random event
-        if (Input.GetKeyDown(triggerRandomEventKey))
+        [Header("Debug Controls")]
+        [SerializeField] private KeyCode triggerRandomEventKey = KeyCode.E;
+        [SerializeField] private KeyCode resetEventsKey = KeyCode.R;
+        
+        private EventManager eventManager;
+        
+        private void Start()
         {
-            if (eventManager != null)
-            {
-                eventManager.TriggerRandomEvent();
-            }
+            eventManager = EventManager.Instance;
+            Debug.Log("Event Tester loaded. Press 'E' to trigger a random event, 'R' to reset all events.");
+            Debug.Log("When an event appears, press 1, 2, or 3 to select options.");
         }
         
-        // Reset all events
-        if (Input.GetKeyDown(resetEventsKey))
+        private void Update()
         {
-            if (eventManager != null)
+            // Trigger a random event
+            if (Input.GetKeyDown(triggerRandomEventKey))
             {
-                eventManager.ResetAllEvents();
+                if (eventManager != null)
+                {
+                    eventManager.TriggerRandomEvent();
+                }
+            }
+            
+            // Reset all events
+            if (Input.GetKeyDown(resetEventsKey))
+            {
+                if (eventManager != null)
+                {
+                    eventManager.ResetAllEvents();
+                }
             }
         }
     }

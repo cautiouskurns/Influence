@@ -8,630 +8,89 @@ using Core;
 using Managers;
 using UI;
 
-public class EventManager : MonoBehaviour
+namespace NarrativeSystem
 {
-    #region Singleton
-    private static EventManager _instance;
-    
-    public static EventManager Instance
+    public class EventManager : MonoBehaviour
     {
-        get
+        #region Singleton
+        private static EventManager _instance;
+        
+        public static EventManager Instance
         {
-            if (_instance == null)
+            get
             {
-                _instance = FindFirstObjectByType<EventManager>();
-                
                 if (_instance == null)
                 {
-                    GameObject go = new GameObject("EventManager");
-                    _instance = go.AddComponent<EventManager>();
+                    _instance = FindFirstObjectByType<EventManager>();
+                    
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("EventManager");
+                        _instance = go.AddComponent<EventManager>();
+                    }
                 }
+                
+                return _instance;
+            }
+        }
+        #endregion
+        
+        [Header("Event Settings")]
+        [SerializeField] private List<GameEvent> availableEvents = new List<GameEvent>();
+        [SerializeField] private float checkInterval = 2.0f;
+        
+        [Header("UI References")]
+        [Tooltip("Drag your DialogueUI GameObject with DialogueView component here")]
+        [SerializeField] public DialogueView dialogueView;
+        
+        [Header("Debug")]
+        [SerializeField] private bool showDebugLogs = true;
+        [SerializeField] private KeyCode option1Key = KeyCode.Alpha1;
+        [SerializeField] private KeyCode option2Key = KeyCode.Alpha2;
+        [SerializeField] private KeyCode option3Key = KeyCode.Alpha3;
+        [SerializeField] private bool useJsonEvents = true;
+        
+        // Core system references
+        private EconomicSystem economicSystem;
+        private GameManager gameManager;
+        
+        // Event handling
+        private Queue<GameEvent> pendingEvents = new Queue<GameEvent>();
+        private GameEvent currentEvent;
+        private float checkTimer = 0f;
+        
+        private void Awake()
+        {
+            // Singleton setup
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
             }
             
-            return _instance;
-        }
-    }
-    #endregion
-    
-    [Header("Event Settings")]
-    [SerializeField] private List<GameEvent> availableEvents = new List<GameEvent>();
-    [SerializeField] private float checkInterval = 2.0f;
-    
-    [Header("UI References")]
-    [Tooltip("Drag your DialogueUI GameObject with DialogueView component here")]
-    [SerializeField] public DialogueView dialogueView;
-    
-    [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = true;
-    [SerializeField] private KeyCode option1Key = KeyCode.Alpha1;
-    [SerializeField] private KeyCode option2Key = KeyCode.Alpha2;
-    [SerializeField] private KeyCode option3Key = KeyCode.Alpha3;
-    [SerializeField] private bool useJsonEvents = true;
-    
-    // Core system references
-    private EconomicSystem economicSystem;
-    private GameManager gameManager;
-    
-    // Event handling
-    private Queue<GameEvent> pendingEvents = new Queue<GameEvent>();
-    private GameEvent currentEvent;
-    private float checkTimer = 0f;
-    
-    private void Awake()
-    {
-        // Singleton setup
-        if (_instance != null && _instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        _instance = this;
-        
-        // Find references
-        economicSystem = FindFirstObjectByType<EconomicSystem>();
-        gameManager = GameManager.Instance;
-        
-        // Find DialogueView if not set
-        if (dialogueView == null)
-        {
-            dialogueView = FindFirstObjectByType<DialogueView>();
+            _instance = this;
+            
+            // Find references
+            economicSystem = FindFirstObjectByType<EconomicSystem>();
+            gameManager = GameManager.Instance;
+            
+            // Find DialogueView if not set
             if (dialogueView == null)
             {
-                Debug.LogWarning("DialogueView not found! Please create one using DialoguePrefabSetup.");
-            }
-        }
-        
-        // Load events from JSON if selected
-        if (useJsonEvents)
-        {
-            LoadEventsFromJson();
-        }
-        
-        // Create sample events if we don't have any after attempting to load
-        if (availableEvents.Count == 0)
-        {
-            CreateSampleEvents();
-            
-            // Optional: Save the sample events to JSON for future editing
-            if (useJsonEvents)
-            {
-                SaveEventsToJson();
-            }
-        }
-    }
-    
-    private void OnEnable()
-    {
-        EventBus.Subscribe("EconomicTick", OnEconomicTick);
-        
-        // Subscribe to dialogue response event
-        if (dialogueView != null)
-        {
-            dialogueView.OnResponseSelected += HandleDialogueResponse;
-        }
-    }
-    
-    private void OnDisable()
-    {
-        EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
-        
-        // Unsubscribe from dialogue response event
-        if (dialogueView != null)
-        {
-            dialogueView.OnResponseSelected -= HandleDialogueResponse;
-        }
-    }
-    
-    private void Update()
-    {
-        // Regular checking for new events
-        checkTimer += Time.deltaTime;
-        if (checkTimer >= checkInterval)
-        {
-            CheckForEvents();
-            checkTimer = 0f;
-        }
-        
-        // Handle key presses for choices
-        if (currentEvent != null)
-        {
-            if (Input.GetKeyDown(option1Key) && currentEvent.choices.Count >= 1)
-            {
-                ProcessChoice(0);
-            }
-            else if (Input.GetKeyDown(option2Key) && currentEvent.choices.Count >= 2)
-            {
-                ProcessChoice(1);
-            }
-            else if (Input.GetKeyDown(option3Key) && currentEvent.choices.Count >= 3)
-            {
-                ProcessChoice(2);
-            }
-        }
-    }
-    
-    // Load events from JSON file
-    private void LoadEventsFromJson()
-    {
-        List<GameEvent> loadedEvents = EventLoader.LoadEventsFromJSON();
-        
-        if (loadedEvents.Count > 0)
-        {
-            availableEvents = loadedEvents;
-            
-            if (showDebugLogs)
-            {
-                Debug.Log($"Loaded {loadedEvents.Count} events from JSON");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("No events loaded from JSON, will use sample events instead");
-        }
-    }
-    
-    // Save current events to JSON file
-    private void SaveEventsToJson()
-    {
-        if (availableEvents.Count > 0)
-        {
-            EventLoader.SaveEventsToJSON(availableEvents);
-            
-            if (showDebugLogs)
-            {
-                Debug.Log($"Saved {availableEvents.Count} events to JSON");
-            }
-        }
-    }
-    
-    private void OnEconomicTick(object data)
-    {
-        CheckForEvents();
-    }
-    
-    public void CheckForEvents()
-    {
-        if (economicSystem == null) return;
-        
-        // Get a random region to check (for simplicity)
-        List<string> regionIds = economicSystem.GetAllRegionIds();
-        if (regionIds.Count == 0) return;
-        
-        string randomRegionId = regionIds[Random.Range(0, regionIds.Count)];
-        RegionEntity region = economicSystem.GetRegion(randomRegionId);
-        
-        // Check all events
-        foreach (GameEvent evt in availableEvents)
-        {
-            if (!evt.hasTriggered && evt.IsConditionMet(economicSystem, region))
-            {
-                QueueEvent(evt);
-                evt.hasTriggered = true;
-                
-                if (showDebugLogs)
+                dialogueView = FindFirstObjectByType<DialogueView>();
+                if (dialogueView == null)
                 {
-                    Debug.Log($"Event triggered: {evt.title} (ID: {evt.id})");
+                    Debug.LogWarning("DialogueView not found! Please create one using DialoguePrefabSetup.");
                 }
             }
-        }
-        
-        // Display pending event if none is active
-        if (currentEvent == null && pendingEvents.Count > 0)
-        {
-            DisplayNextEvent();
-        }
-    }
-    
-    private void QueueEvent(GameEvent evt)
-    {
-        pendingEvents.Enqueue(evt);
-    }
-    
-    private void DisplayNextEvent()
-    {
-        if (pendingEvents.Count == 0) return;
-        
-        currentEvent = pendingEvents.Dequeue();
-        
-        // Pause the game when an event is displayed
-        if (gameManager != null)
-        {
-            gameManager.PauseSimulation();
-            Debug.Log("Game paused due to event");
-        }
-        
-        // If we have a DialogueView, use it to display the event
-        if (dialogueView != null)
-        {
-            // Convert event choices to string list and effects list for DialogueView
-            List<string> choiceTexts = new List<string>();
-            List<DialogueView.ResponseEffects> choiceEffects = new List<DialogueView.ResponseEffects>();
             
-            foreach (EventChoice choice in currentEvent.choices)
-            {
-                choiceTexts.Add(choice.text);
-                
-                // Create a response effects object for each choice
-                DialogueView.ResponseEffects effects = new DialogueView.ResponseEffects
-                {
-                    wealthEffect = choice.wealthEffect,
-                    productionEffect = choice.productionEffect,
-                    laborEffect = choice.laborEffect
-                };
-                
-                choiceEffects.Add(effects);
-            }
-            
-            // Show the dialogue with effects
-            dialogueView.ShowDialogueWithEffects(
-                currentEvent.id,
-                currentEvent.title,
-                currentEvent.description,
-                choiceTexts,
-                choiceEffects
-            );
-            
-            if (showDebugLogs)
-            {
-                Debug.Log($"Displaying event in UI with effects: {currentEvent.title}");
-            }
-        }
-        else
-        {
-            // Fallback to console display if DialogueView is not available
-            Debug.Log("=================================");
-            Debug.Log($"EVENT: {currentEvent.title}");
-            Debug.Log($"{currentEvent.description}");
-            Debug.Log("---------------------------------");
-            
-            // Print choices with effects
-            for (int i = 0; i < currentEvent.choices.Count; i++)
-            {
-                EventChoice choice = currentEvent.choices[i];
-                string effectsText = "";
-                
-                if (choice.wealthEffect != 0)
-                    effectsText += $" Wealth: {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect}";
-                
-                if (choice.productionEffect != 0)
-                    effectsText += $" Production: {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect}";
-                
-                if (choice.laborEffect != 0)
-                    effectsText += $" Labor: {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect}";
-                
-                Debug.Log($"[{i + 1}] {choice.text} ({effectsText})");
-            }
-            
-            Debug.Log("=================================");
-            Debug.Log("Press the corresponding number key to select an option");
-        }
-    }
-    
-    // New method to handle response from DialogueView
-    private void HandleDialogueResponse(string eventId, int choiceIndex)
-    {
-        // Verify this is the current event
-        if (currentEvent != null && currentEvent.id == eventId)
-        {
-            ProcessChoice(choiceIndex);
-        }
-    }
-    
-    public void ProcessChoice(int choiceIndex)
-    {
-        if (currentEvent == null || choiceIndex < 0 || choiceIndex >= currentEvent.choices.Count)
-        {
-            return;
-        }
-        
-        EventChoice choice = currentEvent.choices[choiceIndex];
-        
-        // Show the result
-        if (showDebugLogs)
-        {
-            Debug.Log("=================================");
-            Debug.Log($"RESULT: {choice.result}");
-        }
-        
-        // Apply effects
-        if (economicSystem != null)
-        {
-            List<string> regionIds = economicSystem.GetAllRegionIds();
-            if (regionIds.Count > 0)
-            {
-                string regionId = regionIds[Random.Range(0, regionIds.Count)];
-                RegionEntity region = economicSystem.GetRegion(regionId);
-                
-                if (region != null)
-                {
-                    // Apply wealth effect
-                    if (choice.wealthEffect != 0)
-                    {
-                        region.Wealth += choice.wealthEffect;
-                        if (showDebugLogs)
-                        {
-                            Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Wealth})");
-                        }
-                    }
-                    
-                    // Apply production effect
-                    if (choice.productionEffect != 0)
-                    {
-                        region.Production += choice.productionEffect;
-                        if (showDebugLogs)
-                        {
-                            Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.Production})");
-                        }
-                    }
-                    
-                    // Apply labor effect
-                    if (choice.laborEffect != 0)
-                    {
-                        region.LaborAvailable += choice.laborEffect;
-                        if (showDebugLogs)
-                        {
-                            Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.LaborAvailable})");
-                        }
-                    }
-                    
-                    // Update the region in the economic system
-                    economicSystem.UpdateRegion(region);
-                }
-            }
-        }
-        
-        if (showDebugLogs)
-        {
-            Debug.Log("=================================");
-        }
-        
-        // Check for next event
-        string nextEventId = choice.nextEventId;
-        currentEvent = null;
-        
-        // If there's a next event, try to find and queue it
-        if (!string.IsNullOrEmpty(nextEventId))
-        {
-            GameEvent nextEvent = availableEvents.Find(e => e.id == nextEventId);
-            if (nextEvent != null)
-            {
-                nextEvent.hasTriggered = false;  // Reset so it can trigger again
-                QueueEvent(nextEvent);
-                DisplayNextEvent();
-            }
-            else
-            {
-                // If no next event found, resume the simulation
-                ResumeSimulationIfNoEvents();
-            }
-        }
-        else if (pendingEvents.Count > 0)
-        {
-            // If there are other pending events, show the next one
-            DisplayNextEvent();
-        }
-        else
-        {
-            // If no more events, resume the simulation
-            ResumeSimulationIfNoEvents();
-        }
-    }
-
-    // Helper method to resume the simulation if there are no pending events
-    private void ResumeSimulationIfNoEvents()
-    {
-        if (pendingEvents.Count == 0 && currentEvent == null && gameManager != null)
-        {
-            gameManager.ResumeSimulation();
-            if (showDebugLogs)
-            {
-                Debug.Log("No more events, resuming simulation");
-            }
-        }
-    }
-    
-    private void CreateSampleEvents()
-    {
-        // Event 1: Resource Shortage (triggers when production is below 80)
-        GameEvent resourceEvent = new GameEvent
-        {
-            id = "resource_shortage",
-            title = "Resource Shortage",
-            description = "Your economic advisor reports a serious shortage of essential resources.",
-            conditionType = ConditionType.MaximumProduction,
-            conditionValue = 80f
-        };
-        
-        // Add choices
-        resourceEvent.choices.Add(new EventChoice
-        {
-            text = "Import resources from neighboring regions",
-            result = "You negotiate favorable import terms with neighboring regions.",
-            wealthEffect = -500,
-            productionEffect = 20,
-            nextEventId = "economic_reform"
-        });
-        
-        resourceEvent.choices.Add(new EventChoice
-        {
-            text = "Divert labor to resource extraction",
-            result = "You order an emergency reallocation of labor to increase resource production.",
-            wealthEffect = -10,
-            productionEffect = 15,
-            laborEffect = -5
-        });
-        
-        resourceEvent.choices.Add(new EventChoice
-        {
-            text = "Do nothing and hope the market resolves the shortage",
-            result = "You decide to let market forces handle the shortage naturally.",
-            wealthEffect = -20,
-            productionEffect = -10
-        });
-        
-        availableEvents.Add(resourceEvent);
-        
-        // Event 2: Economic Reform (triggers on turn 5)
-        GameEvent economicEvent = new GameEvent
-        {
-            id = "economic_reform",
-            title = "Economic Reform Proposal",
-            description = "Your finance minister has presented a series of possible economic reforms aimed at increasing long-term growth.",
-            conditionType = ConditionType.TurnNumber,
-            conditionValue = 5f
-        };
-        
-        // Add choices
-        economicEvent.choices.Add(new EventChoice
-        {
-            text = "Implement market liberalization reforms",
-            result = "You begin a program of market liberalization, reducing regulations and trade barriers.",
-            wealthEffect = 30,
-            productionEffect = 15,
-            laborEffect = -5
-        });
-        
-        economicEvent.choices.Add(new EventChoice
-        {
-            text = "Focus on industrial modernization",
-            result = "You invest heavily in modernizing industrial infrastructure and production methods.",
-            wealthEffect = -80,
-            productionEffect = 50,
-            laborEffect = 10
-        });
-        
-        economicEvent.choices.Add(new EventChoice
-        {
-            text = "Implement worker protection and welfare programs",
-            result = "You strengthen worker protections and expand social safety nets.",
-            wealthEffect = -60,
-            productionEffect = -10,
-            laborEffect = 20
-        });
-        
-        availableEvents.Add(economicEvent);
-        
-        // Event 3: Population Growth (triggers when wealth exceeds 500)
-        GameEvent populationEvent = new GameEvent
-        {
-            id = "population_growth",
-            title = "Population Boom",
-            description = "Your region's prosperity has attracted many new residents seeking opportunities.",
-            conditionType = ConditionType.MinimumWealth,
-            conditionValue = 500f
-        };
-        
-        // Add choices
-        populationEvent.choices.Add(new EventChoice
-        {
-            text = "Expand housing and infrastructure",
-            result = "You invest in new housing developments and infrastructure to accommodate growth.",
-            wealthEffect = -100,
-            productionEffect = 10,
-            laborEffect = 30
-        });
-        
-        populationEvent.choices.Add(new EventChoice
-        {
-            text = "Implement strict migration controls",
-            result = "You establish controls to limit the influx of new residents.",
-            wealthEffect = -20,
-            productionEffect = -5,
-            laborEffect = 5
-        });
-        
-        populationEvent.choices.Add(new EventChoice
-        {
-            text = "Let existing systems handle the growth",
-            result = "You allow existing systems to adapt to the population changes.",
-            wealthEffect = 0,
-            productionEffect = 0,
-            laborEffect = 15
-        });
-        
-        availableEvents.Add(populationEvent);
-    }
-    
-    // Public methods for manual testing
-    
-    public void TriggerRandomEvent()
-    {
-        if (availableEvents.Count == 0) return;
-        
-        int index = Random.Range(0, availableEvents.Count);
-        GameEvent randomEvent = availableEvents[index];
-        randomEvent.hasTriggered = false;
-        
-        Debug.Log($"Manually triggering random event: {randomEvent.title}");
-        QueueEvent(randomEvent);
-        
-        if (currentEvent == null)
-        {
-            DisplayNextEvent();
-        }
-    }
-    
-    public void ResetAllEvents()
-    {
-        foreach (var evt in availableEvents)
-        {
-            evt.hasTriggered = false;
-        }
-        
-        pendingEvents.Clear();
-        currentEvent = null;
-        
-        Debug.Log("All events have been reset.");
-    }
-    
-    #if UNITY_EDITOR
-    // Editor-only method to save events to JSON
-    public void SaveCurrentEventsToJson()
-    {
-        SaveEventsToJson();
-    }
-    #endif
-
-    #region Debug API
-    
-    /// <summary>
-    /// Get a copy of all available events for debugging
-    /// </summary>
-    public List<GameEvent> GetAvailableEvents()
-    {
-        return new List<GameEvent>(availableEvents);
-    }
-    
-    /// <summary>
-    /// Check if JSON events are being used
-    /// </summary>
-    public bool GetUseJsonEvents()
-    {
-        return useJsonEvents;
-    }
-    
-    /// <summary>
-    /// Set whether to use JSON events or hardcoded events
-    /// </summary>
-    public void SetUseJsonEvents(bool value)
-    {
-        if (value != useJsonEvents)
-        {
-            useJsonEvents = value;
-            
-            // Clear all events
-            availableEvents.Clear();
-            pendingEvents.Clear();
-            currentEvent = null;
-            
-            // Load appropriate events
+            // Load events from JSON if selected
             if (useJsonEvents)
             {
                 LoadEventsFromJson();
             }
             
-            // If we have no events after attempting to load, create sample events
+            // Create sample events if we don't have any after attempting to load
             if (availableEvents.Count == 0)
             {
                 CreateSampleEvents();
@@ -642,42 +101,586 @@ public class EventManager : MonoBehaviour
                     SaveEventsToJson();
                 }
             }
+        }
+        
+        private void OnEnable()
+        {
+            EventBus.Subscribe("EconomicTick", OnEconomicTick);
+            
+            // Subscribe to dialogue response event
+            if (dialogueView != null)
+            {
+                dialogueView.OnResponseSelected += HandleDialogueResponse;
+            }
+        }
+        
+        private void OnDisable()
+        {
+            EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
+            
+            // Unsubscribe from dialogue response event
+            if (dialogueView != null)
+            {
+                dialogueView.OnResponseSelected -= HandleDialogueResponse;
+            }
+        }
+        
+        private void Update()
+        {
+            // Regular checking for new events
+            checkTimer += Time.deltaTime;
+            if (checkTimer >= checkInterval)
+            {
+                CheckForEvents();
+                checkTimer = 0f;
+            }
+            
+            // Handle key presses for choices
+            if (currentEvent != null)
+            {
+                if (Input.GetKeyDown(option1Key) && currentEvent.choices.Count >= 1)
+                {
+                    ProcessChoice(0);
+                }
+                else if (Input.GetKeyDown(option2Key) && currentEvent.choices.Count >= 2)
+                {
+                    ProcessChoice(1);
+                }
+                else if (Input.GetKeyDown(option3Key) && currentEvent.choices.Count >= 3)
+                {
+                    ProcessChoice(2);
+                }
+            }
+        }
+        
+        // Load events from JSON file
+        private void LoadEventsFromJson()
+        {
+            List<GameEvent> loadedEvents = EventLoader.LoadEventsFromJSON();
+            
+            if (loadedEvents.Count > 0)
+            {
+                availableEvents = loadedEvents;
+                
+                if (showDebugLogs)
+                {
+                    Debug.Log($"Loaded {loadedEvents.Count} events from JSON");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No events loaded from JSON, will use sample events instead");
+            }
+        }
+        
+        // Save current events to JSON file
+        private void SaveEventsToJson()
+        {
+            if (availableEvents.Count > 0)
+            {
+                EventLoader.SaveEventsToJSON(availableEvents);
+                
+                if (showDebugLogs)
+                {
+                    Debug.Log($"Saved {availableEvents.Count} events to JSON");
+                }
+            }
+        }
+        
+        private void OnEconomicTick(object data)
+        {
+            CheckForEvents();
+        }
+        
+        public void CheckForEvents()
+        {
+            if (economicSystem == null) return;
+            
+            // Get a random region to check (for simplicity)
+            List<string> regionIds = economicSystem.GetAllRegionIds();
+            if (regionIds.Count == 0) return;
+            
+            string randomRegionId = regionIds[Random.Range(0, regionIds.Count)];
+            RegionEntity region = economicSystem.GetRegion(randomRegionId);
+            
+            // Check all events
+            foreach (GameEvent evt in availableEvents)
+            {
+                if (!evt.hasTriggered && evt.IsConditionMet(economicSystem, region))
+                {
+                    QueueEvent(evt);
+                    evt.hasTriggered = true;
+                    
+                    if (showDebugLogs)
+                    {
+                        Debug.Log($"Event triggered: {evt.title} (ID: {evt.id})");
+                    }
+                }
+            }
+            
+            // Display pending event if none is active
+            if (currentEvent == null && pendingEvents.Count > 0)
+            {
+                DisplayNextEvent();
+            }
+        }
+        
+        private void QueueEvent(GameEvent evt)
+        {
+            pendingEvents.Enqueue(evt);
+        }
+        
+        private void DisplayNextEvent()
+        {
+            if (pendingEvents.Count == 0) return;
+            
+            currentEvent = pendingEvents.Dequeue();
+            
+            // Pause the game when an event is displayed
+            if (gameManager != null)
+            {
+                gameManager.PauseSimulation();
+                Debug.Log("Game paused due to event");
+            }
+            
+            // If we have a DialogueView, use it to display the event
+            if (dialogueView != null)
+            {
+                // Convert event choices to string list and effects list for DialogueView
+                List<string> choiceTexts = new List<string>();
+                List<DialogueView.ResponseEffects> choiceEffects = new List<DialogueView.ResponseEffects>();
+                
+                foreach (EventChoice choice in currentEvent.choices)
+                {
+                    choiceTexts.Add(choice.text);
+                    
+                    // Create a response effects object for each choice
+                    DialogueView.ResponseEffects effects = new DialogueView.ResponseEffects
+                    {
+                        wealthEffect = choice.wealthEffect,
+                        productionEffect = choice.productionEffect,
+                        laborEffect = choice.laborEffect
+                    };
+                    
+                    choiceEffects.Add(effects);
+                }
+                
+                // Show the dialogue with effects
+                dialogueView.ShowDialogueWithEffects(
+                    currentEvent.id,
+                    currentEvent.title,
+                    currentEvent.description,
+                    choiceTexts,
+                    choiceEffects
+                );
+                
+                if (showDebugLogs)
+                {
+                    Debug.Log($"Displaying event in UI with effects: {currentEvent.title}");
+                }
+            }
+            else
+            {
+                // Fallback to console display if DialogueView is not available
+                Debug.Log("=================================");
+                Debug.Log($"EVENT: {currentEvent.title}");
+                Debug.Log($"{currentEvent.description}");
+                Debug.Log("---------------------------------");
+                
+                // Print choices with effects
+                for (int i = 0; i < currentEvent.choices.Count; i++)
+                {
+                    EventChoice choice = currentEvent.choices[i];
+                    string effectsText = "";
+                    
+                    if (choice.wealthEffect != 0)
+                        effectsText += $" Wealth: {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect}";
+                    
+                    if (choice.productionEffect != 0)
+                        effectsText += $" Production: {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect}";
+                    
+                    if (choice.laborEffect != 0)
+                        effectsText += $" Labor: {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect}";
+                    
+                    Debug.Log($"[{i + 1}] {choice.text} ({effectsText})");
+                }
+                
+                Debug.Log("=================================");
+                Debug.Log("Press the corresponding number key to select an option");
+            }
+        }
+        
+        // New method to handle response from DialogueView
+        private void HandleDialogueResponse(string eventId, int choiceIndex)
+        {
+            // Verify this is the current event
+            if (currentEvent != null && currentEvent.id == eventId)
+            {
+                ProcessChoice(choiceIndex);
+            }
+        }
+        
+        public void ProcessChoice(int choiceIndex)
+        {
+            if (currentEvent == null || choiceIndex < 0 || choiceIndex >= currentEvent.choices.Count)
+            {
+                return;
+            }
+            
+            EventChoice choice = currentEvent.choices[choiceIndex];
+            
+            // Show the result
+            if (showDebugLogs)
+            {
+                Debug.Log("=================================");
+                Debug.Log($"RESULT: {choice.result}");
+            }
+            
+            // Apply effects
+            if (economicSystem != null)
+            {
+                List<string> regionIds = economicSystem.GetAllRegionIds();
+                if (regionIds.Count > 0)
+                {
+                    string regionId = regionIds[Random.Range(0, regionIds.Count)];
+                    RegionEntity region = economicSystem.GetRegion(regionId);
+                    
+                    if (region != null)
+                    {
+                        // Apply wealth effect
+                        if (choice.wealthEffect != 0)
+                        {
+                            region.Wealth += choice.wealthEffect;
+                            if (showDebugLogs)
+                            {
+                                Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Wealth})");
+                            }
+                        }
+                        
+                        // Apply production effect
+                        if (choice.productionEffect != 0)
+                        {
+                            region.Production += choice.productionEffect;
+                            if (showDebugLogs)
+                            {
+                                Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.Production})");
+                            }
+                        }
+                        
+                        // Apply labor effect
+                        if (choice.laborEffect != 0)
+                        {
+                            region.LaborAvailable += choice.laborEffect;
+                            if (showDebugLogs)
+                            {
+                                Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.LaborAvailable})");
+                            }
+                        }
+                        
+                        // Update the region in the economic system
+                        economicSystem.UpdateRegion(region);
+                    }
+                }
+            }
             
             if (showDebugLogs)
             {
-                Debug.Log($"Switched to {(useJsonEvents ? "JSON" : "hardcoded")} events. {availableEvents.Count} events loaded.");
+                Debug.Log("=================================");
+            }
+            
+            // Check for next event
+            string nextEventId = choice.nextEventId;
+            currentEvent = null;
+            
+            // If there's a next event, try to find and queue it
+            if (!string.IsNullOrEmpty(nextEventId))
+            {
+                GameEvent nextEvent = availableEvents.Find(e => e.id == nextEventId);
+                if (nextEvent != null)
+                {
+                    nextEvent.hasTriggered = false;  // Reset so it can trigger again
+                    QueueEvent(nextEvent);
+                    DisplayNextEvent();
+                }
+                else
+                {
+                    // If no next event found, resume the simulation
+                    ResumeSimulationIfNoEvents();
+                }
+            }
+            else if (pendingEvents.Count > 0)
+            {
+                // If there are other pending events, show the next one
+                DisplayNextEvent();
+            }
+            else
+            {
+                // If no more events, resume the simulation
+                ResumeSimulationIfNoEvents();
             }
         }
-    }
-    
-    /// <summary>
-    /// Trigger a specific event for testing
-    /// </summary>
-    public void TriggerSpecificEvent(GameEvent evt)
-    {
-        if (evt == null) return;
-        
-        // Reset the event's triggered state to make sure it can be displayed
-        evt.hasTriggered = false;
-        
-        // If another event is active, clear it to make way for the debug event
-        if (currentEvent != null)
+
+        // Helper method to resume the simulation if there are no pending events
+        private void ResumeSimulationIfNoEvents()
         {
-            Debug.Log($"Canceling current event to display debug event: {evt.title}");
+            if (pendingEvents.Count == 0 && currentEvent == null && gameManager != null)
+            {
+                gameManager.ResumeSimulation();
+                if (showDebugLogs)
+                {
+                    Debug.Log("No more events, resuming simulation");
+                }
+            }
+        }
+        
+        private void CreateSampleEvents()
+        {
+            // Event 1: Resource Shortage (triggers when production is below 80)
+            GameEvent resourceEvent = new GameEvent
+            {
+                id = "resource_shortage",
+                title = "Resource Shortage",
+                description = "Your economic advisor reports a serious shortage of essential resources.",
+                conditionType = ConditionType.MaximumProduction,
+                conditionValue = 80f
+            };
+            
+            // Add choices
+            resourceEvent.choices.Add(new EventChoice
+            {
+                text = "Import resources from neighboring regions",
+                result = "You negotiate favorable import terms with neighboring regions.",
+                wealthEffect = -500,
+                productionEffect = 20,
+                nextEventId = "economic_reform"
+            });
+            
+            resourceEvent.choices.Add(new EventChoice
+            {
+                text = "Divert labor to resource extraction",
+                result = "You order an emergency reallocation of labor to increase resource production.",
+                wealthEffect = -10,
+                productionEffect = 15,
+                laborEffect = -5
+            });
+            
+            resourceEvent.choices.Add(new EventChoice
+            {
+                text = "Do nothing and hope the market resolves the shortage",
+                result = "You decide to let market forces handle the shortage naturally.",
+                wealthEffect = -20,
+                productionEffect = -10
+            });
+            
+            availableEvents.Add(resourceEvent);
+            
+            // Event 2: Economic Reform (triggers on turn 5)
+            GameEvent economicEvent = new GameEvent
+            {
+                id = "economic_reform",
+                title = "Economic Reform Proposal",
+                description = "Your finance minister has presented a series of possible economic reforms aimed at increasing long-term growth.",
+                conditionType = ConditionType.TurnNumber,
+                conditionValue = 5f
+            };
+            
+            // Add choices
+            economicEvent.choices.Add(new EventChoice
+            {
+                text = "Implement market liberalization reforms",
+                result = "You begin a program of market liberalization, reducing regulations and trade barriers.",
+                wealthEffect = 30,
+                productionEffect = 15,
+                laborEffect = -5
+            });
+            
+            economicEvent.choices.Add(new EventChoice
+            {
+                text = "Focus on industrial modernization",
+                result = "You invest heavily in modernizing industrial infrastructure and production methods.",
+                wealthEffect = -80,
+                productionEffect = 50,
+                laborEffect = 10
+            });
+            
+            economicEvent.choices.Add(new EventChoice
+            {
+                text = "Implement worker protection and welfare programs",
+                result = "You strengthen worker protections and expand social safety nets.",
+                wealthEffect = -60,
+                productionEffect = -10,
+                laborEffect = 20
+            });
+            
+            availableEvents.Add(economicEvent);
+            
+            // Event 3: Population Growth (triggers when wealth exceeds 500)
+            GameEvent populationEvent = new GameEvent
+            {
+                id = "population_growth",
+                title = "Population Boom",
+                description = "Your region's prosperity has attracted many new residents seeking opportunities.",
+                conditionType = ConditionType.MinimumWealth,
+                conditionValue = 500f
+            };
+            
+            // Add choices
+            populationEvent.choices.Add(new EventChoice
+            {
+                text = "Expand housing and infrastructure",
+                result = "You invest in new housing developments and infrastructure to accommodate growth.",
+                wealthEffect = -100,
+                productionEffect = 10,
+                laborEffect = 30
+            });
+            
+            populationEvent.choices.Add(new EventChoice
+            {
+                text = "Implement strict migration controls",
+                result = "You establish controls to limit the influx of new residents.",
+                wealthEffect = -20,
+                productionEffect = -5,
+                laborEffect = 5
+            });
+            
+            populationEvent.choices.Add(new EventChoice
+            {
+                text = "Let existing systems handle the growth",
+                result = "You allow existing systems to adapt to the population changes.",
+                wealthEffect = 0,
+                productionEffect = 0,
+                laborEffect = 15
+            });
+            
+            availableEvents.Add(populationEvent);
+        }
+        
+        // Public methods for manual testing
+        
+        public void TriggerRandomEvent()
+        {
+            if (availableEvents.Count == 0) return;
+            
+            int index = Random.Range(0, availableEvents.Count);
+            GameEvent randomEvent = availableEvents[index];
+            randomEvent.hasTriggered = false;
+            
+            Debug.Log($"Manually triggering random event: {randomEvent.title}");
+            QueueEvent(randomEvent);
+            
+            if (currentEvent == null)
+            {
+                DisplayNextEvent();
+            }
+        }
+        
+        public void ResetAllEvents()
+        {
+            foreach (var evt in availableEvents)
+            {
+                evt.hasTriggered = false;
+            }
+            
+            pendingEvents.Clear();
             currentEvent = null;
+            
+            Debug.Log("All events have been reset.");
         }
         
-        // Add to pending events queue
-        QueueEvent(evt);
-        
-        // Force display the event immediately
-        DisplayNextEvent();
-        
-        if (showDebugLogs)
+        #if UNITY_EDITOR
+        // Editor-only method to save events to JSON
+        public void SaveCurrentEventsToJson()
         {
-            Debug.Log($"Manually triggered event: {evt.title} (ID: {evt.id})");
+            SaveEventsToJson();
         }
+        #endif
+
+        #region Debug API
+        
+        /// <summary>
+        /// Get a copy of all available events for debugging
+        /// </summary>
+        public List<GameEvent> GetAvailableEvents()
+        {
+            return new List<GameEvent>(availableEvents);
+        }
+        
+        /// <summary>
+        /// Check if JSON events are being used
+        /// </summary>
+        public bool GetUseJsonEvents()
+        {
+            return useJsonEvents;
+        }
+        
+        /// <summary>
+        /// Set whether to use JSON events or hardcoded events
+        /// </summary>
+        public void SetUseJsonEvents(bool value)
+        {
+            if (value != useJsonEvents)
+            {
+                useJsonEvents = value;
+                
+                // Clear all events
+                availableEvents.Clear();
+                pendingEvents.Clear();
+                currentEvent = null;
+                
+                // Load appropriate events
+                if (useJsonEvents)
+                {
+                    LoadEventsFromJson();
+                }
+                
+                // If we have no events after attempting to load, create sample events
+                if (availableEvents.Count == 0)
+                {
+                    CreateSampleEvents();
+                    
+                    // Optional: Save the sample events to JSON for future editing
+                    if (useJsonEvents)
+                    {
+                        SaveEventsToJson();
+                    }
+                }
+                
+                if (showDebugLogs)
+                {
+                    Debug.Log($"Switched to {(useJsonEvents ? "JSON" : "hardcoded")} events. {availableEvents.Count} events loaded.");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Trigger a specific event for testing
+        /// </summary>
+        public void TriggerSpecificEvent(GameEvent evt)
+        {
+            if (evt == null) return;
+            
+            // Reset the event's triggered state to make sure it can be displayed
+            evt.hasTriggered = false;
+            
+            // If another event is active, clear it to make way for the debug event
+            if (currentEvent != null)
+            {
+                Debug.Log($"Canceling current event to display debug event: {evt.title}");
+                currentEvent = null;
+            }
+            
+            // Add to pending events queue
+            QueueEvent(evt);
+            
+            // Force display the event immediately
+            DisplayNextEvent();
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"Manually triggered event: {evt.title} (ID: {evt.id})");
+            }
+        }
+        
+        #endregion
     }
-    
-    #endregion
 }

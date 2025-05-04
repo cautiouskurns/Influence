@@ -1,6 +1,9 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using Systems;
+using Managers;
+using NarrativeSystem;
 
 namespace UI
 {

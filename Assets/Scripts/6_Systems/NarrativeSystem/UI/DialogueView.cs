@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 
-namespace UI
+namespace NarrativeSystem
 {
     /// <summary>
     /// DialogueView manages the dialogue UI window and handles player interaction with dialogue events

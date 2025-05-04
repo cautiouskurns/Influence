@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using Managers;
+using NarrativeSystem;
 
 #if UNITY_EDITOR
 namespace UI.Editor
