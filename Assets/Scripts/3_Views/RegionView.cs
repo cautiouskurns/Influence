@@ -70,6 +70,14 @@ namespace UI
         }
         
         /// <summary>
+        /// Get the current color of the region
+        /// </summary>
+        public Color GetColor()
+        {
+            return mainRenderer != null ? mainRenderer.color : Color.white;
+        }
+        
+        /// <summary>
         /// Toggle the highlight state
         /// </summary>
         public void SetHighlighted(bool highlighted)

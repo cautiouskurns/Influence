@@ -8,52 +8,197 @@ using Controllers;
 namespace UI.MapComponents
 {
     /// <summary>
+    /// Defines the different visualization modes for region colors on the map
+    /// </summary>
+    public enum RegionColorMode
+    {
+        Default,
+        Position,
+        Wealth,
+        Production,
+        Nation,
+        Terrain
+    }
+
+    /// <summary>
     /// CLASS PURPOSE:
-    /// Calculate colors for map regions based on different visualization modes.
+    /// Centralized service for managing the colors of map regions based on different visualization modes.
     /// 
     /// CORE RESPONSIBILITIES:
     /// - Calculate colors based on economic data (wealth, production)
     /// - Calculate colors based on nation ownership
     /// - Calculate colors based on position/coordinate data
     /// - Calculate colors based on terrain type
+    /// - Manage color mode switching and updates
+    /// - Handle region color-related events
     /// </summary>
-    public class RegionColorCalculator
+    public class RegionColorService : MonoBehaviour
     {
-        // Color settings
-        private readonly Color defaultColor;
-        private readonly Color wealthMinColor;
-        private readonly Color wealthMaxColor;
-        private readonly Color productionMinColor;
-        private readonly Color productionMaxColor;
-        private readonly Color nationDefaultColor;
-        
-        // Dependencies
-        private readonly EconomicSystem economicSystem;
-        private readonly NationManager nationManager;
-        
-        /// <summary>
-        /// Constructor with color settings and dependencies
-        /// </summary>
-        public RegionColorCalculator(
-            Color defaultColor,
-            Color wealthMinColor,
-            Color wealthMaxColor,
-            Color productionMinColor,
-            Color productionMaxColor,
-            Color nationDefaultColor,
-            EconomicSystem economicSystem,
-            NationManager nationManager)
+        #region Singleton Pattern
+        private static RegionColorService _instance;
+        public static RegionColorService Instance
         {
-            this.defaultColor = defaultColor;
-            this.wealthMinColor = wealthMinColor;
-            this.wealthMaxColor = wealthMaxColor;
-            this.productionMinColor = productionMinColor;
-            this.productionMaxColor = productionMaxColor;
-            this.nationDefaultColor = nationDefaultColor;
-            this.economicSystem = economicSystem;
-            this.nationManager = nationManager;
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindFirstObjectByType<RegionColorService>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("RegionColorService");
+                        _instance = go.AddComponent<RegionColorService>();
+                    }
+                }
+                return _instance;
+            }
         }
+        #endregion
+
+        [Header("Color Settings")]
+        [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
+        [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
+        [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f);
+        [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f);
+        [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f);
+        [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f);
+        [SerializeField] private Color nationDefaultColor = new Color(0.6f, 0.6f, 0.6f);
+
+        // Dependencies
+        private EconomicSystem economicSystem;
+        private NationManager nationManager;
         
+        // Cache for grid dimensions - updated when Initialize is called
+        private int gridWidth = 8; 
+        private int gridHeight = 8;
+        
+        // References to map objects
+        private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
+
+        private void Awake()
+        {
+            // Singleton pattern check
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            _instance = this;
+            
+            // Find dependencies
+            economicSystem = FindFirstObjectByType<EconomicSystem>();
+            nationManager = NationManager.Instance;
+        }
+
+        private void OnEnable()
+        {
+            // Subscribe to events
+            EventBus.Subscribe("RegionNationChanged", OnRegionNationChanged);
+            EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
+            EventBus.Subscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
+        }
+
+        private void OnDisable()
+        {
+            // Unsubscribe from events
+            EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
+            EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
+            EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
+        }
+
+        /// <summary>
+        /// Initialize the service with references to map objects
+        /// </summary>
+        public void Initialize(Dictionary<string, RegionView> regionViews, int gridWidth, int gridHeight)
+        {
+            this.regionViews = regionViews;
+            this.gridWidth = gridWidth;
+            this.gridHeight = gridHeight;
+            Debug.Log($"RegionColorService: Initialized with {regionViews.Count} region views");
+        }
+
+        /// <summary>
+        /// Set the color mode for the map and update all region colors
+        /// </summary>
+        public void SetColorMode(int modeValue)
+        {
+            // Validate the input mode value
+            if (modeValue < 0 || modeValue > System.Enum.GetValues(typeof(RegionColorMode)).Length - 1)
+            {
+                Debug.LogError($"RegionColorService: Invalid color mode value: {modeValue}");
+                return;
+            }
+            
+            // Convert to enum and assign
+            RegionColorMode newMode = (RegionColorMode)modeValue;
+            Debug.Log($"RegionColorService: Changing color mode from {colorMode} to {newMode}");
+            colorMode = newMode;
+            
+            // Update all region colors immediately
+            UpdateAllRegionColors();
+        }
+
+        /// <summary>
+        /// Set the color mode directly with the enum value
+        /// </summary>
+        public void SetColorMode(RegionColorMode mode)
+        {
+            colorMode = mode;
+            UpdateAllRegionColors();
+        }
+
+        /// <summary>
+        /// Get the current color mode
+        /// </summary>
+        public RegionColorMode GetColorMode()
+        {
+            return colorMode;
+        }
+
+        /// <summary>
+        /// Update colors for all regions based on current color mode
+        /// </summary>
+        public void UpdateAllRegionColors()
+        {
+            if (regionViews == null || regionViews.Count == 0)
+            {
+                Debug.LogWarning("RegionColorService: No region views to update colors on!");
+                return;
+            }
+            
+            Debug.Log($"RegionColorService: Updating {regionViews.Count} region colors to {colorMode} mode");
+            
+            foreach (var kvp in regionViews)
+            {
+                UpdateRegionColor(kvp.Key, kvp.Value);
+            }
+        }
+
+        /// <summary>
+        /// Update the color for a specific region
+        /// </summary>
+        public void UpdateRegionColor(string regionId, RegionView view)
+        {
+            if (view == null || view.gameObject == null)
+            {
+                return;
+            }
+            
+            // Extract coordinates from region ID (format: "Region_X_Y" or "region_X_Y")
+            string[] parts = regionId.Split('_');
+            if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
+            {
+                Debug.LogWarning($"RegionColorService: Could not parse coordinates from region ID: {regionId}. Using default color.");
+                view.SetColor(defaultRegionColor);
+                return;
+            }
+            
+            // Calculate new color based on current mode
+            Color newColor = GetRegionColor(regionId, q, r, gridWidth, gridHeight, colorMode);
+            
+            // Force immediate update on the view
+            view.SetColor(newColor);
+        }
+
         /// <summary>
         /// Get a color for a region based on the current color mode
         /// </summary>
@@ -78,7 +223,7 @@ namespace UI.MapComponents
                     
                 case RegionColorMode.Default:
                 default:
-                    return defaultColor;
+                    return defaultRegionColor;
             }
         }
         
@@ -100,10 +245,10 @@ namespace UI.MapComponents
         /// </summary>
         private Color GetWealthBasedColor(string regionId)
         {
-            if (economicSystem == null) return defaultColor;
+            if (economicSystem == null) return defaultRegionColor;
             
             var region = economicSystem.GetRegion(regionId);
-            if (region == null) return defaultColor;
+            if (region == null) return defaultRegionColor;
             
             // Get min/max wealth values in the economy
             int minWealth = int.MaxValue;
@@ -134,10 +279,10 @@ namespace UI.MapComponents
         /// </summary>
         private Color GetProductionBasedColor(string regionId)
         {
-            if (economicSystem == null) return defaultColor;
+            if (economicSystem == null) return defaultRegionColor;
             
             var region = economicSystem.GetRegion(regionId);
-            if (region == null) return defaultColor;
+            if (region == null) return defaultRegionColor;
             
             // Get min/max production values in the economy
             int minProduction = int.MaxValue;
@@ -187,7 +332,7 @@ namespace UI.MapComponents
             string[] parts = regionId.Split('_');
             if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
             {
-                return defaultColor;
+                return defaultRegionColor;
             }
             
             // Use a combination of coordinates to create terrain "zones"
@@ -221,5 +366,40 @@ namespace UI.MapComponents
                 return new Color(0.9f, 0.95f, 0.95f);
             }
         }
+
+        #region Event Handlers
+
+        private void OnUpdateMapColors(object data)
+        {
+            UpdateAllRegionColors();
+        }
+
+        private void OnRegionNationChanged(object data)
+        {
+            if (colorMode == RegionColorMode.Nation)
+            {
+                // If we have the specific region data, update just that region
+                if (data is RegionNationChangedData changeData)
+                {
+                    if (regionViews.TryGetValue(changeData.RegionId, out RegionView view))
+                    {
+                        UpdateRegionColor(changeData.RegionId, view);
+                    }
+                }
+                else
+                {
+                    // Otherwise update all regions
+                    UpdateAllRegionColors();
+                }
+            }
+        }
+
+        private void OnRegionsAssignedToNations(object data)
+        {
+            Debug.Log("RegionColorService: Regions were assigned to nations, updating to nation color mode");
+            SetColorMode(RegionColorMode.Nation);
+        }
+
+        #endregion
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using Entities;
 using Entities.Components;
@@ -217,6 +218,34 @@ namespace Tests
             {
                 Debug.LogWarning("WaitForCondition timed out after " + timeoutSeconds + " seconds");
             }
+        }
+
+        /// <summary>
+        /// Sets a private field on an object using reflection.
+        /// 
+        /// Motivation: Tests often need to configure private fields that aren't exposed publicly.
+        /// This utility method provides a standardized way to access and set private fields for testing.
+        /// 
+        /// Parameters:
+        /// - target: The object instance containing the field to set
+        /// - fieldName: Name of the private field to set
+        /// - value: Value to set on the field
+        /// 
+        /// Example Usage:
+        /// TestHelper.SetPrivateField(myObject, "privateField", 42);
+        /// </summary>
+        public static void SetPrivateField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, 
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            
+            if (field == null)
+            {
+                Debug.LogError($"Field '{fieldName}' not found on type {target.GetType().Name}");
+                return;
+            }
+            
+            field.SetValue(target, value);
         }
     }
 }

@@ -282,7 +282,7 @@ namespace UI
             }
             
             // Set controller references
-            colorController.mapManager = mapManager;
+            // colorController.mapManager = mapManager;
             colorController.defaultColorButton = defaultColorButton;
             colorController.positionColorButton = positionColorButton;
             colorController.wealthColorButton = wealthColorButton; 

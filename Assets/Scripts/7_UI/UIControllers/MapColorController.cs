@@ -2,13 +2,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
+using UI.MapComponents;
 
 namespace UI
 {
     public class MapColorController : MonoBehaviour
     {
         [Header("References")]
-        public MapManager mapManager;
+        private RegionColorService colorService;
         
         [Header("UI References")]
         public Button defaultColorButton;
@@ -31,18 +32,15 @@ namespace UI
         
         private void Awake()
         {
-            // If not set in inspector, try to find MapManager
-            if (mapManager == null)
+            // Get the RegionColorService instance
+            colorService = RegionColorService.Instance;
+            if (colorService == null)
             {
-                mapManager = FindFirstObjectByType<MapManager>();
-                if (mapManager == null)
-                {
-                    Debug.LogError("MapColorController: Could not find MapManager in scene!");
-                }
-                else if (logDebugInfo)
-                {
-                    Debug.Log("MapColorController: Found MapManager: " + mapManager.name);
-                }
+                Debug.LogError("MapColorController: Could not find RegionColorService in scene!");
+            }
+            else if (logDebugInfo)
+            {
+                Debug.Log("MapColorController: Found RegionColorService");
             }
         }
         
@@ -51,8 +49,16 @@ namespace UI
             // Set up button listeners directly in Start
             SetupButtonListeners();
             
-            // Initialize with default mode
-            SetColorMode(RegionColorMode.Default);
+            // Initialize with the current mode from the service
+            if (colorService != null)
+            {
+                UpdateLegend(colorService.GetColorMode());
+            }
+            else
+            {
+                // Fallback to default mode
+                UpdateLegend(RegionColorMode.Default);
+            }
             
             if (logDebugInfo)
             {
@@ -104,28 +110,22 @@ namespace UI
         
         public void SetColorMode(RegionColorMode mode)
         {
-            if (mapManager == null)
+            if (colorService == null)
             {
-                Debug.LogError("Cannot set color mode: MapManager is null!");
+                Debug.LogError("Cannot set color mode: RegionColorService is null!");
                 
                 // Try to find it again as a last resort
-                mapManager = FindFirstObjectByType<MapManager>();
-                if (mapManager == null) return;
+                colorService = RegionColorService.Instance;
+                if (colorService == null) return;
             }
             
             Debug.Log($"Setting color mode to: {mode}");
             
-            // Call the MapManager's method to change color mode
-            mapManager.SetColorMode((int)mode);
+            // Call the RegionColorService's method to change color mode
+            colorService.SetColorMode(mode);
             
             // Update the legend based on the selected mode
             UpdateLegend(mode);
-            
-            // Directly force an update of colors in case the event system fails
-            if (mapManager != null)
-            {
-                mapManager.UpdateRegionColors();
-            }
         }
         
         private void UpdateLegend(RegionColorMode mode)
@@ -203,9 +203,9 @@ namespace UI
         // Call this method to manually refresh connections
         public void RefreshConnections()
         {
-            if (mapManager == null)
+            if (colorService == null)
             {
-                mapManager = FindFirstObjectByType<MapManager>();
+                colorService = RegionColorService.Instance;
             }
             
             SetupButtonListeners();

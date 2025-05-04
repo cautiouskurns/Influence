@@ -10,16 +10,6 @@ using Scenarios; // Added this namespace for RegionStartCondition
 
 namespace UI
 {
-    public enum RegionColorMode
-    {
-        Default,
-        Position,
-        Wealth,
-        Production,
-        Nation,
-        Terrain  // New terrain view mode
-    }
-
     /// <summary>
     /// CLASS PURPOSE:
     /// MapManager coordinates the different components of the map system.
@@ -45,20 +35,8 @@ namespace UI
         [SerializeField] [Range(0.7f, 1.3f)] private float horizontalSpacingAdjust = 1.0f;
         [SerializeField] [Range(0.7f, 1.3f)] private float verticalSpacingAdjust = 1.0f;
         
-        [Header("Color Settings")]
-        [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
-        [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
-        [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f);
-        [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f);
-        [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f);
-        [SerializeField] private Color productionMaxColor = new Color(0.8f, 0.8f, 0.2f);
-        
-        [Header("Nation Colors")]
-        [SerializeField] private Color nationDefaultColor = new Color(0.6f, 0.6f, 0.6f);
-        
         // Component references
         private HexGridGenerator gridGenerator;
-        private RegionColorCalculator colorCalculator;
         private RegionFactory regionFactory;
         private MapSelectionManager selectionManager;
         
@@ -68,11 +46,13 @@ namespace UI
         // Dependencies
         private EconomicSystem economicSystem;
         private RegionControllerManager controllerManager;
+        private RegionColorService colorService;
         
         private void Awake()
         {
             // Get dependencies
             economicSystem = FindFirstObjectByType<EconomicSystem>();
+            colorService = RegionColorService.Instance;
             
             // Initialize the controller manager
             InitializeControllerManager();
@@ -93,19 +73,11 @@ namespace UI
         private void OnEnable()
         {
             EventBus.Subscribe("RegionSelected", OnRegionSelected);
-            EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
-            EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
-            EventBus.Subscribe("RegionNationChanged", OnRegionNationChanged);
-            EventBus.Subscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
         }
         
         private void OnDisable()
         {
             EventBus.Unsubscribe("RegionSelected", OnRegionSelected);
-            EventBus.Unsubscribe("RegionUpdated", OnRegionUpdated);
-            EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
-            EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
-            EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
         }
         
         /// <summary>
@@ -123,18 +95,6 @@ namespace UI
                 verticalSpacingAdjust
             );
             
-            // Create the color calculator
-            colorCalculator = new RegionColorCalculator(
-                defaultRegionColor,
-                wealthMinColor,
-                wealthMaxColor,
-                productionMinColor,
-                productionMaxColor,
-                nationDefaultColor,
-                economicSystem,
-                NationManager.Instance
-            );
-            
             // Create the region factory
             regionFactory = new RegionFactory(
                 regionPrefab,
@@ -145,6 +105,16 @@ namespace UI
             
             // Create the selection manager
             selectionManager = new MapSelectionManager(regionViews);
+            
+            // Initialize the color service with our region views
+            if (colorService != null)
+            {
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
+            }
+            else 
+            {
+                Debug.LogError("MapManager: RegionColorService is null! Colors will not be properly managed.");
+            }
             
             Debug.Log("MapManager: Initialized all components");
         }
@@ -163,8 +133,9 @@ namespace UI
             foreach (var cell in cells)
             {
                 // Get the color for this region
-                Color regionColor = colorCalculator.GetRegionColor(
-                    cell.Id, cell.Q, cell.R, gridWidth, gridHeight, colorMode);
+                Color regionColor = colorService != null 
+                    ? colorService.GetRegionColor(cell.Id, cell.Q, cell.R, gridWidth, gridHeight, colorService.GetColorMode())
+                    : Color.white;
                 
                 // Create the region with entity
                 RegionView regionView = regionFactory.CreateRegionWithEntity(
@@ -175,6 +146,12 @@ namespace UI
             }
             
             Debug.Log($"MapManager created {regionViews.Count} hexagonal regions in a tightly packed hex grid");
+            
+            // Update the color service with the new region views
+            if (colorService != null)
+            {
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
+            }
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
             EventBus.Trigger("RegionsCreated", regionViews.Count);
@@ -294,8 +271,9 @@ namespace UI
                     Quaternion rotation = Quaternion.identity;
                     
                     // Get appropriate color
-                    Color regionColor = colorCalculator.GetRegionColor(
-                        regionCondition.regionId, q, r, gridWidth, gridHeight, colorMode);
+                    Color regionColor = colorService != null 
+                        ? colorService.GetRegionColor(regionCondition.regionId, q, r, gridWidth, gridHeight, colorService.GetColorMode())
+                        : Color.white;
                     
                     // Create the region with entity and custom properties
                     RegionView regionView = regionFactory.CreateCustomRegion(
@@ -319,6 +297,12 @@ namespace UI
             }
             
             Debug.Log($"MapManager created {regionViews.Count} custom regions from scenario data");
+            
+            // Update the color service with the new region views
+            if (colorService != null)
+            {
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
+            }
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
             EventBus.Trigger("RegionsCreated", regionViews.Count);
@@ -398,65 +382,14 @@ namespace UI
         }
         
         /// <summary>
-        /// Update colors for all regions based on current color mode
-        /// </summary>
-        public void UpdateRegionColors()
-        {
-            if (regionViews == null || regionViews.Count == 0)
-            {
-                Debug.LogWarning("MapManager: No region views to update colors on!");
-                return;
-            }
-            
-            Debug.Log($"MapManager: Updating {regionViews.Count} region colors to {colorMode} mode");
-            
-            foreach (var kvp in regionViews)
-            {
-                string regionId = kvp.Key;
-                RegionView view = kvp.Value;
-                
-                if (view == null || view.gameObject == null)
-                {
-                    continue;
-                }
-                
-                // Extract coordinates from region ID (format: "Region_X_Y" or "region_X_Y")
-                string[] parts = regionId.Split('_');
-                if (parts.Length < 3 || !int.TryParse(parts[1], out int q) || !int.TryParse(parts[2], out int r))
-                {
-                    Debug.LogWarning($"MapManager: Could not parse coordinates from region ID: {regionId}. Using default color.");
-                    view.SetColor(defaultRegionColor);
-                    continue;
-                }
-                
-                // Calculate new color based on current mode
-                Color newColor = colorCalculator.GetRegionColor(
-                    regionId, q, r, gridWidth, gridHeight, colorMode);
-                
-                // Force immediate update on the view
-                view.SetColor(newColor);
-            }
-        }
-        
-        /// <summary>
-        /// Set the color mode for the map
+        /// Set the color mode for the map via the RegionColorService
         /// </summary>
         public void SetColorMode(int modeValue)
         {
-            // Validate the input mode value
-            if (modeValue < 0 || modeValue > System.Enum.GetValues(typeof(RegionColorMode)).Length - 1)
+            if (colorService != null)
             {
-                Debug.LogError($"MapManager: Invalid color mode value: {modeValue}");
-                return;
+                colorService.SetColorMode(modeValue);
             }
-            
-            // Convert to enum and assign
-            RegionColorMode newMode = (RegionColorMode)modeValue;
-            Debug.Log($"MapManager: Changing color mode from {colorMode} to {newMode}");
-            colorMode = newMode;
-            
-            // Update all region colors immediately
-            UpdateRegionColors();
         }
         
         /// <summary>
@@ -479,30 +412,6 @@ namespace UI
         private void OnRegionSelected(object data)
         {
             selectionManager.OnRegionSelected(data);
-        }
-        
-        private void OnRegionUpdated(object data)
-        {
-            // This is handled by RegionControllers now
-        }
-        
-        private void OnUpdateMapColors(object data)
-        {
-            UpdateRegionColors();
-        }
-        
-        private void OnRegionNationChanged(object data)
-        {
-            if (colorMode == RegionColorMode.Nation)
-            {
-                UpdateRegionColors();
-            }
-        }
-        
-        private void OnRegionsAssignedToNations(object data)
-        {
-            Debug.Log("MapManager: Regions were assigned to nations, updating to nation color mode");
-            SetColorMode((int)RegionColorMode.Nation);
         }
         
         #endregion

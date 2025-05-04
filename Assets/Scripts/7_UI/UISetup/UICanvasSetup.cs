@@ -452,8 +452,7 @@ namespace UI
             GameObject controllerObj = new GameObject("UI_Controllers");
             colorController = controllerObj.AddComponent<MapColorController>();
 
-            // Set controller references
-            colorController.mapManager = mapManager;
+            // Set controller references for buttons
             colorController.defaultColorButton = colorButtons[0];
             colorController.positionColorButton = colorButtons[1];
             colorController.wealthColorButton = colorButtons[2];
