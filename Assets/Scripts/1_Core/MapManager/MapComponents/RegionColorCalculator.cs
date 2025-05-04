@@ -19,6 +19,44 @@ namespace UI.MapComponents
         Nation,
         Terrain
     }
+    
+    /// <summary>
+    /// Contains all the necessary configuration data for displaying map color legends
+    /// </summary>
+    [System.Serializable]
+    public class LegendConfiguration
+    {
+        public string Title;
+        public bool ShowLegend;
+        public Color MinColor;
+        public Color MaxColor;
+        public string MinLabel;
+        public string MaxLabel;
+        
+        public LegendConfiguration()
+        {
+            // Default values
+            Title = "Default";
+            ShowLegend = true;
+            MinColor = Color.white;
+            MaxColor = Color.white;
+            MinLabel = "Min";
+            MaxLabel = "Max";
+        }
+    }
+
+    /// <summary>
+    /// Data structure for region view enabled events
+    /// </summary>
+    public class RegionViewEnabledData
+    {
+        public string RegionId { get; private set; }
+        
+        public RegionViewEnabledData(string regionId)
+        {
+            RegionId = regionId;
+        }
+    }
 
     /// <summary>
     /// CLASS PURPOSE:
@@ -95,6 +133,7 @@ namespace UI.MapComponents
             EventBus.Subscribe("RegionNationChanged", OnRegionNationChanged);
             EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
             EventBus.Subscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
+            EventBus.Subscribe("RegionViewEnabled", OnRegionViewEnabled);
         }
 
         private void OnDisable()
@@ -103,6 +142,7 @@ namespace UI.MapComponents
             EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
             EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
             EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
+            EventBus.Unsubscribe("RegionViewEnabled", OnRegionViewEnabled);
         }
 
         /// <summary>
@@ -367,6 +407,76 @@ namespace UI.MapComponents
             }
         }
 
+        /// <summary>
+        /// Get legend configuration data for a specific color mode
+        /// </summary>
+        /// <param name="mode">The color mode to get legend data for</param>
+        /// <returns>A structure containing all necessary legend information</returns>
+        public LegendConfiguration GetLegendConfiguration(RegionColorMode mode)
+        {
+            LegendConfiguration config = new LegendConfiguration();
+            
+            // Set legend attributes based on color mode
+            switch (mode)
+            {
+                case RegionColorMode.Default:
+                    config.Title = "Default";
+                    config.ShowLegend = false;
+                    config.MinColor = defaultRegionColor;
+                    config.MaxColor = defaultRegionColor;
+                    config.MinLabel = "Uniform";
+                    config.MaxLabel = "Uniform";
+                    break;
+                
+                case RegionColorMode.Position:
+                    config.Title = "Position";
+                    config.ShowLegend = true;
+                    config.MinColor = new Color(0.4f, 0.4f, 0.5f);
+                    config.MaxColor = new Color(1.0f, 1.0f, 0.5f);
+                    config.MinLabel = "Top-Left";
+                    config.MaxLabel = "Bottom-Right";
+                    break;
+                
+                case RegionColorMode.Wealth:
+                    config.Title = "Wealth";
+                    config.ShowLegend = true;
+                    config.MinColor = wealthMinColor;
+                    config.MaxColor = wealthMaxColor;
+                    config.MinLabel = "Poor";
+                    config.MaxLabel = "Wealthy";
+                    break;
+                
+                case RegionColorMode.Production:
+                    config.Title = "Production";
+                    config.ShowLegend = true;
+                    config.MinColor = productionMinColor;
+                    config.MaxColor = productionMaxColor;
+                    config.MinLabel = "Low";
+                    config.MaxLabel = "High";
+                    break;
+                    
+                case RegionColorMode.Nation:
+                    config.Title = "Nation";
+                    config.ShowLegend = true;
+                    config.MinColor = nationDefaultColor;
+                    config.MaxColor = new Color(1.0f, 0.5f, 0.5f);
+                    config.MinLabel = "Nation A";
+                    config.MaxLabel = "Nation B";
+                    break;
+                    
+                case RegionColorMode.Terrain:
+                    config.Title = "Terrain Type";
+                    config.ShowLegend = true;
+                    config.MinColor = new Color(0.7f, 0.85f, 0.5f); // Plains
+                    config.MaxColor = new Color(0.95f, 0.85f, 0.6f); // Desert
+                    config.MinLabel = "Plains";
+                    config.MaxLabel = "Desert";
+                    break;
+            }
+            
+            return config;
+        }
+
         #region Event Handlers
 
         private void OnUpdateMapColors(object data)
@@ -398,6 +508,17 @@ namespace UI.MapComponents
         {
             Debug.Log("RegionColorService: Regions were assigned to nations, updating to nation color mode");
             SetColorMode(RegionColorMode.Nation);
+        }
+
+        private void OnRegionViewEnabled(object data)
+        {
+            if (data is RegionViewEnabledData enabledData)
+            {
+                if (regionViews.TryGetValue(enabledData.RegionId, out RegionView view))
+                {
+                    UpdateRegionColor(enabledData.RegionId, view);
+                }
+            }
         }
 
         #endregion

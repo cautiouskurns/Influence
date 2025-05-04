@@ -142,6 +142,15 @@ namespace UI
                 else
                     productionText.color = new Color(0.9f, 0.9f, 0.2f); // Yellow for middle values
             }
+            
+            // Request color refresh from the RegionColorService when the view is enabled
+            // This ensures proper color representation if color modes changed while inactive
+            if (!string.IsNullOrEmpty(RegionName))
+            {
+                // Create and send proper data object with the event
+                var data = new UI.MapComponents.RegionViewEnabledData(RegionName);
+                EventBus.Trigger("RegionViewEnabled", data);
+            }
         }
         
         /// <summary>

@@ -132,63 +132,84 @@ namespace UI
         {
             if (legendPanel == null) return;
             
-            switch (mode)
+            // Get legend configuration from the service
+            if (colorService != null)
             {
-                case RegionColorMode.Default:
-                    // Hide legend for default uniform coloring
-                    legendPanel.SetActive(false);
-                    break;
-                    
-                case RegionColorMode.Position:
-                    // Simple position-based legend
-                    legendPanel.SetActive(true);
-                    legendTitle.text = "Position";
-                    minColorImage.color = new Color(0.4f, 0.4f, 0.5f);
-                    maxColorImage.color = new Color(1.0f, 1.0f, 0.5f);
-                    minValueText.text = "Top-Left";
-                    maxValueText.text = "Bottom-Right";
-                    break;
-                    
-                case RegionColorMode.Wealth:
-                    // Wealth-based legend
-                    legendPanel.SetActive(true);
-                    legendTitle.text = "Wealth";
-                    minColorImage.color = new Color(0.8f, 0.2f, 0.2f); // Red for poor
-                    maxColorImage.color = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy
-                    minValueText.text = "Poor";
-                    maxValueText.text = "Wealthy";
-                    break;
-                    
-                case RegionColorMode.Production:
-                    // Production-based legend
-                    legendPanel.SetActive(true);
-                    legendTitle.text = "Production";
-                    minColorImage.color = new Color(0.2f, 0.2f, 0.8f); // Blue for low
-                    maxColorImage.color = new Color(0.8f, 0.8f, 0.2f); // Yellow for high
-                    minValueText.text = "Low";
-                    maxValueText.text = "High";
-                    break;
+                LegendConfiguration config = colorService.GetLegendConfiguration(mode);
+                
+                // Apply configuration to UI elements
+                legendPanel.SetActive(config.ShowLegend);
+                
+                if (config.ShowLegend)
+                {
+                    legendTitle.text = config.Title;
+                    minColorImage.color = config.MinColor;
+                    maxColorImage.color = config.MaxColor;
+                    minValueText.text = config.MinLabel;
+                    maxValueText.text = config.MaxLabel;
+                }
+            }
+            else
+            {
+                // Fallback to previous hardcoded behavior if service is unavailable
+                switch (mode)
+                {
+                    case RegionColorMode.Default:
+                        // Hide legend for default uniform coloring
+                        legendPanel.SetActive(false);
+                        break;
+                        
+                    case RegionColorMode.Position:
+                        // Simple position-based legend
+                        legendPanel.SetActive(true);
+                        legendTitle.text = "Position";
+                        minColorImage.color = new Color(0.4f, 0.4f, 0.5f);
+                        maxColorImage.color = new Color(1.0f, 1.0f, 0.5f);
+                        minValueText.text = "Top-Left";
+                        maxValueText.text = "Bottom-Right";
+                        break;
+                        
+                    case RegionColorMode.Wealth:
+                        // Wealth-based legend
+                        legendPanel.SetActive(true);
+                        legendTitle.text = "Wealth";
+                        minColorImage.color = new Color(0.8f, 0.2f, 0.2f); // Red for poor
+                        maxColorImage.color = new Color(0.2f, 0.8f, 0.2f); // Green for wealthy
+                        minValueText.text = "Poor";
+                        maxValueText.text = "Wealthy";
+                        break;
+                        
+                    case RegionColorMode.Production:
+                        // Production-based legend
+                        legendPanel.SetActive(true);
+                        legendTitle.text = "Production";
+                        minColorImage.color = new Color(0.2f, 0.2f, 0.8f); // Blue for low
+                        maxColorImage.color = new Color(0.8f, 0.8f, 0.2f); // Yellow for high
+                        minValueText.text = "Low";
+                        maxValueText.text = "High";
+                        break;
 
-                case RegionColorMode.Nation:
-                    // Nation-based legend
-                    legendPanel.SetActive(true);
-                    legendTitle.text = "Nation";
-                    minColorImage.color = new Color(0.5f, 0.5f, 0.5f); // Example color for nation
-                    maxColorImage.color = new Color(1.0f, 0.5f, 0.5f); // Example color for nation
-                    minValueText.text = "Nation A";
-                    maxValueText.text = "Nation B";
-                    break;
-                    
-                case RegionColorMode.Terrain:
-                    // Terrain-based legend
-                    legendPanel.SetActive(true);
-                    legendTitle.text = "Terrain Type";
-                    // Sample terrain colors
-                    minColorImage.color = new Color(0.7f, 0.85f, 0.5f); // Plains green
-                    maxColorImage.color = new Color(0.95f, 0.85f, 0.6f); // Desert yellow
-                    minValueText.text = "Plains";
-                    maxValueText.text = "Desert";
-                    break;
+                    case RegionColorMode.Nation:
+                        // Nation-based legend
+                        legendPanel.SetActive(true);
+                        legendTitle.text = "Nation";
+                        minColorImage.color = new Color(0.5f, 0.5f, 0.5f); // Example color for nation
+                        maxColorImage.color = new Color(1.0f, 0.5f, 0.5f); // Example color for nation
+                        minValueText.text = "Nation A";
+                        maxValueText.text = "Nation B";
+                        break;
+                        
+                    case RegionColorMode.Terrain:
+                        // Terrain-based legend
+                        legendPanel.SetActive(true);
+                        legendTitle.text = "Terrain Type";
+                        // Sample terrain colors
+                        minColorImage.color = new Color(0.7f, 0.85f, 0.5f); // Plains green
+                        maxColorImage.color = new Color(0.95f, 0.85f, 0.6f); // Desert yellow
+                        minValueText.text = "Plains";
+                        maxValueText.text = "Desert";
+                        break;
+                }
             }
         }
         
