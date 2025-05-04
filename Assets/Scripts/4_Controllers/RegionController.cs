@@ -26,6 +26,7 @@ namespace Controllers
         // Cache for systems and managers
         private EconomicSystem economicSystem;
         private NationManager nationManager;
+        private NationStatsController nationStatsController;
         
         public RegionController(RegionView view)
         {
@@ -34,6 +35,8 @@ namespace Controllers
             // Find references
             economicSystem = Object.FindFirstObjectByType<EconomicSystem>();
             nationManager = NationManager.Instance;
+            // Get the singleton instance instead of finding/creating a new one
+            nationStatsController = NationStatsController.Instance;
             
             // Subscribe to events
             EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
@@ -181,6 +184,17 @@ namespace Controllers
                 {
                     // This region was selected
                     view.SetHighlighted(true);
+                    
+                    // Display nation stats if this region belongs to a nation
+                    if (regionEntity != null && !string.IsNullOrEmpty(regionEntity.NationId) && nationManager != null)
+                    {
+                        NationEntity nation = nationManager.GetNation(regionEntity.NationId);
+                        if (nation != null && nationStatsController != null)
+                        {
+                            // Update the nation stats panel with this region's nation
+                            nationStatsController.SetSelectedNation(nation);
+                        }
+                    }
                     
                     // Print detailed region information to console
                     if (regionEntity != null)

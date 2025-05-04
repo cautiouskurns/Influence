@@ -10,11 +10,27 @@ using UI;
 
 namespace NarrativeSystem
 {
+    /// <summary>
+    /// EventManager is the core controller of the narrative system. It manages the creation, triggering, 
+    /// processing, and presentation of narrative events within the game.
+    /// 
+    /// This class handles:
+    /// - Loading events from JSON or creating sample events
+    /// - Checking conditions for event triggering
+    /// - Managing event flow and sequences
+    /// - Processing player choices and their effects
+    /// - Interfacing with the UI system to display events
+    /// 
+    /// The EventManager follows the Singleton pattern to ensure only one instance exists.
+    /// </summary>
     public class EventManager : MonoBehaviour
     {
         #region Singleton
         private static EventManager _instance;
         
+        /// <summary>
+        /// Singleton accessor that creates the EventManager if it doesn't exist
+        /// </summary>
         public static EventManager Instance
         {
             get
@@ -36,7 +52,10 @@ namespace NarrativeSystem
         #endregion
         
         [Header("Event Settings")]
+        [Tooltip("The list of all available events that can be triggered in the game")]
         [SerializeField] private List<GameEvent> availableEvents = new List<GameEvent>();
+        
+        [Tooltip("How often (in seconds) to check for potential event triggers")]
         [SerializeField] private float checkInterval = 2.0f;
         
         [Header("UI References")]
@@ -44,21 +63,34 @@ namespace NarrativeSystem
         [SerializeField] public DialogueView dialogueView;
         
         [Header("Debug")]
+        [Tooltip("Enable to show detailed debug logs in the console")]
         [SerializeField] private bool showDebugLogs = true;
+        
+        [Tooltip("Key to select the first dialogue option")]
         [SerializeField] private KeyCode option1Key = KeyCode.Alpha1;
+        
+        [Tooltip("Key to select the second dialogue option")]
         [SerializeField] private KeyCode option2Key = KeyCode.Alpha2;
+        
+        [Tooltip("Key to select the third dialogue option")]
         [SerializeField] private KeyCode option3Key = KeyCode.Alpha3;
+        
+        [Tooltip("If true, loads events from JSON file. If false, uses hard-coded events")]
         [SerializeField] private bool useJsonEvents = true;
         
         // Core system references
-        private EconomicSystem economicSystem;
-        private GameManager gameManager;
+        private EconomicSystem economicSystem; // Reference to the game's economic system for applying effects
+        private GameManager gameManager;       // Reference to the game manager for control flow
         
         // Event handling
-        private Queue<GameEvent> pendingEvents = new Queue<GameEvent>();
-        private GameEvent currentEvent;
-        private float checkTimer = 0f;
+        private Queue<GameEvent> pendingEvents = new Queue<GameEvent>(); // Queue of events waiting to be displayed
+        private GameEvent currentEvent;    // The currently active event being displayed to the player
+        private float checkTimer = 0f;     // Timer for the periodic event check
         
+        /// <summary>
+        /// Initializes the EventManager and sets up required references.
+        /// Loads events from JSON if configured, or creates sample events if none exist.
+        /// </summary>
         private void Awake()
         {
             // Singleton setup
@@ -70,7 +102,7 @@ namespace NarrativeSystem
             
             _instance = this;
             
-            // Find references
+            // Find references to other systems
             economicSystem = FindFirstObjectByType<EconomicSystem>();
             gameManager = GameManager.Instance;
             
@@ -103,6 +135,9 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Subscribe to necessary events when this component is enabled
+        /// </summary>
         private void OnEnable()
         {
             EventBus.Subscribe("EconomicTick", OnEconomicTick);
@@ -114,6 +149,9 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Unsubscribe from events when this component is disabled
+        /// </summary>
         private void OnDisable()
         {
             EventBus.Unsubscribe("EconomicTick", OnEconomicTick);
@@ -125,6 +163,9 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Handles periodic event checking and key input for event choices
+        /// </summary>
         private void Update()
         {
             // Regular checking for new events
@@ -135,7 +176,7 @@ namespace NarrativeSystem
                 checkTimer = 0f;
             }
             
-            // Handle key presses for choices
+            // Handle key presses for choices when an event is active
             if (currentEvent != null)
             {
                 if (Input.GetKeyDown(option1Key) && currentEvent.choices.Count >= 1)
@@ -153,7 +194,9 @@ namespace NarrativeSystem
             }
         }
         
-        // Load events from JSON file
+        /// <summary>
+        /// Loads game events from a JSON file in the Resources folder
+        /// </summary>
         private void LoadEventsFromJson()
         {
             List<GameEvent> loadedEvents = EventLoader.LoadEventsFromJSON();
@@ -173,7 +216,9 @@ namespace NarrativeSystem
             }
         }
         
-        // Save current events to JSON file
+        /// <summary>
+        /// Saves current events to a JSON file
+        /// </summary>
         private void SaveEventsToJson()
         {
             if (availableEvents.Count > 0)
@@ -187,11 +232,18 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Handler for the economic tick event from the EventBus
+        /// </summary>
+        /// <param name="data">Event data (unused)</param>
         private void OnEconomicTick(object data)
         {
             CheckForEvents();
         }
         
+        /// <summary>
+        /// Checks all available events to see if any should be triggered based on their conditions
+        /// </summary>
         public void CheckForEvents()
         {
             if (economicSystem == null) return;
@@ -203,7 +255,7 @@ namespace NarrativeSystem
             string randomRegionId = regionIds[Random.Range(0, regionIds.Count)];
             RegionEntity region = economicSystem.GetRegion(randomRegionId);
             
-            // Check all events
+            // Check all events against current game state
             foreach (GameEvent evt in availableEvents)
             {
                 if (!evt.hasTriggered && evt.IsConditionMet(economicSystem, region))
@@ -225,11 +277,19 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Adds an event to the pending events queue
+        /// </summary>
+        /// <param name="evt">The event to queue</param>
         private void QueueEvent(GameEvent evt)
         {
             pendingEvents.Enqueue(evt);
         }
         
+        /// <summary>
+        /// Displays the next event in the queue to the player
+        /// Pauses the game while the event is displayed
+        /// </summary>
         private void DisplayNextEvent()
         {
             if (pendingEvents.Count == 0) return;
@@ -310,7 +370,11 @@ namespace NarrativeSystem
             }
         }
         
-        // New method to handle response from DialogueView
+        /// <summary>
+        /// Callback handler for when the player selects a response in the dialogue UI
+        /// </summary>
+        /// <param name="eventId">ID of the event the response belongs to</param>
+        /// <param name="choiceIndex">Index of the selected choice</param>
         private void HandleDialogueResponse(string eventId, int choiceIndex)
         {
             // Verify this is the current event
@@ -320,6 +384,10 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Processes the player's choice and applies its effects to the game state
+        /// </summary>
+        /// <param name="choiceIndex">Index of the chosen option</param>
         public void ProcessChoice(int choiceIndex)
         {
             if (currentEvent == null || choiceIndex < 0 || choiceIndex >= currentEvent.choices.Count)
@@ -336,7 +404,7 @@ namespace NarrativeSystem
                 Debug.Log($"RESULT: {choice.result}");
             }
             
-            // Apply effects
+            // Apply effects to a random region (this could be enhanced to target specific regions)
             if (economicSystem != null)
             {
                 List<string> regionIds = economicSystem.GetAllRegionIds();
@@ -388,7 +456,7 @@ namespace NarrativeSystem
                 Debug.Log("=================================");
             }
             
-            // Check for next event
+            // Check for next event in a chain
             string nextEventId = choice.nextEventId;
             currentEvent = null;
             
@@ -420,7 +488,9 @@ namespace NarrativeSystem
             }
         }
 
-        // Helper method to resume the simulation if there are no pending events
+        /// <summary>
+        /// Helper method to resume the game simulation if there are no active or pending events
+        /// </summary>
         private void ResumeSimulationIfNoEvents()
         {
             if (pendingEvents.Count == 0 && currentEvent == null && gameManager != null)
@@ -433,6 +503,10 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Creates a set of sample narrative events for the game
+        /// Used when no events are loaded from JSON or as initial examples
+        /// </summary>
         private void CreateSampleEvents()
         {
             // Event 1: Resource Shortage (triggers when production is below 80)
@@ -555,8 +629,12 @@ namespace NarrativeSystem
             availableEvents.Add(populationEvent);
         }
         
-        // Public methods for manual testing
+        #region Public Test Methods
         
+        /// <summary>
+        /// Triggers a random event for testing purposes
+        /// Useful for debugging or demonstrating the event system
+        /// </summary>
         public void TriggerRandomEvent()
         {
             if (availableEvents.Count == 0) return;
@@ -574,6 +652,10 @@ namespace NarrativeSystem
             }
         }
         
+        /// <summary>
+        /// Resets all events to their untriggered state
+        /// Useful for testing or starting a new game
+        /// </summary>
         public void ResetAllEvents()
         {
             foreach (var evt in availableEvents)
@@ -588,34 +670,40 @@ namespace NarrativeSystem
         }
         
         #if UNITY_EDITOR
-        // Editor-only method to save events to JSON
+        /// <summary>
+        /// Editor-only method to save current events to JSON
+        /// </summary>
         public void SaveCurrentEventsToJson()
         {
             SaveEventsToJson();
         }
         #endif
+        #endregion
 
         #region Debug API
         
         /// <summary>
-        /// Get a copy of all available events for debugging
+        /// Gets a copy of all available events for debugging and inspection
         /// </summary>
+        /// <returns>A copy of the available events list</returns>
         public List<GameEvent> GetAvailableEvents()
         {
             return new List<GameEvent>(availableEvents);
         }
         
         /// <summary>
-        /// Check if JSON events are being used
+        /// Checks if JSON events are being used instead of hardcoded events
         /// </summary>
+        /// <returns>True if using JSON events, false otherwise</returns>
         public bool GetUseJsonEvents()
         {
             return useJsonEvents;
         }
         
         /// <summary>
-        /// Set whether to use JSON events or hardcoded events
+        /// Sets whether to use JSON events or hardcoded events
         /// </summary>
+        /// <param name="value">True to use JSON events, false to use hardcoded events</param>
         public void SetUseJsonEvents(bool value)
         {
             if (value != useJsonEvents)
@@ -653,8 +741,9 @@ namespace NarrativeSystem
         }
         
         /// <summary>
-        /// Trigger a specific event for testing
+        /// Triggers a specific event for testing and debugging purposes
         /// </summary>
+        /// <param name="evt">The event to trigger</param>
         public void TriggerSpecificEvent(GameEvent evt)
         {
             if (evt == null) return;

@@ -306,6 +306,52 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &246743157
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 246743159}
+  - component: {fileID: 246743158}
+  m_Layer: 0
+  m_Name: NationStatsController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &246743158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 246743157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 795eb2cc49bfd4626b8b6dd64f707805, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameManager: {fileID: 0}
+  statsPanel: {fileID: 0}
+--- !u!4 &246743159
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 246743157}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1051.0245, y: -115.15029, z: -12.884202}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &279918506
 GameObject:
   m_ObjectHideFlags: 0
@@ -1238,6 +1284,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   triggerRandomEventKey: 101
   resetEventsKey: 114
+  eventManager: {fileID: 0}
 --- !u!114 &798012499
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1302,6 +1349,7 @@ GameObject:
   - component: {fileID: 890069361}
   - component: {fileID: 890069362}
   - component: {fileID: 890069363}
+  - component: {fileID: 890069364}
   m_Layer: 0
   m_Name: SimulationSystems
   m_TagString: Untagged
@@ -1381,6 +1429,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 555a968297d4e4f0d903b2a42e610208, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &890069364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890069359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c2ac3335f50143f4a69b106186cbed2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  turnManager: {fileID: 890069361}
+  economicSystem: {fileID: 890069362}
+  uiManager: {fileID: 1455276065}
+  mapManager: {fileID: 1395318621}
+  startingTurn: 1
+  baseSimulationSpeed: 1
+  startPaused: 1
+  currentTurn: 0
+  totalPopulation: 0
+  populationGrowthRate: 0.02
+  migrationRate: 0.01
 --- !u!1 &946969353
 GameObject:
   m_ObjectHideFlags: 0
@@ -1886,13 +1957,55 @@ MonoBehaviour:
   pointyTopHexes: 1
   horizontalSpacingAdjust: 1.25
   verticalSpacingAdjust: 0.9
-  colorMode: 0
-  defaultRegionColor: {r: 0.5, g: 0.5, b: 0.7, a: 1}
-  wealthMinColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}
-  wealthMaxColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
-  productionMinColor: {r: 0.2, g: 0.2, b: 0.8, a: 1}
-  productionMaxColor: {r: 0.8, g: 0.8, b: 0.2, a: 1}
-  nationDefaultColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+--- !u!1 &1396367330
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1396367331}
+  - component: {fileID: 1396367332}
+  m_Layer: 5
+  m_Name: NationStatsPanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1396367331
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1396367330}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1937840659}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1396367332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1396367330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 763b9ba4731a843918a23524b330f068, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  statsModule: {fileID: 0}
 --- !u!1 &1455276063
 GameObject:
   m_ObjectHideFlags: 0
@@ -2586,6 +2699,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 296726740}
+  - {fileID: 1396367331}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3045,3 +3159,4 @@ SceneRoots:
   - {fileID: 1802490352}
   - {fileID: 771388975}
   - {fileID: 182796287}
+  - {fileID: 246743159}
