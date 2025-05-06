@@ -3,6 +3,8 @@ using Entities;
 using Systems;
 using Managers;
 using UI;
+using Systems.UI;
+
 
 namespace Controllers
 {
@@ -26,7 +28,8 @@ namespace Controllers
         // Cache for systems and managers
         private EconomicSystem economicSystem;
         private NationManager nationManager;
-        private NationStatsController nationStatsController;
+        private NationStatsPresenter nationStatsPresenter;
+        private RegionStatsPresenter regionStatsPresenter; // Added reference to RegionStatsPresenter
         
         public RegionController(RegionView view)
         {
@@ -35,8 +38,9 @@ namespace Controllers
             // Find references
             economicSystem = Object.FindFirstObjectByType<EconomicSystem>();
             nationManager = NationManager.Instance;
-            // Get the singleton instance instead of finding/creating a new one
-            nationStatsController = NationStatsController.Instance;
+            // Get the singleton instance of the presenters
+            nationStatsPresenter = NationStatsPresenter.Instance;
+            regionStatsPresenter = RegionStatsPresenter.Instance; // Get region stats presenter
             
             // Subscribe to events
             EventBus.Subscribe("RegionUpdated", OnRegionUpdated);
@@ -123,6 +127,15 @@ namespace Controllers
             {
                 regionEntity = entity;
                 UpdateViewWithEntityData();
+                
+                // Update region stats display if this is the currently selected region
+                if (regionStatsPresenter != null && 
+                    regionStatsPresenter.GetSelectedRegion() != null &&
+                    regionStatsPresenter.GetSelectedRegion().Id == entity.Id)
+                {
+                    // Call RefreshDisplay() method on the presenter
+                    regionStatsPresenter.RefreshDisplay();
+                }
             }
         }
         
@@ -184,14 +197,20 @@ namespace Controllers
                     // This region was selected
                     view.SetHighlighted(true);
                     
+                    // Display region stats in the UI
+                    if (regionEntity != null && regionStatsPresenter != null)
+                    {
+                        regionStatsPresenter.DisplayRegionStats(regionEntity);
+                    }
+                    
                     // Display nation stats if this region belongs to a nation
                     if (regionEntity != null && !string.IsNullOrEmpty(regionEntity.NationId) && nationManager != null)
                     {
                         NationEntity nation = nationManager.GetNation(regionEntity.NationId);
-                        if (nation != null && nationStatsController != null)
+                        if (nation != null && nationStatsPresenter != null)
                         {
                             // Update the nation stats panel with this region's nation
-                            nationStatsController.SetSelectedNation(nation);
+                            nationStatsPresenter.SetSelectedNation(nation);
                         }
                     }
                     
@@ -254,5 +273,23 @@ namespace Controllers
         }
         
         #endregion
+        
+        /// <summary>
+        /// Handle mouse click on this region
+        /// </summary>
+        public void HandleRegionClick()
+        {
+            if (regionEntity != null)
+            {
+                // Trigger the region selected event
+                EventBus.Trigger("RegionSelected", regionEntity.Id);
+                
+                // Also directly show region stats
+                if (regionStatsPresenter != null)
+                {
+                    regionStatsPresenter.DisplayRegionStats(regionEntity);
+                }
+            }
+        }
     }
 }

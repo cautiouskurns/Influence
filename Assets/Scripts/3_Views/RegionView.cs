@@ -3,6 +3,7 @@ using TMPro;
 using Entities;
 using Systems;
 using Managers;
+using Controllers;
 
 namespace UI
 {
@@ -30,8 +31,27 @@ namespace UI
         // Region identifier
         public string RegionName { get; private set; }
         
+        // Entity reference 
+        private RegionEntity _regionEntity;
+        public RegionEntity RegionEntity => _regionEntity;
+        
+        // Controller reference
+        private RegionController controller;
+        
         // Cache the last production value to detect changes
         private int lastProductionValue = 0;
+        
+        private void Awake()
+        {
+            // Create the controller for this view
+            controller = new RegionController(this);
+        }
+        
+        private void OnDestroy()
+        {
+            // Clean up the controller
+            controller?.Dispose();
+        }
         
         /// <summary>
         /// Initialize the view with basic data
@@ -169,11 +189,25 @@ namespace UI
         }
         
         /// <summary>
+        /// Set the associated region entity
+        /// </summary>
+        public void SetRegionEntity(RegionEntity entity)
+        {
+            _regionEntity = entity;
+            controller?.SetRegionEntity(entity);
+        }
+        
+        /// <summary>
         /// Handle mouse click on the region
         /// </summary>
         private void OnMouseDown()
         {
-            // Just trigger the event - business logic belongs in controller
+            Debug.Log($"Region clicked: {RegionName}");
+            
+            // Use the controller to handle the click
+            controller?.HandleRegionClick();
+            
+            // Original event trigger remains for compatibility
             EventBus.Trigger("RegionSelected", RegionName);
         }
     }

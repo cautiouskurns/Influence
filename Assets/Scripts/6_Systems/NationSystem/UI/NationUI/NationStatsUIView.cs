@@ -3,22 +3,20 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using Entities;
+using UI;
 
-namespace UI
+namespace Systems.UI
 {
     /// <summary>
-    /// UI Module for displaying basic nation statistics
+    /// View component responsible for creating and updating UI elements for nation statistics display.
+    /// This class handles the visual representation of nation data.
     /// </summary>
-    public class NationStatsUIModule : UIModuleBase
+    public class NationStatsUIView : UIModuleBase
     {
-        [Header("Nation Reference")]
-        [SerializeField] private NationEntity currentNation;
-        
         [Header("UI Settings")]
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.2f, 0.4f, 0.8f, 1f);
         [SerializeField] private Vector2 statsPanelSize = new Vector2(280f, 380f);
-        [SerializeField] private float updateInterval = 0.5f;
         [SerializeField] private Vector2 panelPosition = new Vector2(-925f, -30f); // Left side offset
         
         // UI Elements
@@ -27,32 +25,11 @@ namespace UI
         private Image colorIndicator;
         private Dictionary<string, TextMeshProUGUI> statTexts = new Dictionary<string, TextMeshProUGUI>();
         
-        // Data tracking
-        private float updateTimer = 0f;
-        
-        public void SetNation(NationEntity nation)
+        public override void Initialize()
         {
-            Debug.Log($"SetNation called with nation: {(nation != null ? nation.Name : "null")}");
-            
-            currentNation = nation;
-            
-            // Make the panel visible when a nation is set
-            if (statsPanel != null)
-            {
-                statsPanel.SetActive(true);
-            }
-            
-            if (titleText != null && currentNation != null)
-            {
-                titleText.text = currentNation.Name.ToUpper();
-                colorIndicator.color = currentNation.Color;
-                Debug.Log($"Setting panel title to {currentNation.Name.ToUpper()} and color to {currentNation.Color}");
-                UpdateStats();
-            }
-            else
-            {
-                Debug.LogWarning($"Could not update UI: titleText={titleText != null}, currentNation={currentNation != null}");
-            }
+            Debug.Log("NationStatsUIView Initialize called");
+            base.Initialize();
+            CreateUIElements();
         }
         
         public override void Show()
@@ -60,6 +37,11 @@ namespace UI
             if (statsPanel != null)
             {
                 statsPanel.SetActive(true);
+                Debug.Log("NationStatsUIView panel shown");
+            }
+            else
+            {
+                Debug.LogWarning("Cannot show NationStatsUIView - panel is null");
             }
         }
         
@@ -68,23 +50,75 @@ namespace UI
             if (statsPanel != null)
             {
                 statsPanel.SetActive(false);
+                Debug.Log("NationStatsUIView panel hidden");
             }
         }
         
-        public override void Initialize()
+        /// <summary>
+        /// Display nation data prepared by the ViewModel
+        /// </summary>
+        public void DisplayNation(NationStatsViewModel.NationDisplayData displayData)
         {
-            base.Initialize();
-            CreateUIElements();
+            Debug.Log("DisplayNation called with prepared display data");
+            
+            if (statsPanel == null)
+            {
+                Debug.LogError("DisplayNation failed - statsPanel is null. Creating UI elements...");
+                CreateUIElements();
+            }
+            
+            if (statsPanel != null)
+            {
+                statsPanel.SetActive(true);
+            }
+            
+            if (titleText != null && colorIndicator != null)
+            {
+                titleText.text = displayData.nationName;
+                colorIndicator.color = displayData.nationColor;
+                
+                // Update all stat values from the display data
+                UpdateDisplay(displayData);
+                Debug.Log($"Updated nation display with name: {displayData.nationName}");
+            }
+            else
+            {
+                Debug.LogError($"DisplayNation UI elements not ready: titleText={titleText != null}, colorIndicator={colorIndicator != null}");
+            }
         }
         
-        private void Update()
+        /// <summary>
+        /// Update the display with prepared data
+        /// </summary>
+        public void UpdateDisplay(NationStatsViewModel.NationDisplayData data)
         {
-            // Update stats periodically
-            updateTimer += Time.deltaTime;
-            if (updateTimer >= updateInterval && currentNation != null)
+            Debug.Log("UpdateDisplay called with fresh display data");
+            
+            // Update display with prepared data from ViewModel
+            UpdateStatValue("Regions", data.regionsCount);
+            
+            // Economy stats
+            UpdateStatValue("Treasury", data.treasury);
+            UpdateStatValue("GDP", data.gdp);
+            UpdateStatValue("Growth", data.growthRate);
+            UpdateStatValue("Total Wealth", data.totalWealth);
+            UpdateStatValue("Production", data.production);
+            
+            // Stability stats
+            UpdateStatValue("Stability", data.stability);
+            UpdateStatValue("Unrest", data.unrest);
+            
+            // Policy settings
+            UpdateStatValue("Economic", data.economicPolicy);
+            UpdateStatValue("Diplomatic", data.diplomaticPolicy);
+            UpdateStatValue("Military", data.militaryPolicy);
+            UpdateStatValue("Social", data.socialPolicy);
+            
+            // Force layout refresh
+            if (statsPanel != null)
             {
-                updateTimer = 0f;
-                UpdateStats();
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(statsPanel.GetComponent<RectTransform>());
             }
         }
         
@@ -93,12 +127,14 @@ namespace UI
             // Check if elements already exist
             if (statsPanel != null)
             {
-//                Debug.Log("UI elements already created, skipping creation.");
+                Debug.Log("NationStatsUIView UI elements already created");
                 return;
             }
             
+            Debug.Log("Creating NationStatsUIView UI elements");
+            
             // Create main panel
-            statsPanel = new GameObject("NationStatsUIPanel"); // Renamed to avoid conflicts
+            statsPanel = new GameObject("NationStatsPanel");
             statsPanel.transform.SetParent(transform, false);
             
             // Add panel image
@@ -122,6 +158,40 @@ namespace UI
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
             
+            // Create header section
+            CreateHeaderSection();
+            
+            // Add divider
+            CreateDivider();
+            
+            // Add basic stats fields
+            CreateStatField("Regions", "0");
+            CreateStatField("Treasury", "0");
+            CreateStatField("GDP", "0");
+            CreateStatField("Growth", "0%");
+            CreateStatField("Total Wealth", "0");
+            CreateStatField("Production", "0");
+            CreateStatField("Stability", "0%");
+            CreateStatField("Unrest", "0%");
+            
+            // Add divider
+            CreateDivider();
+            
+            // Add policy stats
+            CreateStatCategory("Policy Settings");
+            CreateStatField("Economic", "Balanced");
+            CreateStatField("Diplomatic", "Balanced");
+            CreateStatField("Military", "Balanced");
+            CreateStatField("Social", "Balanced");
+            
+            Debug.Log("UI elements created successfully");
+            
+            // Hide panel initially until a nation is set
+            statsPanel.SetActive(false);
+        }
+        
+        private void CreateHeaderSection()
+        {
             // Add header container
             GameObject headerContainer = new GameObject("HeaderContainer");
             headerContainer.transform.SetParent(statsPanel.transform, false);
@@ -161,29 +231,6 @@ namespace UI
             
             LayoutElement titleLayout = titleObj.AddComponent<LayoutElement>();
             titleLayout.flexibleWidth = 1;
-            
-            // Add divider
-            CreateDivider();
-            
-            // Add basic stats fields
-            CreateStatField("Regions", "0");
-            CreateStatField("Treasury", "0");
-            CreateStatField("GDP", "0");
-            CreateStatField("Growth", "0%");
-            CreateStatField("Total Wealth", "0");
-            CreateStatField("Production", "0");
-            CreateStatField("Stability", "0%");
-            CreateStatField("Unrest", "0%");
-            
-            // Add divider
-            CreateDivider();
-            
-            // Add policy stats
-            CreateStatCategory("Policy Settings");
-            CreateStatField("Economic", "Balanced");
-            CreateStatField("Diplomatic", "Balanced");
-            CreateStatField("Military", "Balanced");
-            CreateStatField("Social", "Balanced");
         }
         
         private void CreateDivider()
@@ -267,127 +314,17 @@ namespace UI
             statTexts[label] = valueText;
         }
         
-        private void UpdateStats()
-        {
-            if (currentNation == null)
-                return;
-
-            try
-            {
-                // Debug logging
-                // Debug.Log($"Updating stats for nation: {currentNation.Name} (ID: {currentNation.Id})");
-                if (currentNation.Economy != null)
-                {
-//                    Debug.Log($"Economy data: Treasury={currentNation.Economy.TreasuryBalance}, GDP={currentNation.Economy.GDP}, Growth={currentNation.Economy.GDPGrowthRate}");
-                }
-                else
-                {
-                    Debug.LogWarning($"Nation {currentNation.Name} has no Economy component!");
-                }
-
-                // Update basic nation stats
-                UpdateStatValue("Regions", currentNation.GetRegionIds()?.Count.ToString() ?? "0");
-                
-                // Economy stats with null checks
-                if (currentNation.Economy != null)
-                {
-                    UpdateStatValue("Treasury", FormatNumber(currentNation.Economy.TreasuryBalance));
-                    UpdateStatValue("GDP", FormatNumber(currentNation.Economy.GDP));
-                    UpdateStatValue("Growth", FormatPercent(currentNation.Economy.GDPGrowthRate));
-                    UpdateStatValue("Total Wealth", FormatNumber(currentNation.Economy.TotalWealth));
-                    UpdateStatValue("Production", FormatNumber(currentNation.Economy.TotalProduction));
-                }
-                else
-                {
-                    // Use test values if Economy component is missing
-                    Debug.Log("Using test values for economy stats");
-                    UpdateStatValue("Treasury", FormatNumber(1000));
-                    UpdateStatValue("GDP", FormatNumber(2500));
-                    UpdateStatValue("Growth", FormatPercent(0.05f));
-                    UpdateStatValue("Total Wealth", FormatNumber(5000));
-                    UpdateStatValue("Production", FormatNumber(750));
-                }
-                
-                // Stability stats with null check
-                if (currentNation.Stability != null)
-                {
-//                    Debug.Log($"Stability data: Stability={currentNation.Stability.Stability}, Unrest={currentNation.Stability.UnrestLevel}");
-                    UpdateStatValue("Stability", FormatPercent(currentNation.Stability.Stability));
-                    UpdateStatValue("Unrest", FormatPercent(currentNation.Stability.UnrestLevel));
-                }
-                else
-                {
-   //                 Debug.LogWarning($"Nation {currentNation.Name} has no Stability component!");
-                    UpdateStatValue("Stability", "0%");
-                    UpdateStatValue("Unrest", "0%");
-                }
-                
-                // Update policy settings with try-catch for each one
-                try { UpdateStatValue("Economic", FormatPolicyValue(currentNation.GetPolicy(NationEntity.PolicyType.Economic))); } 
-                catch (System.Exception e) { 
-                    Debug.LogWarning($"Failed to get Economic policy: {e.Message}");
-                    UpdateStatValue("Economic", "N/A"); 
-                }
-                
-                try { UpdateStatValue("Diplomatic", FormatPolicyValue(currentNation.GetPolicy(NationEntity.PolicyType.Diplomatic))); } 
-                catch (System.Exception e) { 
-                    Debug.LogWarning($"Failed to get Diplomatic policy: {e.Message}");
-                    UpdateStatValue("Diplomatic", "N/A"); 
-                }
-                
-                try { UpdateStatValue("Military", FormatPolicyValue(currentNation.GetPolicy(NationEntity.PolicyType.Military))); } 
-                catch (System.Exception e) { 
-                    Debug.LogWarning($"Failed to get Military policy: {e.Message}");
-                    UpdateStatValue("Military", "N/A"); 
-                }
-                
-                try { UpdateStatValue("Social", FormatPolicyValue(currentNation.GetPolicy(NationEntity.PolicyType.Social))); } 
-                catch (System.Exception e) { 
-                    Debug.LogWarning($"Failed to get Social policy: {e.Message}");
-                    UpdateStatValue("Social", "N/A"); 
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error updating nation stats: {e.Message}");
-            }
-        }
-        
         private void UpdateStatValue(string key, string value)
         {
             if (statTexts.ContainsKey(key))
             {
                 statTexts[key].text = value;
+                // Debug.Log($"Updated stat {key} to {value}");
             }
-        }
-        
-        private string FormatNumber(float value)
-        {
-            if (value >= 1000000)
-                return (value / 1000000f).ToString("F2") + "M";
-            else if (value >= 1000)
-                return (value / 1000f).ToString("F1") + "K";
             else
-                return value.ToString("F1");
-        }
-        
-        private string FormatPercent(float value)
-        {
-            return (value * 100).ToString("F1") + "%";
-        }
-        
-        private string FormatPolicyValue(float value)
-        {
-            if (value < 0.25f)
-                return "Very Low";
-            else if (value < 0.4f)
-                return "Low";
-            else if (value <= 0.6f)
-                return "Balanced";
-            else if (value <= 0.75f)
-                return "High";
-            else
-                return "Very High";
+            {
+                Debug.LogWarning($"Tried to update non-existent stat field: {key}");
+            }
         }
     }
 }
