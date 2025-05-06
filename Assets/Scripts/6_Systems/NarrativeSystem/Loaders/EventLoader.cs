@@ -29,7 +29,7 @@ namespace NarrativeSystem
                     if (eventCollection != null && eventCollection.events != null)
                     {
                         loadedEvents.AddRange(eventCollection.events);
-                        Debug.Log($"Successfully loaded {eventCollection.events.Count} events from JSON");
+                        //Debug.Log($"Successfully loaded {eventCollection.events.Count} events from JSON");
                     }
                     else
                     {

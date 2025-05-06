@@ -65,12 +65,12 @@ namespace Systems
                 //CreateTestRegions();
             }
             
-            Debug.Log($"[EconomicSystem] Initialized with {regions.Count} regions in Awake");
+//            Debug.Log($"[EconomicSystem] Initialized with {regions.Count} regions in Awake");
         }
         
         private void Start()
         {
-            Debug.Log($"[EconomicSystem] Starting with {regions.Count} regions");
+            // Debug.Log($"[EconomicSystem] Starting with {regions.Count} regions");
             
             // Manually trigger a notification that regions exist
             EventBus.Trigger("RegionsCreated", regions.Count);

@@ -106,7 +106,6 @@ namespace NarrativeSystem
                 if (dialoguePanelTransform != null)
                 {
                     dialoguePanel = dialoguePanelTransform.GetComponent<RectTransform>();
-                    Debug.Log("DialogueView: Found dialoguePanel as a child object.");
                     
                     // Try to find the other objects as children of the panel
                     TryFindComponents();
@@ -160,7 +159,6 @@ namespace NarrativeSystem
                     if (titleText != null && eventTitleText == null)
                     {
                         eventTitleText = titleText.GetComponent<TextMeshProUGUI>();
-                        Debug.Log("DialogueView: Found eventTitleText component.");
                     }
                 }
                 
@@ -172,7 +170,6 @@ namespace NarrativeSystem
                     if (descText != null && eventDescriptionText == null)
                     {
                         eventDescriptionText = descText.GetComponent<TextMeshProUGUI>();
-                        Debug.Log("DialogueView: Found eventDescriptionText component.");
                     }
                 }
                 
@@ -185,12 +182,10 @@ namespace NarrativeSystem
                     if (scrollRect != null && scrollRect.content != null)
                     {
                         responseContainer = scrollRect.content;
-                        Debug.Log("DialogueView: Found responseContainer from ScrollRect.content.");
                     }
                     else
                     {
                         responseContainer = responseContainerTrans.GetComponent<RectTransform>();
-                        Debug.Log("DialogueView: Found responseContainer component.");
                     }
                     
                     // Try to find response button template in the direct container
@@ -198,7 +193,6 @@ namespace NarrativeSystem
                     if (buttonTemplate != null && responseButtonTemplate == null)
                     {
                         responseButtonTemplate = buttonTemplate.GetComponent<Button>();
-                        Debug.Log("DialogueView: Found responseButtonTemplate component.");
                     }
                     else if (responseContainerTrans != null)
                     {
@@ -207,7 +201,6 @@ namespace NarrativeSystem
                         if (buttonTemplate != null && responseButtonTemplate == null)
                         {
                             responseButtonTemplate = buttonTemplate.GetComponent<Button>();
-                            Debug.Log("DialogueView: Found responseButtonTemplate in container parent.");
                         }
                         else
                         {
@@ -218,7 +211,6 @@ namespace NarrativeSystem
                                 if (buttonTemplate != null && responseButtonTemplate == null)
                                 {
                                     responseButtonTemplate = buttonTemplate.GetComponent<Button>();
-                                    Debug.Log("DialogueView: Found responseButtonTemplate in viewport.");
                                 }
                             }
                         }

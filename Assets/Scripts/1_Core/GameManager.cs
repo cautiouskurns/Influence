@@ -99,8 +99,6 @@ public class GameManager : MonoBehaviour
             turnManager.SetTimeScale(baseSimulationSpeed);
         }
         
-        // _isInitialized = true;
-        Debug.Log("GameManager initialized successfully");
     }
     
     private void OnDestroy()

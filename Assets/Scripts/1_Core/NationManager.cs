@@ -59,8 +59,8 @@ namespace Managers
             // Initialize references
             TryFindEconomicSystem();
             
-            if (debugLogging)
-                Debug.Log("[NationManager] Awake completed - EconomicSystem found: " + (economicSystem != null));
+            // if (debugLogging)
+            //     Debug.Log("[NationManager] Awake completed - EconomicSystem found: " + (economicSystem != null));
         }
         
         private void OnEnable()
@@ -84,7 +84,7 @@ namespace Managers
             }
             
             // Debug output to check the setup
-            Debug.Log($"[NationManager] Nation system initialized with {nations.Count} nations");
+//            Debug.Log($"[NationManager] Nation system initialized with {nations.Count} nations");
             
             // Start coroutine to ensure we have economic system and regions
             StartCoroutine(EnsureEconomicSystemAndAssignRegions());
@@ -134,7 +134,7 @@ namespace Managers
             }
             else
             {
-                Debug.Log("[NationManager] No regions found yet, will wait for RegionsCreated event");
+                // Debug.Log("[NationManager] No regions found yet, will wait for RegionsCreated event");
             }
         }
 
@@ -147,7 +147,7 @@ namespace Managers
                 regionCount = count;
             }
             
-            Debug.Log($"[NationManager] Received RegionsCreated event with {regionCount} regions");
+            // Debug.Log($"[NationManager] Received RegionsCreated event with {regionCount} regions");
             
             // Ensure we have an economic system reference
             if (!TryFindEconomicSystem())
@@ -172,7 +172,7 @@ namespace Managers
             }
             
             var regions = economicSystem.GetAllRegionIds();
-            Debug.Log($"[NationManager] Regions found: {regions.Count}");
+//            Debug.Log($"[NationManager] Regions found: {regions.Count}");
             
             if (regions.Count > 0)
             {
@@ -185,12 +185,12 @@ namespace Managers
                 // Additional debug logging to confirm nations have regions
                 foreach (var nation in nations.Values)
                 {
-                    Debug.Log($"[NationManager] Nation {nation.Name} has {nation.GetRegionIds().Count} regions assigned");
+                    // Debug.Log($"[NationManager] Nation {nation.Name} has {nation.GetRegionIds().Count} regions assigned");
                 }
             }
             else
             {
-                Debug.LogWarning("[NationManager] No regions found yet, will wait for RegionsCreated event");
+                // Debug.LogWarning("[NationManager] No regions found yet, will wait for RegionsCreated event");
             }
         }
 
@@ -206,7 +206,7 @@ namespace Managers
             NationEntity newNation = new NationEntity(id, name, color);
             nations.Add(id, newNation);
             
-            Debug.Log($"Created new nation: {name} (ID: {id})");
+            // Debug.Log($"Created new nation: {name} (ID: {id})");
             return newNation;
         }
         
@@ -231,7 +231,6 @@ namespace Managers
                 if (nations.TryGetValue(nationId, out NationEntity mappedNation))
                 {
                     if (debugLogging)
-                        Debug.Log($"[NationManager] Region {regionId} belongs to nation: {mappedNation.Name} (from map)");
                     return mappedNation;
                 }
             }
@@ -287,9 +286,7 @@ namespace Managers
                 
                 // Update the map for quick lookups
                 regionNationMap[regionId] = nationId;
-                
-                if (debugLogging)
-                    Debug.Log($"[NationManager] Assigned region {regionId} to nation {nationId}");
+
                 
                 // Trigger an event for visualization/processing
                 EventBus.Trigger("RegionNationChanged", new RegionNationChangedData { 
@@ -326,7 +323,7 @@ namespace Managers
                 return;
             }
             
-            Debug.Log($"[NationManager] Assigning {regions.Count} regions to {nationIds.Count} nations");
+            // Debug.Log($"[NationManager] Assigning {regions.Count} regions to {nationIds.Count} nations");
             
             // Simple distribution - assign regions to nations based on a simple pattern
             for (int i = 0; i < regions.Count; i++)
@@ -345,7 +342,7 @@ namespace Managers
             CreateNation("republic", "Coastal Republic", new Color(0.2f, 0.4f, 0.8f));
             CreateNation("kingdom", "Southern Kingdom", new Color(0.1f, 0.6f, 0.3f));
             
-            Debug.Log("[NationManager] Created sample nations");
+            // Debug.Log("[NationManager] Created sample nations");
         }
     }
     

@@ -75,7 +75,6 @@ namespace Systems
             // Initialize the region cache
             UpdateRegionCache();
             
-            Debug.Log("[NationSystem] Initialized successfully");
         }
         
         private void OnEnable()
@@ -134,7 +133,7 @@ namespace Systems
                 // Update the statistics for the nation
                 UpdateNationData(nationId);
                 
-                Debug.Log($"[NationSystem] Region {regionId} changed to nation {nationId}, updated statistics");
+                // Debug.Log($"[NationSystem] Region {regionId} changed to nation {nationId}, updated statistics");
             }
         }
         
@@ -184,7 +183,6 @@ namespace Systems
                 regionCache[region.Name] = region;
             }
             
-            Debug.Log($"[NationSystem] Updated region cache with {regionCache.Count} regions");
         }
         
         // Update data for all nations
@@ -205,7 +203,6 @@ namespace Systems
             
             // Update basic nation data
             // This will be enhanced by the subsystems later
-            Debug.Log($"[NationSystem] Updated core data for {nation.Name}");
         }
         
         // Public API methods

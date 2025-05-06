@@ -59,7 +59,6 @@ namespace Managers
             
             cameraController.SetBoundaries(min, max);
             
-            Debug.Log($"CameraMapAdapter: Set camera boundaries to Min({min.x}, {min.y}), Max({max.x}, {max.y})");
         }
         
         /// <summary>

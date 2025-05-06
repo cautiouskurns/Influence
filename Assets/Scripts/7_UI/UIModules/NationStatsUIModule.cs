@@ -55,7 +55,7 @@ namespace UI
             }
         }
         
-        public void Show()
+        public override void Show()
         {
             if (statsPanel != null)
             {
@@ -63,7 +63,7 @@ namespace UI
             }
         }
         
-        public void Hide()
+        public override void Hide()
         {
             if (statsPanel != null)
             {
@@ -93,7 +93,7 @@ namespace UI
             // Check if elements already exist
             if (statsPanel != null)
             {
-                Debug.Log("UI elements already created, skipping creation.");
+//                Debug.Log("UI elements already created, skipping creation.");
                 return;
             }
             

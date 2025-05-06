@@ -147,9 +147,7 @@ namespace UI
             // This ensures proper color representation if color modes changed while inactive
             if (!string.IsNullOrEmpty(RegionName))
             {
-                // Create and send proper data object with the event
-                var data = new UI.MapComponents.RegionViewEnabledData(RegionName);
-                EventBus.Trigger("RegionViewEnabled", data);
+                EventBus.Trigger("RegionViewEnabled", RegionName);
             }
         }
         

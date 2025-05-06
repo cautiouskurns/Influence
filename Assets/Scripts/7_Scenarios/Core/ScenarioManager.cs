@@ -166,7 +166,7 @@ namespace Scenarios
                         // Store the nation
                         if (nation != null) {
                             scenarioNations[nation.Id] = nation;
-                            Debug.Log($"Created nation: {nation.Id}");
+                            // Debug.Log($"Created nation: {nation.Id}");
                         }
                     }
                     catch (System.Exception ex) {

@@ -116,7 +116,7 @@ namespace UI
                 Debug.LogError("MapManager: RegionColorService is null! Colors will not be properly managed.");
             }
             
-            Debug.Log("MapManager: Initialized all components");
+//            Debug.Log("MapManager: Initialized all components");
         }
         
         /// <summary>
@@ -163,9 +163,7 @@ namespace UI
         public void CreateCustomMap(List<Scenarios.RegionStartCondition> regionStartConditions)
         {
             ClearExistingRegions();
-            
-            Debug.Log($"MapManager: Creating custom map with {regionStartConditions.Count} predefined regions");
-            
+                        
             // First, get the nation manager
             NationManager nationManager = NationManager.Instance;
             if (nationManager == null)
@@ -296,7 +294,7 @@ namespace UI
                 }
             }
             
-            Debug.Log($"MapManager created {regionViews.Count} custom regions from scenario data");
+            // Debug.Log($"MapManager created {regionViews.Count} custom regions from scenario data");
             
             // Update the color service with the new region views
             if (colorService != null)
@@ -403,7 +401,7 @@ namespace UI
             {
                 GameObject managerObj = new GameObject("RegionControllerManager");
                 controllerManager = managerObj.AddComponent<RegionControllerManager>();
-                Debug.Log("MapManager: Created new RegionControllerManager");
+                // Debug.Log("MapManager: Created new RegionControllerManager");
             }
         }
         

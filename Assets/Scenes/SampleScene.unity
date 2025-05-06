@@ -1246,7 +1246,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 798012497}
-  - component: {fileID: 798012498}
   - component: {fileID: 798012499}
   m_Layer: 0
   m_Name: EventManager
@@ -1270,21 +1269,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 813411116}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &798012498
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 798012496}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f17f3f03499a4c01a28c40920945dea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  triggerRandomEventKey: 101
-  resetEventsKey: 114
-  eventManager: {fileID: 0}
 --- !u!114 &798012499
 MonoBehaviour:
   m_ObjectHideFlags: 0

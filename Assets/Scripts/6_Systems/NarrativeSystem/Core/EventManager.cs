@@ -207,7 +207,7 @@ namespace NarrativeSystem
                 
                 if (showDebugLogs)
                 {
-                    Debug.Log($"Loaded {loadedEvents.Count} events from JSON");
+                    // Debug.Log($"Loaded {loadedEvents.Count} events from JSON");
                 }
             }
             else

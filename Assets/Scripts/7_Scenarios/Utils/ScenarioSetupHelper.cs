@@ -40,7 +40,6 @@ namespace Scenarios
                     controllerSO.FindProperty("scenarioManager").objectReferenceValue = scenarioManager;
                     controllerSO.ApplyModifiedProperties();
                     
-                    Debug.Log("Added MapScenarioController to MapManager");
                 }
                 else
                 {

@@ -82,7 +82,7 @@ public class ScenarioTester : MonoBehaviour
                 
             so.ApplyModifiedProperties();
             
-            Debug.Log("Connected systems to ScenarioManager");
+            // Debug.Log("Connected systems to ScenarioManager");
         }
     }
     
@@ -108,7 +108,6 @@ public class ScenarioTester : MonoBehaviour
         
         // The ScenarioUI will create its own text in Awake if not assigned
         
-        Debug.Log("Created simplified ScenarioUI");
     }
     
     private TestScenario CreateTestScenario()
@@ -206,7 +205,6 @@ public class ScenarioTester : MonoBehaviour
         
         if (scenarioManager != null && testScenario != null)
         {
-            Debug.Log("Starting test scenario: " + testScenario.scenarioName);
             scenarioManager.StartScenario(testScenario);
         }
     }

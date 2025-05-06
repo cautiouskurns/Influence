@@ -88,7 +88,6 @@ public class UIInitializer : MonoBehaviour
         
         // Create the module
         SimulationUIModule module = uiManager.CreateModule<SimulationUIModule>(simulationControlsPosition);
-        Debug.Log("Created SimulationUIModule");
     }
     
     /// <summary>
@@ -106,7 +105,7 @@ public class UIInitializer : MonoBehaviour
         
         // Create the module
         VisualizationUIModule module = uiManager.CreateModule<VisualizationUIModule>(visualizationControlsPosition);
-        Debug.Log("Created VisualizationUIModule");
+        // Debug.Log("Created VisualizationUIModule");
     }
     
     /// <summary>
@@ -124,6 +123,6 @@ public class UIInitializer : MonoBehaviour
         
         // Create the module
         StatsDisplayUIModule module = uiManager.CreateModule<StatsDisplayUIModule>(statsDisplayPosition);
-        Debug.Log("Created StatsDisplayUIModule");
+        // Debug.Log("Created StatsDisplayUIModule");
     }
 }

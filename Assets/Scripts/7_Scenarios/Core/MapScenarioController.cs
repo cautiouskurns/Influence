@@ -43,7 +43,6 @@ namespace Scenarios
         {
             if (data is TestScenario scenario)
             {
-                Debug.Log("MapScenarioController received ScenarioStarted event, creating custom map");
                 CreateMapFromScenario(scenario);
             }
         }
@@ -52,7 +51,6 @@ namespace Scenarios
         {
             if (mapManager != null && scenario != null)
             {
-                Debug.Log($"Creating map with {scenario.regionStartConditions.Count} regions from scenario: {scenario.scenarioName}");
                 
                 // Cast the list to remove any ambiguity about the type
                 List<RegionStartCondition> regionConditions = scenario.regionStartConditions;

@@ -148,7 +148,6 @@ namespace Controllers
         {
             if (data is RegionNationChangedData changeData && changeData.RegionId == view.RegionName)
             {
-                Debug.Log($"Region {view.RegionName} nation changed to {changeData.NationId}");
                 
                 // Update the entity's NationId property directly
                 if (regionEntity != null)

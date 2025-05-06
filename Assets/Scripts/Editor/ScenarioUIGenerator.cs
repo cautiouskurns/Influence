@@ -9,8 +9,7 @@ namespace Editor
 {
     public class ScenarioUIGenerator : EditorWindow
     {
-        private bool createPrefab = true;
-        private string prefabPath = "Assets/Prefabs/UI/ScenarioItemPrefab.prefab";
+
         private bool autoWireReferences = true;
 
         [MenuItem("Tools/Scenario UI Generator")]

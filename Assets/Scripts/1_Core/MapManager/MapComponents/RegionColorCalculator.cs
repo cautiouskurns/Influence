@@ -46,19 +46,6 @@ namespace UI.MapComponents
     }
 
     /// <summary>
-    /// Data structure for region view enabled events
-    /// </summary>
-    public class RegionViewEnabledData
-    {
-        public string RegionId { get; private set; }
-        
-        public RegionViewEnabledData(string regionId)
-        {
-            RegionId = regionId;
-        }
-    }
-
-    /// <summary>
     /// CLASS PURPOSE:
     /// Centralized service for managing the colors of map regions based on different visualization modes.
     /// 
@@ -133,7 +120,6 @@ namespace UI.MapComponents
             EventBus.Subscribe("RegionNationChanged", OnRegionNationChanged);
             EventBus.Subscribe("UpdateMapColors", OnUpdateMapColors);
             EventBus.Subscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
-            EventBus.Subscribe("RegionViewEnabled", OnRegionViewEnabled);
         }
 
         private void OnDisable()
@@ -142,7 +128,6 @@ namespace UI.MapComponents
             EventBus.Unsubscribe("RegionNationChanged", OnRegionNationChanged);
             EventBus.Unsubscribe("UpdateMapColors", OnUpdateMapColors);
             EventBus.Unsubscribe("RegionsAssignedToNations", OnRegionsAssignedToNations);
-            EventBus.Unsubscribe("RegionViewEnabled", OnRegionViewEnabled);
         }
 
         /// <summary>
@@ -508,17 +493,6 @@ namespace UI.MapComponents
         {
             Debug.Log("RegionColorService: Regions were assigned to nations, updating to nation color mode");
             SetColorMode(RegionColorMode.Nation);
-        }
-
-        private void OnRegionViewEnabled(object data)
-        {
-            if (data is RegionViewEnabledData enabledData)
-            {
-                if (regionViews.TryGetValue(enabledData.RegionId, out RegionView view))
-                {
-                    UpdateRegionColor(enabledData.RegionId, view);
-                }
-            }
         }
 
         #endregion

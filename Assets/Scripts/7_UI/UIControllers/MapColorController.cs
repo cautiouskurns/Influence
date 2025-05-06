@@ -40,7 +40,7 @@ namespace UI
             }
             else if (logDebugInfo)
             {
-                Debug.Log("MapColorController: Found RegionColorService");
+//                Debug.Log("MapColorController: Found RegionColorService");
             }
         }
         
