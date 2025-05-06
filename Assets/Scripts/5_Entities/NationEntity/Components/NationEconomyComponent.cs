@@ -256,5 +256,54 @@ namespace Entities.Components
             
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Update the wealth and production values for testing purposes
+        /// </summary>
+        public void UpdateWealth(float amount)
+        {
+            TotalWealth += amount;
+            Debug.Log($"Nation economy: Updated TotalWealth by {amount}, new value: {TotalWealth}");
+        }
+        
+        /// <summary>
+        /// Update the production values for testing purposes
+        /// </summary>
+        public void UpdateProduction(float amount)
+        {
+            TotalProduction += amount;
+            Debug.Log($"Nation economy: Updated TotalProduction by {amount}, new value: {TotalProduction}");
+        }
+        
+        /// <summary>
+        /// Simulate basic economic changes for testing UI updates
+        /// </summary>
+        public void SimulateEconomicChanges()
+        {
+            // Apply small random changes to economic values for testing
+            float wealthChange = Random.Range(-50f, 100f);
+            float productionChange = Random.Range(-20f, 40f);
+            float treasuryChange = Random.Range(-30f, 70f);
+            
+            // Apply the changes
+            TotalWealth += wealthChange;
+            TotalProduction += productionChange;
+            TreasuryBalance += treasuryChange;
+            
+            // Update GDP based on new values
+            PreviousGDP = GDP;
+            GDP = TotalWealth + TotalProduction * 2;
+            
+            // Calculate growth rate
+            if (PreviousGDP > 0)
+            {
+                GDPGrowthRate = (GDP - PreviousGDP) / PreviousGDP;
+            }
+            
+            Debug.Log($"Simulated economic changes: Wealth {(wealthChange >= 0 ? "+" : "")}{wealthChange:F0}, " +
+                     $"Production {(productionChange >= 0 ? "+" : "")}{productionChange:F0}, " +
+                     $"Treasury {(treasuryChange >= 0 ? "+" : "")}{treasuryChange:F0}, " +
+                     $"Growth {GDPGrowthRate:P2}");
+        }
     }
 }

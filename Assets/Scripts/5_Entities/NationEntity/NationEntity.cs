@@ -157,6 +157,9 @@ namespace Entities
             // Process economy
             Economy.ProcessTurn(regions);
             
+            // Add random simulation of economic changes for testing UI updates
+            Economy.SimulateEconomicChanges();
+            
             // Process policy effects
             Policy.ProcessTurn();
             Policy.ApplyPolicyEffects(regions);
@@ -214,6 +217,43 @@ namespace Entities
         {
             return NationPolicyComponent.CreateStandardPolicy(name, description, cost, duration, 
                                                             wealthEffect, productionEffect, stabilityEffect);
+        }
+
+        /// <summary>
+        /// Debug method to log all nation stats to the console
+        /// </summary>
+        public void LogStatsToConsole()
+        {
+            // Create a clear visual separator for this nation
+            string separator = new string('=', 50);
+            
+            Debug.Log($"{separator}\n" +
+                      $"NATION: {Name} (ID: {Id})\n" +
+                      $"{separator}");
+            
+            // Economic stats with detailed logging
+            Debug.Log($"ECONOMY - {Name}:\n" +
+                      $"  Wealth: {Economy.TotalWealth:F0}\n" +
+                      $"  Production: {Economy.TotalProduction:F0}\n" +
+                      $"  GDP: {Economy.GDP:F0}\n" +
+                      $"  Growth Rate: {Economy.GDPGrowthRate:P2}\n" +
+                      $"  Treasury: {Economy.TreasuryBalance:F0}\n" +
+                      $"  Regions: {regionIds.Count}");
+            
+            // Stability stats
+            Debug.Log($"STABILITY - {Name}:\n" +
+                      $"  Stability: {Stability.Stability:P0}\n" +
+                      $"  Unrest: {Stability.UnrestLevel:P0}");
+            
+            // Policy stats
+            Debug.Log($"POLICY - {Name}:\n" +
+                      $"  Economic: {GetPolicy(PolicyType.Economic):F2}\n" +
+                      $"  Diplomatic: {GetPolicy(PolicyType.Diplomatic):F2}\n" +
+                      $"  Military: {GetPolicy(PolicyType.Military):F2}\n" +
+                      $"  Social: {GetPolicy(PolicyType.Social):F2}");
+            
+            // End separator
+            Debug.Log($"{separator}\n");
         }
     }
 }

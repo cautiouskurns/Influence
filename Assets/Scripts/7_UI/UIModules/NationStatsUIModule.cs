@@ -278,7 +278,7 @@ namespace UI
                 // Debug.Log($"Updating stats for nation: {currentNation.Name} (ID: {currentNation.Id})");
                 if (currentNation.Economy != null)
                 {
-                    Debug.Log($"Economy data: Treasury={currentNation.Economy.TreasuryBalance}, GDP={currentNation.Economy.GDP}, Growth={currentNation.Economy.GDPGrowthRate}");
+//                    Debug.Log($"Economy data: Treasury={currentNation.Economy.TreasuryBalance}, GDP={currentNation.Economy.GDP}, Growth={currentNation.Economy.GDPGrowthRate}");
                 }
                 else
                 {
@@ -311,13 +311,13 @@ namespace UI
                 // Stability stats with null check
                 if (currentNation.Stability != null)
                 {
-                    Debug.Log($"Stability data: Stability={currentNation.Stability.Stability}, Unrest={currentNation.Stability.UnrestLevel}");
+//                    Debug.Log($"Stability data: Stability={currentNation.Stability.Stability}, Unrest={currentNation.Stability.UnrestLevel}");
                     UpdateStatValue("Stability", FormatPercent(currentNation.Stability.Stability));
                     UpdateStatValue("Unrest", FormatPercent(currentNation.Stability.UnrestLevel));
                 }
                 else
                 {
-                    Debug.LogWarning($"Nation {currentNation.Name} has no Stability component!");
+   //                 Debug.LogWarning($"Nation {currentNation.Name} has no Stability component!");
                     UpdateStatValue("Stability", "0%");
                     UpdateStatValue("Unrest", "0%");
                 }

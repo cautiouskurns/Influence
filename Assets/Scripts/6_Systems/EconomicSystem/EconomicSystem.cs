@@ -162,8 +162,42 @@ namespace Systems
                 }
             }
             
+            // Debug log all nation stats
+            LogAllNationStats();
+            
             // Also update all map colors when the economy ticks
             EventBus.Trigger("UpdateMapColors", null);
+        }
+        
+        /// <summary>
+        /// Debug method to log economic stats for all nations to the console
+        /// </summary>
+        private void LogAllNationStats()
+        {
+            Debug.Log("\n========== NATION STATS DEBUG LOG ==========");
+            Debug.Log($"Turn {Time.frameCount}: Logging stats for all nations");
+            
+            NationManager nationManager = NationManager.Instance;
+            if (nationManager == null)
+            {
+                Debug.LogWarning("NationManager not found, can't log nation stats");
+                return;
+            }
+            
+            List<string> nationIds = nationManager.GetAllNationIds();
+            Debug.Log($"Found {nationIds.Count} nations in the game");
+            
+            foreach (string nationId in nationIds)
+            {
+                NationEntity nation = nationManager.GetNation(nationId);
+                if (nation != null)
+                {
+                    // Use the LogStatsToConsole method we added to NationEntity
+                    nation.LogStatsToConsole();
+                }
+            }
+            
+            Debug.Log("=============== END OF LOG ===============\n");
         }
 
         [ContextMenu("Process Economic Tick")]

@@ -83,8 +83,27 @@ public class NationStatsController : MonoBehaviour
         // Refresh the currently displayed nation stats if there is one
         if (currentlyDisplayedNation != null)
         {
+            Debug.Log($"Turn changed - refreshing nation stats for {currentlyDisplayedNation.Name}");
+            
+            // Log economic values before refresh
+            if (currentlyDisplayedNation.Economy != null)
+            {
+                Debug.Log($"BEFORE refresh: Nation {currentlyDisplayedNation.Name} - " +
+                          $"Treasury: {currentlyDisplayedNation.Economy.TreasuryBalance}, " +
+                          $"Wealth: {currentlyDisplayedNation.Economy.TotalWealth}, " +
+                          $"Production: {currentlyDisplayedNation.Economy.TotalProduction}");
+            }
+            
             DisplayNationStats(currentlyDisplayedNation);
-            Debug.Log($"Updated nation stats for {currentlyDisplayedNation.Name} after turn change");
+            
+            // Log economic values after refresh
+            if (currentlyDisplayedNation.Economy != null)
+            {
+                Debug.Log($"AFTER refresh: Nation {currentlyDisplayedNation.Name} - " +
+                          $"Treasury: {currentlyDisplayedNation.Economy.TreasuryBalance}, " +
+                          $"Wealth: {currentlyDisplayedNation.Economy.TotalWealth}, " +
+                          $"Production: {currentlyDisplayedNation.Economy.TotalProduction}");
+            }
         }
     }
     
