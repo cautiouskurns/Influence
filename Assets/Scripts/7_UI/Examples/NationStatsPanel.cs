@@ -1,6 +1,7 @@
 using UnityEngine;
 using Entities;
 using UI;
+using System.Collections.Generic;
 
 /// <summary>
 /// Example script that shows how to use the NationStatsUIModule in your game
@@ -66,17 +67,9 @@ public class NationStatsPanel : MonoBehaviour
             // Make sure the nation has valid economy data
             if (nation != null)
             {
-                // Ensure Economy component is initialized
-                if (nation.Economy == null)
-                {
-                    Debug.LogWarning($"Nation {nation.Name} has no Economy component - creating one");
-                    PopulateEconomyDataForTesting(nation);
-                }
-                else if (nation.Economy.TotalWealth == 0 && nation.Economy.TotalProduction == 0)
-                {
-                    Debug.LogWarning($"Nation {nation.Name} has zero values in Economy - populating test data");
-                    PopulateEconomyDataForTesting(nation);
-                }
+                // We need to repopulate the test data since the previous changes broke it
+                // This is a temporary fix until real economy simulation is implemented
+                PopulateEconomyDataForTesting(nation);
             }
             
             statsModule.SetNation(nation);
@@ -88,6 +81,9 @@ public class NationStatsPanel : MonoBehaviour
         }
     }
     
+    // Keep track of nations we've already populated with data to avoid duplicate logs
+    private HashSet<string> populatedNations = new HashSet<string>();
+    
     // Helper method to ensure nation has valid economy data for UI display
     private void PopulateEconomyDataForTesting(NationEntity nation)
     {
@@ -97,59 +93,59 @@ public class NationStatsPanel : MonoBehaviour
         // Calculate base values from region count - gives some variety
         float baseValue = 1000 + (regionCount * 250);
         
-        // Set base economy values
+        // Set base economy values - directly using property setters now
         if (nation.Economy != null)
         {
-            // Use reflection to set values if regular property access doesn't work
-            var economyType = nation.Economy.GetType();
+            // Only log once per nation to avoid console spam
+            bool firstTime = !populatedNations.Contains(nation.Id);
+            if (firstTime)
+            {
+                Debug.Log($"Setting economic values for nation: {nation.Name}");
+                populatedNations.Add(nation.Id);
+            }
             
-            try {
-                // Try setting values through properties
-                SetPrivateFieldOrProperty(economyType, nation.Economy, "TreasuryBalance", baseValue * 0.5f);
-                SetPrivateFieldOrProperty(economyType, nation.Economy, "GDP", baseValue * 2.5f);
-                SetPrivateFieldOrProperty(economyType, nation.Economy, "TotalProduction", baseValue * 0.65f);
-                SetPrivateFieldOrProperty(economyType, nation.Economy, "TotalWealth", baseValue * 5f);
-                SetPrivateFieldOrProperty(economyType, nation.Economy, "GDPGrowthRate", 0.05f);
-            }
-            catch (System.Exception e) {
-                Debug.LogError($"Failed to set economy values: {e.Message}");
-            }
+            // Set values directly on the component using our helper method
+            // which now properly assigns values instead of trying to be too smart
+            SetEconomyValue(nation.Economy, "TreasuryBalance", baseValue * 0.5f);
+            SetEconomyValue(nation.Economy, "GDP", baseValue * 2.5f);
+            SetEconomyValue(nation.Economy, "TotalProduction", baseValue * 0.65f);
+            SetEconomyValue(nation.Economy, "TotalWealth", baseValue * 5f);
+            SetEconomyValue(nation.Economy, "GDPGrowthRate", 0.05f);
         }
         
         // Ensure stability values are available too
         if (nation.Stability != null)
         {
-            try {
-                var stabilityType = nation.Stability.GetType();
-                SetPrivateFieldOrProperty(stabilityType, nation.Stability, "Stability", 0.75f);
-                SetPrivateFieldOrProperty(stabilityType, nation.Stability, "UnrestLevel", 0.15f);
-            }
-            catch {
-                Debug.Log("Could not set stability values");
-            }
+            SetStabilityValue(nation.Stability, "Stability", 0.75f);
+            SetStabilityValue(nation.Stability, "UnrestLevel", 0.15f);
         }
     }
     
-    // Helper method to set private fields using reflection
-    private void SetPrivateFieldOrProperty(System.Type type, object instance, string name, object value)
+    // Simplified helper method to directly set economy values
+    private void SetEconomyValue(object component, string propertyName, object value)
     {
-        // Try to set property first
-        var prop = type.GetProperty(name);
-        if (prop != null && prop.CanWrite)
-        {
-            prop.SetValue(instance, value);
-            return;
+        try {
+            var property = component.GetType().GetProperty(propertyName);
+            if (property != null && property.CanWrite) {
+                property.SetValue(component, value);
+            }
         }
-        
-        // Try to set field if property not found or not writable
-        var field = type.GetField(name, 
-            System.Reflection.BindingFlags.Public | 
-            System.Reflection.BindingFlags.NonPublic | 
-            System.Reflection.BindingFlags.Instance);
-            
-        if (field != null)
-        {
-            field.SetValue(instance, value);
+        catch (System.Exception e) {
+            Debug.LogError($"Failed to set {propertyName}: {e.Message}");
+        }
+    }
+    
+    // Simplified helper method to directly set stability values
+    private void SetStabilityValue(object component, string propertyName, object value)
+    {
+        try {
+            var property = component.GetType().GetProperty(propertyName);
+            if (property != null && property.CanWrite) {
+                property.SetValue(component, value);
+            }
+        }
+        catch (System.Exception e) {
+            Debug.LogError($"Failed to set {propertyName}: {e.Message}");
         }
     }
     

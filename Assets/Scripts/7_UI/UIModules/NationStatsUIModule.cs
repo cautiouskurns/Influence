@@ -275,7 +275,7 @@ namespace UI
             try
             {
                 // Debug logging
-                Debug.Log($"Updating stats for nation: {currentNation.Name} (ID: {currentNation.Id})");
+                // Debug.Log($"Updating stats for nation: {currentNation.Name} (ID: {currentNation.Id})");
                 if (currentNation.Economy != null)
                 {
                     Debug.Log($"Economy data: Treasury={currentNation.Economy.TreasuryBalance}, GDP={currentNation.Economy.GDP}, Growth={currentNation.Economy.GDPGrowthRate}");

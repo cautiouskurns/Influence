@@ -53,9 +53,7 @@ namespace Managers
         {
             // Find all RegionViews in the scene
             RegionView[] views = FindObjectsByType<RegionView>(FindObjectsSortMode.None);
-            
-            Debug.Log($"RegionControllerManager: Found {views.Length} region views");
-            
+                        
             // Create a controller for each view
             foreach (RegionView view in views)
             {

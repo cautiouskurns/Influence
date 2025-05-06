@@ -145,6 +145,14 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Update labor availability by adding or subtracting a delta value
+        /// </summary>
+        public void UpdateLaborAvailable(float delta)
+        {
+            LaborAvailable = Mathf.Max(0, LaborAvailable + delta);
+        }
+
+        /// <summary>
         /// Get a summary of the population status
         /// </summary>
         public string GetSummary()

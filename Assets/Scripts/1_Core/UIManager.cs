@@ -42,6 +42,9 @@ namespace UI
             // Discover UI modules in the scene
             DiscoverUIModules();
             
+            // Create essential UI modules if they don't exist
+            CreateEssentialModules();
+            
             // Initialize all modules
             InitializeModules();
         }
@@ -369,6 +372,19 @@ namespace UI
             foreach (UIModuleBase module in uiModules)
             {
                 module.Initialize();
+            }
+        }
+
+        /// <summary>
+        /// Create essential UI modules if they don't exist yet
+        /// </summary>
+        private void CreateEssentialModules()
+        {
+            // Check if we already have a GameStatsUIModule
+            if (GetModule<GameStatsUIModule>() == null)
+            {
+                // Create the turn counter in the bottom panel (was previously in top panel)
+                CreateModule<GameStatsUIModule>(UIPosition.Bottom);
             }
         }
     }

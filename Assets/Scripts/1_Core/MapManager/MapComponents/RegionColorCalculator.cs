@@ -138,7 +138,6 @@ namespace UI.MapComponents
             this.regionViews = regionViews;
             this.gridWidth = gridWidth;
             this.gridHeight = gridHeight;
-            Debug.Log($"RegionColorService: Initialized with {regionViews.Count} region views");
         }
 
         /// <summary>
@@ -190,7 +189,7 @@ namespace UI.MapComponents
                 return;
             }
             
-            Debug.Log($"RegionColorService: Updating {regionViews.Count} region colors to {colorMode} mode");
+            // Debug.Log($"RegionColorService: Updating {regionViews.Count} region colors to {colorMode} mode");
             
             foreach (var kvp in regionViews)
             {

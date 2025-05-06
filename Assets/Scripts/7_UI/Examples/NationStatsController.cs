@@ -2,6 +2,7 @@ using UnityEngine;
 using Entities;
 using UI;
 using Core;
+using Managers;
 
 /// <summary>
 /// Example controller that demonstrates how to display nation stats
@@ -64,6 +65,26 @@ public class NationStatsController : MonoBehaviour
         if (currentSelectedNation != null)
         {
             DisplayNationStats(currentSelectedNation);
+        }
+        
+        // Subscribe to turn change events
+        EventBus.Subscribe("EconomicTick", OnTurnChanged);
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe when destroyed
+        EventBus.Unsubscribe("EconomicTick", OnTurnChanged);
+    }
+    
+    // Handle turn changes
+    private void OnTurnChanged(object data)
+    {
+        // Refresh the currently displayed nation stats if there is one
+        if (currentlyDisplayedNation != null)
+        {
+            DisplayNationStats(currentlyDisplayedNation);
+            Debug.Log($"Updated nation stats for {currentlyDisplayedNation.Name} after turn change");
         }
     }
     

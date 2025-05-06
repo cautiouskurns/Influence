@@ -106,18 +106,64 @@ namespace NarrativeSystem
                 if (dialoguePanelTransform != null)
                 {
                     dialoguePanel = dialoguePanelTransform.GetComponent<RectTransform>();
+                    Debug.Log($"DialogueView: Found dialoguePanel as child: {dialoguePanelTransform.name}");
                     
                     // Try to find the other objects as children of the panel
                     TryFindComponents();
                 }
                 else
                 {
-                    // Check if we ARE the dialogue panel
-                    dialoguePanel = GetComponent<RectTransform>();
-                    if (dialoguePanel != null)
+                    // Look for any child with RectTransform that might be the dialogue panel
+                    for (int i = 0; i < transform.childCount; i++)
                     {
-                        Debug.Log("DialogueView: Using this GameObject as the dialoguePanel.");
-                        TryFindComponents();
+                        Transform child = transform.GetChild(i);
+                        RectTransform rect = child.GetComponent<RectTransform>();
+                        
+                        if (rect != null && (child.name.Contains("Panel") || child.name.Contains("Dialogue") || child.name.Contains("Window")))
+                        {
+                            Debug.Log($"DialogueView: Found potential dialogue panel: {child.name}");
+                            dialoguePanel = rect;
+                            TryFindComponents();
+                            
+                            // If we found all components after trying this panel, break out
+                            if (eventTitleText != null && eventDescriptionText != null && 
+                                responseContainer != null && responseButtonTemplate != null)
+                            {
+                                Debug.Log("DialogueView: Successfully found all components");
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If still not found, check if we ARE the dialogue panel
+                    if (dialoguePanel == null)
+                    {
+                        dialoguePanel = GetComponent<RectTransform>();
+                        if (dialoguePanel != null)
+                        {
+                            Debug.Log("DialogueView: Using this GameObject as the dialoguePanel.");
+                            TryFindComponents();
+                        }
+                        else
+                        {
+                            // Last resort: just create a new dialogue panel
+                            Debug.LogWarning("DialogueView: Creating a new dialogue panel as last resort");
+                            GameObject panelObj = new GameObject("DialoguePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                            panelObj.transform.SetParent(transform, false);
+                            
+                            dialoguePanel = panelObj.GetComponent<RectTransform>();
+                            dialoguePanel.anchorMin = new Vector2(0.5f, 0.5f);
+                            dialoguePanel.anchorMax = new Vector2(0.5f, 0.5f);
+                            dialoguePanel.pivot = new Vector2(0.5f, 0.5f);
+                            dialoguePanel.sizeDelta = new Vector2(600, 400);
+                            
+                            // Add a background image
+                            Image panelImage = panelObj.GetComponent<Image>();
+                            panelImage.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+                            
+                            // Create basic components
+                            CreateBasicDialogueComponents();
+                        }
                     }
                 }
             }
@@ -142,6 +188,121 @@ namespace NarrativeSystem
                 
             if (responseButtonTemplate == null)
                 Debug.LogWarning("DialogueView: responseButtonTemplate is null! Please set it up using DialoguePrefabSetup.");
+                
+            // Log the final status
+            Debug.Log($"DialogueView setup status: Panel={dialoguePanel != null}, Title={eventTitleText != null}, " +
+                      $"Description={eventDescriptionText != null}, Container={responseContainer != null}, " +
+                      $"ButtonTemplate={responseButtonTemplate != null}");
+        }
+        
+        /// <summary>
+        /// Creates basic dialogue UI components when none are found
+        /// </summary>
+        private void CreateBasicDialogueComponents()
+        {
+            if (dialoguePanel == null) return;
+            
+            Debug.Log("DialogueView: Creating basic dialogue UI components");
+            
+            // Create header panel with title
+            GameObject headerObj = new GameObject("HeaderPanel", typeof(RectTransform));
+            headerObj.transform.SetParent(dialoguePanel, false);
+            RectTransform headerRect = headerObj.GetComponent<RectTransform>();
+            headerRect.anchorMin = new Vector2(0, 1);
+            headerRect.anchorMax = new Vector2(1, 1);
+            headerRect.pivot = new Vector2(0.5f, 1);
+            headerRect.sizeDelta = new Vector2(0, 50);
+            headerRect.anchoredPosition = Vector2.zero;
+            
+            // Add title text
+            GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleObj.transform.SetParent(headerObj.transform, false);
+            eventTitleText = titleObj.GetComponent<TextMeshProUGUI>();
+            eventTitleText.text = "Dialogue Title";
+            eventTitleText.fontSize = 24;
+            eventTitleText.alignment = TextAlignmentOptions.Center;
+            eventTitleText.color = Color.white;
+            
+            RectTransform titleRect = titleObj.GetComponent<RectTransform>();
+            titleRect.anchorMin = Vector2.zero;
+            titleRect.anchorMax = Vector2.one;
+            titleRect.offsetMin = new Vector2(10, 0);
+            titleRect.offsetMax = new Vector2(-10, 0);
+            
+            // Create content panel with description
+            GameObject contentObj = new GameObject("ContentPanel", typeof(RectTransform));
+            contentObj.transform.SetParent(dialoguePanel, false);
+            RectTransform contentRect = contentObj.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 0.3f);
+            contentRect.anchorMax = new Vector2(1, 0.9f);
+            contentRect.offsetMin = new Vector2(10, 0);
+            contentRect.offsetMax = new Vector2(-10, -10);
+            
+            // Add description text
+            GameObject descObj = new GameObject("DescriptionText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            descObj.transform.SetParent(contentObj.transform, false);
+            eventDescriptionText = descObj.GetComponent<TextMeshProUGUI>();
+            eventDescriptionText.text = "Dialogue description text goes here.";
+            eventDescriptionText.fontSize = 18;
+            eventDescriptionText.alignment = TextAlignmentOptions.TopLeft;
+            eventDescriptionText.color = Color.white;
+            eventDescriptionText.textWrappingMode = TextWrappingModes.Normal;
+            
+            RectTransform descRect = descObj.GetComponent<RectTransform>();
+            descRect.anchorMin = Vector2.zero;
+            descRect.anchorMax = Vector2.one;
+            descRect.offsetMin = new Vector2(10, 10);
+            descRect.offsetMax = new Vector2(-10, -10);
+            
+            // Create response container
+            GameObject responseObj = new GameObject("ResponseContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            responseObj.transform.SetParent(dialoguePanel, false);
+            responseContainer = responseObj.GetComponent<RectTransform>();
+            responseContainer.anchorMin = new Vector2(0, 0);
+            responseContainer.anchorMax = new Vector2(1, 0.25f);
+            responseContainer.offsetMin = new Vector2(20, 20);
+            responseContainer.offsetMax = new Vector2(-20, 0);
+            
+            // Configure layout group
+            VerticalLayoutGroup layout = responseObj.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 10;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlHeight = true;
+            layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = true;
+            
+            // Create button template
+            GameObject buttonObj = new GameObject("ResponseButtonTemplate", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            buttonObj.transform.SetParent(responseContainer, false);
+            buttonObj.SetActive(false); // Template should be inactive
+            
+            // Configure button
+            responseButtonTemplate = buttonObj.GetComponent<Button>();
+            Image buttonImage = buttonObj.GetComponent<Image>();
+            buttonImage.color = new Color(0.2f, 0.2f, 0.3f, 1f);
+            
+            // Add layout element for sizing
+            LayoutElement buttonLayout = buttonObj.AddComponent<LayoutElement>();
+            buttonLayout.minHeight = 40;
+            buttonLayout.preferredHeight = 40;
+            
+            // Add button text
+            GameObject buttonTextObj = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            buttonTextObj.transform.SetParent(buttonObj.transform, false);
+            TextMeshProUGUI buttonText = buttonTextObj.GetComponent<TextMeshProUGUI>();
+            buttonText.text = "Response option";
+            buttonText.fontSize = 16;
+            buttonText.alignment = TextAlignmentOptions.Center;
+            buttonText.color = Color.white;
+            
+            RectTransform buttonTextRect = buttonTextObj.GetComponent<RectTransform>();
+            buttonTextRect.anchorMin = Vector2.zero;
+            buttonTextRect.anchorMax = Vector2.one;
+            buttonTextRect.offsetMin = new Vector2(10, 5);
+            buttonTextRect.offsetMax = new Vector2(-10, -5);
+            
+            Debug.Log("DialogueView: Basic components created successfully");
         }
         
         /// <summary>
@@ -558,6 +719,172 @@ namespace NarrativeSystem
             
             // Hide the dialogue
             HideDialogue();
+        }
+
+        /// <summary>
+        /// Static helper method to create a fully set up DialogueView in the scene
+        /// </summary>
+        public static DialogueView CreateDialogueSystem()
+        {
+            Debug.Log("Creating a new DialogueView system from scratch");
+            
+            // First, find or create a canvas
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                GameObject canvasObj = new GameObject("DialogueCanvas");
+                canvas = canvasObj.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                Debug.Log("Created new canvas for dialogue system");
+            }
+            
+            // Create the dialogue view object
+            GameObject dialogueObj = new GameObject("DialogueView");
+            dialogueObj.transform.SetParent(canvas.transform, false);
+            
+            // Add the DialogueView component
+            DialogueView dialogueView = dialogueObj.AddComponent<DialogueView>();
+            
+            // Create the actual dialogue panel
+            GameObject panelObj = new GameObject("DialoguePanel");
+            panelObj.transform.SetParent(dialogueObj.transform, false);
+            
+            // Add required components
+            RectTransform panelRect = panelObj.AddComponent<RectTransform>();
+            Image panelImage = panelObj.AddComponent<Image>();
+            
+            // Configure the panel
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.sizeDelta = new Vector2(800, 500);
+            panelImage.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+            
+            // Set the dialoguePanel reference
+            dialogueView.dialoguePanel = panelRect;
+            
+            // Create title area
+            GameObject titleObj = new GameObject("HeaderPanel");
+            titleObj.transform.SetParent(panelObj.transform, false);
+            RectTransform titleRect = titleObj.AddComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0, 1);
+            titleRect.anchorMax = new Vector2(1, 1);
+            titleRect.pivot = new Vector2(0.5f, 1);
+            titleRect.sizeDelta = new Vector2(0, 60);
+            titleRect.anchoredPosition = Vector2.zero;
+            
+            // Create title text
+            GameObject titleTextObj = new GameObject("TitleText");
+            titleTextObj.transform.SetParent(titleObj.transform, false);
+            RectTransform titleTextRect = titleTextObj.AddComponent<RectTransform>();
+            TextMeshProUGUI titleText = titleTextObj.AddComponent<TextMeshProUGUI>();
+            titleTextRect.anchorMin = Vector2.zero;
+            titleTextRect.anchorMax = Vector2.one;
+            titleTextRect.offsetMin = new Vector2(20, 10);
+            titleTextRect.offsetMax = new Vector2(-20, -10);
+            titleText.alignment = TextAlignmentOptions.Center;
+            titleText.fontSize = 24;
+            titleText.color = Color.white;
+            titleText.text = "Event Title";
+            
+            // Set the title text reference
+            dialogueView.eventTitleText = titleText;
+            
+            // Create description area
+            GameObject descObj = new GameObject("ContentPanel");
+            descObj.transform.SetParent(panelObj.transform, false);
+            RectTransform descRect = descObj.AddComponent<RectTransform>();
+            descRect.anchorMin = new Vector2(0, 0.3f);
+            descRect.anchorMax = new Vector2(1, 0.9f);
+            descRect.offsetMin = new Vector2(20, 10);
+            descRect.offsetMax = new Vector2(-20, -10);
+            
+            // Create description text
+            GameObject descTextObj = new GameObject("DescriptionText");
+            descTextObj.transform.SetParent(descObj.transform, false);
+            RectTransform descTextRect = descTextObj.AddComponent<RectTransform>();
+            TextMeshProUGUI descText = descTextObj.AddComponent<TextMeshProUGUI>();
+            descTextRect.anchorMin = Vector2.zero;
+            descTextRect.anchorMax = Vector2.one;
+            descTextRect.offsetMin = Vector2.zero;
+            descTextRect.offsetMax = Vector2.zero;
+            descText.alignment = TextAlignmentOptions.TopLeft;
+            descText.fontSize = 18;
+            descText.color = Color.white;
+            descText.text = "Event description goes here...";
+            
+            // Set description text reference
+            dialogueView.eventDescriptionText = descText;
+            
+            // Create response container
+            GameObject responseObj = new GameObject("ResponseContainer");
+            responseObj.transform.SetParent(panelObj.transform, false);
+            RectTransform responseRect = responseObj.AddComponent<RectTransform>();
+            VerticalLayoutGroup responseLayout = responseObj.AddComponent<VerticalLayoutGroup>();
+            ContentSizeFitter sizeFitter = responseObj.AddComponent<ContentSizeFitter>();
+            responseRect.anchorMin = new Vector2(0, 0);
+            responseRect.anchorMax = new Vector2(1, 0.3f);
+            responseRect.offsetMin = new Vector2(40, 20);
+            responseRect.offsetMax = new Vector2(-40, -10);
+            responseLayout.spacing = 10;
+            responseLayout.padding = new RectOffset(5, 5, 5, 5);
+            responseLayout.childAlignment = TextAnchor.UpperCenter;
+            responseLayout.childControlHeight = true;
+            responseLayout.childControlWidth = true;
+            responseLayout.childForceExpandWidth = true;
+            responseLayout.childForceExpandHeight = false;
+            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            
+            // Set response container reference
+            dialogueView.responseContainer = responseRect;
+            
+            // Create response button template
+            GameObject buttonObj = new GameObject("ResponseButtonTemplate");
+            buttonObj.transform.SetParent(responseObj.transform, false);
+            RectTransform buttonRect = buttonObj.AddComponent<RectTransform>();
+            Image buttonImage = buttonObj.AddComponent<Image>();
+            Button button = buttonObj.AddComponent<Button>();
+            buttonRect.anchorMin = new Vector2(0, 0);
+            buttonRect.anchorMax = new Vector2(1, 0);
+            buttonRect.sizeDelta = new Vector2(0, 50);
+            buttonRect.pivot = new Vector2(0.5f, 0);
+            buttonImage.color = new Color(0.2f, 0.3f, 0.4f, 1);
+            
+            ColorBlock colors = button.colors;
+            colors.normalColor = new Color(0.2f, 0.3f, 0.4f, 1);
+            colors.highlightedColor = new Color(0.3f, 0.4f, 0.5f, 1);
+            colors.pressedColor = new Color(0.15f, 0.25f, 0.35f, 1);
+            colors.selectedColor = new Color(0.3f, 0.4f, 0.5f, 1);
+            button.colors = colors;
+            
+            // Create button text
+            GameObject buttonTextObj = new GameObject("Text");
+            buttonTextObj.transform.SetParent(buttonObj.transform, false);
+            RectTransform buttonTextRect = buttonTextObj.AddComponent<RectTransform>();
+            TextMeshProUGUI buttonText = buttonTextObj.AddComponent<TextMeshProUGUI>();
+            buttonTextRect.anchorMin = Vector2.zero;
+            buttonTextRect.anchorMax = Vector2.one;
+            buttonTextRect.offsetMin = new Vector2(15, 5);
+            buttonTextRect.offsetMax = new Vector2(-15, -5);
+            buttonText.alignment = TextAlignmentOptions.Left;
+            buttonText.fontSize = 16;
+            buttonText.color = Color.white;
+            buttonText.text = "Response Option";
+            
+            // Set button reference
+            dialogueView.responseButtonTemplate = button;
+            
+            // Deactivate button template
+            buttonObj.SetActive(false);
+            
+            // Hide dialogue panel by default
+            panelObj.SetActive(false);
+            
+            Debug.Log("DialogueView system created successfully");
+            
+            return dialogueView;
         }
     }
 }

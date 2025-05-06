@@ -80,6 +80,15 @@ namespace Entities.Components
         }
         
         /// <summary>
+        /// Update production by adding or subtracting a delta value
+        /// </summary>
+        public void UpdateProduction(int delta)
+        {
+            baseProduction = Mathf.Max(0, baseProduction + delta);
+            UpdateProduction(); // Recalculate production with new base value
+        }
+        
+        /// <summary>
         /// Set the base production value
         /// </summary>
         public void SetBaseProduction(float value)

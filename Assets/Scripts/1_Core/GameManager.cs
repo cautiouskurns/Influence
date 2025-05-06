@@ -217,8 +217,8 @@ public class GameManager : MonoBehaviour
                 // Calculate growth based on current population and growth rate
                 int growthAmount = Mathf.FloorToInt(region.LaborAvailable * populationGrowthRate);
                 
-                // Apply growth
-                region.LaborAvailable += growthAmount;
+                // Apply growth using the PopulationComp component instead of directly setting LaborAvailable
+                region.PopulationComp.UpdateLaborAvailable(growthAmount);
                 
                 // Update the region
                 economicSystem.UpdateRegion(region);

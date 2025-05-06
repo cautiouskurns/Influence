@@ -62,12 +62,12 @@ namespace UI
             
             if (logDebugInfo)
             {
-                Debug.Log("MapColorController initialized. UI Controls: " + 
-                         (defaultColorButton != null ? "Default✓ " : "Default✗ ") +
-                         (positionColorButton != null ? "Position✓ " : "Position✗ ") +
-                         (wealthColorButton != null ? "Wealth✓ " : "Wealth✗ ") +
-                         (productionColorButton != null ? "Production✓ " : "Production✗ ") +
-                         (nationColorButton != null ? "Nation✓ " : "Nation✗ "));
+                // Debug.Log("MapColorController initialized. UI Controls: " + 
+                //          (defaultColorButton != null ? "Default✓ " : "Default✗ ") +
+                //          (positionColorButton != null ? "Position✓ " : "Position✗ ") +
+                //          (wealthColorButton != null ? "Wealth✓ " : "Wealth✗ ") +
+                //          (productionColorButton != null ? "Production✓ " : "Production✗ ") +
+                //          (nationColorButton != null ? "Nation✓ " : "Nation✗ "));
             }
         }
         

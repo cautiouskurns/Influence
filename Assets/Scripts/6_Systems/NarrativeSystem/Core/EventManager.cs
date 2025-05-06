@@ -106,13 +106,14 @@ namespace NarrativeSystem
             economicSystem = FindFirstObjectByType<EconomicSystem>();
             gameManager = GameManager.Instance;
             
-            // Find DialogueView if not set
+            // Find DialogueView if not set, or create one if none exists
             if (dialogueView == null)
             {
                 dialogueView = FindFirstObjectByType<DialogueView>();
                 if (dialogueView == null)
                 {
-                    Debug.LogWarning("DialogueView not found! Please create one using DialoguePrefabSetup.");
+                    Debug.Log("No DialogueView found. Creating one automatically.");
+                    dialogueView = DialogueView.CreateDialogueSystem();
                 }
             }
             
@@ -418,30 +419,36 @@ namespace NarrativeSystem
                         // Apply wealth effect
                         if (choice.wealthEffect != 0)
                         {
-                            region.Wealth += choice.wealthEffect;
+                            // Update using the Economy component instead of direct property access
+                            region.Economy.UpdateWealth(choice.wealthEffect);
+                            
                             if (showDebugLogs)
                             {
-                                Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Wealth})");
+                                Debug.Log($"Wealth {(choice.wealthEffect > 0 ? "+" : "")}{choice.wealthEffect} (new total: {region.Economy.Wealth})");
                             }
                         }
                         
                         // Apply production effect
                         if (choice.productionEffect != 0)
                         {
-                            region.Production += choice.productionEffect;
+                            // Update using the ProductionComp instead of direct property access
+                            region.ProductionComp.UpdateProduction(choice.productionEffect);
+                            
                             if (showDebugLogs)
                             {
-                                Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.Production})");
+                                Debug.Log($"Production {(choice.productionEffect > 0 ? "+" : "")}{choice.productionEffect} (new total: {region.ProductionComp.Production})");
                             }
                         }
                         
                         // Apply labor effect
                         if (choice.laborEffect != 0)
                         {
-                            region.LaborAvailable += choice.laborEffect;
+                            // Update using the PopulationComp instead of direct property access
+                            region.PopulationComp.UpdateLaborAvailable(choice.laborEffect);
+                            
                             if (showDebugLogs)
                             {
-                                Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.LaborAvailable})");
+                                Debug.Log($"Labor {(choice.laborEffect > 0 ? "+" : "")}{choice.laborEffect} (new total: {region.PopulationComp.LaborAvailable})");
                             }
                         }
                         
