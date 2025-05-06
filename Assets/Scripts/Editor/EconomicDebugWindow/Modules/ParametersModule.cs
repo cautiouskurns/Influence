@@ -30,6 +30,9 @@ namespace Editor.DebugWindow.Modules
         private float parameterFeedbackDisplayTime = 0f;
         private const float PARAMETER_FEEDBACK_DURATION = 4.0f;
         
+        // Track if parameters have changed since last apply/sync
+        private bool parametersChanged = false;
+        
         // Reference to calculators for previewing effects
         private ProductionCalculator productionCalculator;
         private InfrastructureCalculator infrastructureCalculator;
@@ -498,6 +501,9 @@ namespace Editor.DebugWindow.Modules
             // Skip if the change is very small
             if (Mathf.Abs(oldValue - newValue) < 0.01f) return;
             
+            // Set flag that parameters have changed
+            parametersChanged = true;
+            
             float percentChange = ((newValue - oldValue) / Mathf.Max(0.1f, Mathf.Abs(oldValue))) * 100f;
             string direction = newValue > oldValue ? "increased" : "decreased";
             
@@ -663,6 +669,9 @@ namespace Editor.DebugWindow.Modules
             // Apply Economic Cycle parameters
             economicSystem.cycleLength = parameters.economicCycle.cycleLength;
             economicSystem.enableEconomicCycles = parameters.economicCycle.enableEconomicCycles;
+            
+            // Reset the change flag after applying changes
+            parametersChanged = false;
         }
         
         /// <summary>

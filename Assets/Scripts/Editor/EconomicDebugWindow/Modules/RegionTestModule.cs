@@ -14,6 +14,9 @@ namespace Editor.DebugWindow.Modules
         private bool showRegionControls = true;
         private RegionParameters regionParams = new RegionParameters();
         
+        // Track if parameters have changed since last apply/sync
+        private bool parametersChanged = false;
+        
         /// <summary>
         /// Draw the region test controls UI
         /// </summary>
@@ -32,6 +35,7 @@ namespace Editor.DebugWindow.Modules
                 if (newLabor != regionParams.laborAvailable)
                 {
                     regionParams.laborAvailable = newLabor;
+                    parametersChanged = true;
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -42,6 +46,7 @@ namespace Editor.DebugWindow.Modules
                 if (newInfrastructure != regionParams.infrastructureLevel)
                 {
                     regionParams.infrastructureLevel = newInfrastructure;
+                    parametersChanged = true;
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -52,6 +57,7 @@ namespace Editor.DebugWindow.Modules
                 if (newMaintenance != regionParams.maintenanceInvestment)
                 {
                     regionParams.maintenanceInvestment = newMaintenance;
+                    parametersChanged = true;
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -62,6 +68,7 @@ namespace Editor.DebugWindow.Modules
                 if (newDevelopment != regionParams.developmentInvestment)
                 {
                     regionParams.developmentInvestment = newDevelopment;
+                    parametersChanged = true;
                 }
                 EditorGUILayout.EndHorizontal();
                 
@@ -94,6 +101,7 @@ namespace Editor.DebugWindow.Modules
             regionParams.laborAvailable = region.Population;
             regionParams.infrastructureLevel = Mathf.RoundToInt(region.InfrastructureQuality * 10);
             // Other values don't typically sync from the system
+            parametersChanged = false;
         }
         
         /// <summary>
@@ -121,6 +129,7 @@ namespace Editor.DebugWindow.Modules
             //     regionParams.maintenanceInvestment, 
             //     regionParams.developmentInvestment
             // );
+            parametersChanged = false;
         }
         
         /// <summary>
@@ -129,6 +138,7 @@ namespace Editor.DebugWindow.Modules
         public void Reset()
         {
             regionParams = new RegionParameters();
+            parametersChanged = false;
         }
         
         /// <summary>

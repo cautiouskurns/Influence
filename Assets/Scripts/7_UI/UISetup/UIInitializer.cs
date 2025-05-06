@@ -12,11 +12,13 @@ public class UIInitializer : MonoBehaviour
     [SerializeField] private bool createSimulationControls = true;
     [SerializeField] private bool createVisualizationControls = true;
     [SerializeField] private bool createStatsDisplay = true;
+    [SerializeField] private bool createEconomicControls = true;
     
     [Header("UI Positions")]
     [SerializeField] private UIPosition simulationControlsPosition = UIPosition.Bottom;
     [SerializeField] private UIPosition visualizationControlsPosition = UIPosition.Bottom;
     [SerializeField] private UIPosition statsDisplayPosition = UIPosition.Right;
+    [SerializeField] private UIPosition economicControlsPosition = UIPosition.Top;
     
     // Reference to the UIManager
     private UIManager uiManager;
@@ -71,6 +73,11 @@ public class UIInitializer : MonoBehaviour
         {
             CreateStatsDisplayModule();
         }
+        
+        if (createEconomicControls)
+        {
+            CreateEconomicControlsModule();
+        }
     }
     
     /// <summary>
@@ -124,5 +131,23 @@ public class UIInitializer : MonoBehaviour
         // Create the module
         StatsDisplayUIModule module = uiManager.CreateModule<StatsDisplayUIModule>(statsDisplayPosition);
         // Debug.Log("Created StatsDisplayUIModule");
+    }
+    
+    /// <summary>
+    /// Create the economic controls module if it doesn't exist
+    /// </summary>
+    private void CreateEconomicControlsModule()
+    {
+        // Check if module already exists
+        EconomicControlUIModule existingModule = uiManager.GetModule<EconomicControlUIModule>();
+        if (existingModule != null)
+        {
+            Debug.Log("EconomicControlUIModule already exists");
+            return;
+        }
+        
+        // Create the module
+        EconomicControlUIModule module = uiManager.CreateModule<EconomicControlUIModule>(economicControlsPosition);
+        Debug.Log("Created EconomicControlUIModule");
     }
 }

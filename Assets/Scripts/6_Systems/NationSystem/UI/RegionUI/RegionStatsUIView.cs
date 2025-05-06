@@ -16,7 +16,7 @@ namespace Systems.UI
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.8f, 0.4f, 0.2f, 1f);
         [SerializeField] private Vector2 statsPanelSize = new Vector2(500f, 400f); // Larger panel for more stats
-        [SerializeField] private Vector2 panelPosition = new Vector2(750f, 400f); // Right side offset
+        [SerializeField] private Vector2 panelPosition = new Vector2(650f, 400f); // Right side offset
         
         // UI Elements
         private GameObject statsPanel;

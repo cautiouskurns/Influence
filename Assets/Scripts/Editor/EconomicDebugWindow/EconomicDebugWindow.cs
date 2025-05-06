@@ -30,6 +30,9 @@ namespace Editor.DebugWindow
         // Results view
         private ResultsModule resultsModule;
         
+        // UI state for apply buttons
+        private bool showApplyButtons = true;
+        
         [MenuItem("Window/Economic Debug")]
         public static void ShowWindow()
         {
