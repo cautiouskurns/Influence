@@ -2,25 +2,26 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UI;
+using System.Collections.Generic;
 
 namespace Systems.UI
 {
     /// <summary>
     /// View component responsible for displaying basic region information.
-    /// This is a simplified version that shows only region name and wealth.
+    /// Shows region name, wealth, and additional economic metrics.
     /// </summary>
     public class RegionStatsUIView : UIModuleBase
     {
         [Header("UI Settings")]
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.8f, 0.4f, 0.2f, 1f);
-        [SerializeField] private Vector2 statsPanelSize = new Vector2(200f, 100f);
-        [SerializeField] private Vector2 panelPosition = new Vector2(0f, -100f); // Bottom center offset
+        [SerializeField] private Vector2 statsPanelSize = new Vector2(250f, 280f); // Larger panel for more stats
+        [SerializeField] private Vector2 panelPosition = new Vector2(750f, -30f); // Right side offset
         
         // UI Elements
         private GameObject statsPanel;
         private TextMeshProUGUI titleText;
-        private TextMeshProUGUI wealthText;
+        private Dictionary<string, TextMeshProUGUI> statTexts = new Dictionary<string, TextMeshProUGUI>();
         
         public override void Initialize()
         {
@@ -69,16 +70,18 @@ namespace Systems.UI
                 statsPanel.SetActive(true);
             }
             
-            if (titleText != null && wealthText != null)
+            if (titleText != null)
             {
                 titleText.text = displayData.regionName;
-                wealthText.text = "Wealth: " + displayData.wealth;
+                
+                // Update all the stat fields
+                UpdateDisplay(displayData);
                 
                 Debug.Log($"Updated region display with name: {displayData.regionName} and wealth: {displayData.wealth}");
             }
             else
             {
-                Debug.LogError($"DisplayRegion UI elements not ready: titleText={titleText != null}, wealthText={wealthText != null}");
+                Debug.LogError($"DisplayRegion UI elements not ready: titleText={titleText != null}");
             }
         }
         
@@ -89,22 +92,32 @@ namespace Systems.UI
         {
             Debug.Log("UpdateDisplay called with fresh display data");
             
-            if (titleText != null && wealthText != null)
-            {
-                titleText.text = data.regionName;
-                wealthText.text = "Wealth: " + data.wealth;
-                Debug.Log($"Updated region display with wealth: {data.wealth}");
-            }
-            else
-            {
-                Debug.LogError("Cannot update display - UI elements are null");
-            }
+            // Update all the stat values
+            UpdateStatValue("Wealth", data.wealth);
+            UpdateStatValue("Production", data.production);
+            UpdateStatValue("Population", data.population);
+            UpdateStatValue("Infrastructure", data.infrastructure);
+            UpdateStatValue("Resources", data.resources);
+            UpdateStatValue("Growth", data.growth);
+            UpdateStatValue("Nation", data.nationName);
             
             // Force layout refresh
             if (statsPanel != null)
             {
                 Canvas.ForceUpdateCanvases();
                 LayoutRebuilder.ForceRebuildLayoutImmediate(statsPanel.GetComponent<RectTransform>());
+            }
+        }
+        
+        private void UpdateStatValue(string key, string value)
+        {
+            if (statTexts.ContainsKey(key) && statTexts[key] != null)
+            {
+                statTexts[key].text = value;
+            }
+            else
+            {
+                Debug.LogWarning($"Tried to update non-existent stat field: {key}");
             }
         }
         
@@ -129,16 +142,16 @@ namespace Systems.UI
             
             // Configure panel size and position
             RectTransform panelRect = statsPanel.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMin = new Vector2(1, 1);
+            panelRect.anchorMax = new Vector2(1, 1);
+            panelRect.pivot = new Vector2(1, 1);
             panelRect.sizeDelta = statsPanelSize;
             panelRect.anchoredPosition = panelPosition;
             
             // Add layout group for content
             VerticalLayoutGroup layout = statsPanel.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(10, 10, 10, 10);
-            layout.spacing = 5;
+            layout.spacing = 8;
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
             layout.childForceExpandWidth = true;
@@ -150,7 +163,7 @@ namespace Systems.UI
             
             titleText = titleObj.AddComponent<TextMeshProUGUI>();
             titleText.text = "REGION NAME";
-            titleText.fontSize = 18;
+            titleText.fontSize = 20;
             titleText.fontStyle = FontStyles.Bold;
             titleText.color = headerColor;
             titleText.alignment = TextAlignmentOptions.Center;
@@ -160,6 +173,31 @@ namespace Systems.UI
             titleLayout.minHeight = 25;
             
             // Create divider
+            CreateDivider();
+            
+            // Create stat fields
+            CreateStatField("Wealth", "0");
+            CreateStatField("Production", "0");
+            CreateStatField("Population", "0");
+            CreateStatField("Infrastructure", "Level 0 (0%)");
+            
+            // Create divider
+            CreateDivider();
+            
+            // Create additional stats
+            CreateStatCategory("Resources & Growth");
+            CreateStatField("Resources", "Food: 0, Materials: 0, Fuel: 0");
+            CreateStatField("Growth", "0%");
+            CreateStatField("Nation", "Independent");
+            
+            Debug.Log("UI elements created successfully");
+            
+            // Hide panel initially until a region is set
+            statsPanel.SetActive(false);
+        }
+        
+        private void CreateDivider()
+        {
             GameObject dividerObj = new GameObject("Divider");
             dividerObj.transform.SetParent(statsPanel.transform, false);
             
@@ -170,25 +208,73 @@ namespace Systems.UI
             dividerLayout.preferredHeight = 2;
             dividerLayout.flexibleWidth = 1;
             dividerLayout.minHeight = 2;
+        }
+        
+        private void CreateStatCategory(string categoryName)
+        {
+            // Create category header
+            GameObject categoryObj = new GameObject(categoryName + "Category");
+            categoryObj.transform.SetParent(statsPanel.transform, false);
             
-            // Create wealth text
-            GameObject wealthObj = new GameObject("WealthText");
-            wealthObj.transform.SetParent(statsPanel.transform, false);
+            TextMeshProUGUI categoryText = categoryObj.AddComponent<TextMeshProUGUI>();
+            categoryText.text = categoryName.ToUpper();
+            categoryText.fontSize = 16;
+            categoryText.fontStyle = FontStyles.Bold;
+            categoryText.color = headerColor;
+            categoryText.alignment = TextAlignmentOptions.Center;
             
-            wealthText = wealthObj.AddComponent<TextMeshProUGUI>();
-            wealthText.text = "Wealth: 0";
-            wealthText.fontSize = 16;
-            wealthText.color = Color.white;
-            wealthText.alignment = TextAlignmentOptions.Center;
+            LayoutElement categoryLayout = categoryObj.AddComponent<LayoutElement>();
+            categoryLayout.preferredHeight = 25;
+            categoryLayout.minHeight = 25;
+        }
+        
+        private void CreateStatField(string label, string defaultValue = "0")
+        {
+            GameObject statObj = new GameObject(label.Replace(" ", "") + "Stat");
+            statObj.transform.SetParent(statsPanel.transform, false);
             
-            LayoutElement wealthLayout = wealthObj.AddComponent<LayoutElement>();
-            wealthLayout.preferredHeight = 25;
-            wealthLayout.minHeight = 20;
+            // Create horizontal layout for this stat
+            HorizontalLayoutGroup statLayout = statObj.AddComponent<HorizontalLayoutGroup>();
+            statLayout.childAlignment = TextAnchor.MiddleLeft;
+            statLayout.childControlWidth = false;
+            statLayout.childForceExpandWidth = false;
+            statLayout.spacing = 5;
             
-            Debug.Log("UI elements created successfully");
+            LayoutElement statObjLayout = statObj.AddComponent<LayoutElement>();
+            statObjLayout.preferredHeight = 22;
+            statObjLayout.minHeight = 22;
             
-            // Hide panel initially until a region is set
-            statsPanel.SetActive(false);
+            // Create label
+            GameObject labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(statObj.transform, false);
+            
+            TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
+            labelText.text = label + ":";
+            labelText.fontSize = 14;
+            labelText.color = Color.white;
+            labelText.alignment = TextAlignmentOptions.Left;
+            
+            LayoutElement labelLayout = labelObj.AddComponent<LayoutElement>();
+            labelLayout.preferredWidth = 100;
+            labelLayout.minWidth = 100;
+            
+            // Create value text
+            GameObject valueObj = new GameObject("Value");
+            valueObj.transform.SetParent(statObj.transform, false);
+            
+            TextMeshProUGUI valueText = valueObj.AddComponent<TextMeshProUGUI>();
+            valueText.text = defaultValue;
+            valueText.fontSize = 14;
+            valueText.color = Color.white;
+            valueText.alignment = TextAlignmentOptions.Left;
+            
+            LayoutElement valueLayout = valueObj.AddComponent<LayoutElement>();
+            valueLayout.preferredWidth = 120;
+            valueLayout.minWidth = 120;
+            valueLayout.flexibleWidth = 1;
+            
+            // Store reference to value text for updates
+            statTexts[label] = valueText;
         }
     }
 }

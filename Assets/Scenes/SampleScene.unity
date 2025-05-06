@@ -336,7 +336,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameManager: {fileID: 0}
-  statsPanel: {fileID: 0}
 --- !u!4 &246743159
 Transform:
   m_ObjectHideFlags: 0
@@ -1989,7 +1988,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 763b9ba4731a843918a23524b330f068, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  statsModule: {fileID: 0}
+  uiView: {fileID: 0}
 --- !u!1 &1455276063
 GameObject:
   m_ObjectHideFlags: 0
@@ -2058,7 +2057,7 @@ MonoBehaviour:
   initializeOnStart: 1
   createSimulationControls: 1
   createVisualizationControls: 1
-  createStatsDisplay: 1
+  createStatsDisplay: 0
   simulationControlsPosition: 1
   visualizationControlsPosition: 0
   statsDisplayPosition: 3
