@@ -476,6 +476,30 @@ namespace Systems
             return totalWealth;
         }
         
+        /// <summary>
+        /// Gets all regions belonging to a specific nation
+        /// </summary>
+        public List<RegionEntity> GetRegionsForNation(string nationId)
+        {
+            if (string.IsNullOrEmpty(nationId))
+            {
+                Debug.LogWarning("Null or empty nationId passed to GetRegionsForNation");
+                return new List<RegionEntity>();
+            }
+            
+            List<RegionEntity> nationRegions = new List<RegionEntity>();
+            
+            foreach (var region in regions.Values)
+            {
+                if (region != null && region.NationId == nationId)
+                {
+                    nationRegions.Add(region);
+                }
+            }
+            
+            return nationRegions;
+        }
+        
         // Nation-level economic aggregation methods
         public Dictionary<string, int> GetNationWealthData()
         {

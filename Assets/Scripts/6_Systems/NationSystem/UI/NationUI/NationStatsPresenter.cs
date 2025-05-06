@@ -3,6 +3,7 @@ using Entities;
 using UI;
 using Core;
 using Managers;
+using System.Collections.Generic;
 
 /// <summary>
 /// Presenter component that handles nation selection and coordinates updates for the nation stats UI.
@@ -106,6 +107,9 @@ namespace Systems.UI
             {
                 Debug.Log($"Refreshing stats for nation: {currentSelectedNation.Name}");
                 
+                // Check if we need to refresh the nation's economy data based on its regions
+                RefreshNationEconomyFromRegions();
+                
                 // Log debug info
                 LogEconomyDebugInfo("BEFORE refresh", currentSelectedNation);
                 
@@ -120,6 +124,88 @@ namespace Systems.UI
                 Debug.LogWarning("Cannot refresh nation stats: " + 
                     (currentSelectedNation == null ? "No nation selected" : "ViewModel is null"));
             }
+        }
+        
+        /// <summary>
+        /// Refresh nation economy data by aggregating from its regions
+        /// </summary>
+        private void RefreshNationEconomyFromRegions()
+        {
+            if (currentSelectedNation == null || currentSelectedNation.Economy == null)
+                return;
+
+            // Get all regions belonging to this nation
+            List<RegionEntity> nationRegions = GetNationRegions();
+            if (nationRegions == null || nationRegions.Count == 0) 
+            {
+                Debug.LogWarning($"No regions found for nation: {currentSelectedNation.Name}");
+                return;
+            }
+
+            // Aggregate economy values from all regions
+            float totalWealth = 0f;
+            float totalProduction = 0f;
+            
+            // Sum up values from all regions
+            foreach (var region in nationRegions)
+            {
+                // Add region wealth and production to nation totals
+                totalWealth += region.Wealth;
+                totalProduction += region.Production;
+            }
+            
+            // Update the nation's economy with aggregated values
+            if (currentSelectedNation.Economy != null)
+            {
+                // Only update if values have changed
+                if (totalWealth != currentSelectedNation.Economy.TotalWealth)
+                {
+                    float oldWealth = currentSelectedNation.Economy.TotalWealth;
+                    currentSelectedNation.Economy.SetTotalWealth(totalWealth);
+                    Debug.Log($"Updated {currentSelectedNation.Name} TotalWealth: {oldWealth} -> {totalWealth}");
+                }
+                
+                if (totalProduction != currentSelectedNation.Economy.TotalProduction)
+                {
+                    float oldProduction = currentSelectedNation.Economy.TotalProduction;
+                    currentSelectedNation.Economy.SetTotalProduction(totalProduction);
+                    Debug.Log($"Updated {currentSelectedNation.Name} TotalProduction: {oldProduction} -> {totalProduction}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Get all regions belonging to the current nation
+        /// </summary>
+        private List<RegionEntity> GetNationRegions()
+        {
+            if (currentSelectedNation == null)
+                return null;
+                
+            // Try to get region entities via Economic System
+            EconomicSystem economicSystem = FindFirstObjectByType<EconomicSystem>();
+            if (economicSystem != null)
+            {
+                return economicSystem.GetRegionsForNation(currentSelectedNation.Id);
+            }
+            
+            // Fallback method
+            List<RegionEntity> regions = new List<RegionEntity>();
+            List<string> regionIds = currentSelectedNation.GetRegionIds();
+            
+            if (regionIds != null && regionIds.Count > 0)
+            {
+                foreach (var regionId in regionIds)
+                {
+                    RegionEntity region = economicSystem?.GetRegion(regionId);
+                    if (region != null)
+                    {
+                        regions.Add(region);
+                    }
+                }
+            }
+            
+            return regions;
         }
         
         /// <summary>
@@ -177,6 +263,10 @@ namespace Systems.UI
             {
                 Debug.Log($"DisplayNationStats called for nation: {nation.Name}");
                 currentSelectedNation = nation;
+                
+                // Refresh economy data from regions before displaying
+                RefreshNationEconomyFromRegions();
+                
                 viewModel.DisplayNation(nation);
             }
             else
@@ -202,6 +292,27 @@ namespace Systems.UI
         public NationEntity GetSelectedNation()
         {
             return currentSelectedNation;
+        }
+        
+        /// <summary>
+        /// Refresh the current display without changing the selected nation
+        /// </summary>
+        public void RefreshDisplay()
+        {
+            Debug.Log("RefreshDisplay called on NationStatsPresenter");
+            if (viewModel != null && currentSelectedNation != null)
+            {
+                // First refresh the nation economy from its regions
+                RefreshNationEconomyFromRegions();
+                
+                // Then update the UI display
+                viewModel.RefreshDisplay();
+                Debug.Log($"Nation stats refreshed for: {currentSelectedNation.Name}");
+            }
+            else
+            {
+                Debug.LogWarning($"Cannot refresh display: {(viewModel == null ? "ViewModel is null" : "No nation selected")}");
+            }
         }
     }
 }

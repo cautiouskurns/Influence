@@ -35,6 +35,24 @@ namespace Entities.Components
         private readonly int maxHistoryLength = 10;
         
         /// <summary>
+        /// Set the total wealth value directly - intended for testing and UI updates
+        /// </summary>
+        public void SetTotalWealth(float value)
+        {
+            TotalWealth = Mathf.Max(0, value); // Ensure value is never negative
+            Debug.Log($"Nation economy: Set TotalWealth to {TotalWealth}");
+        }
+        
+        /// <summary>
+        /// Set the total production value directly - intended for testing and UI updates
+        /// </summary>
+        public void SetTotalProduction(float value)
+        {
+            TotalProduction = Mathf.Max(0, value); // Ensure value is never negative
+            Debug.Log($"Nation economy: Set TotalProduction to {TotalProduction}");
+        }
+        
+        /// <summary>
         /// Set the treasury balance - intended for testing purposes
         /// </summary>
         public void SetTreasuryBalance(float value)

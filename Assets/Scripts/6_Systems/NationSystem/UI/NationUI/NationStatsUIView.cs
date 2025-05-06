@@ -16,8 +16,8 @@ namespace Systems.UI
         [Header("UI Settings")]
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.2f, 0.4f, 0.8f, 1f);
-        [SerializeField] private Vector2 statsPanelSize = new Vector2(280f, 380f);
-        [SerializeField] private Vector2 panelPosition = new Vector2(-925f, -30f); // Left side offset
+        [SerializeField] private Vector2 statsPanelSize = new Vector2(500f, 400f); // Made taller to fit all content
+        [SerializeField] private Vector2 panelPosition = new Vector2(750f, -500f); // Bottom right corner
         
         // UI Elements
         private GameObject statsPanel;
@@ -114,11 +114,40 @@ namespace Systems.UI
             UpdateStatValue("Military", data.militaryPolicy);
             UpdateStatValue("Social", data.socialPolicy);
             
-            // Force layout refresh
+            // Force layout refresh with additional adjustments for text fitting
             if (statsPanel != null)
             {
                 Canvas.ForceUpdateCanvases();
+                
+                // Check if any text fields might be overflowing and adjust their size if needed
+                foreach (var stat in statTexts)
+                {
+                    CheckAndAdjustTextSize(stat.Value);
+                }
+                
                 LayoutRebuilder.ForceRebuildLayoutImmediate(statsPanel.GetComponent<RectTransform>());
+            }
+        }
+        
+        /// <summary>
+        /// Check if text might be overflowing and adjust its size if needed
+        /// </summary>
+        private void CheckAndAdjustTextSize(TextMeshProUGUI textField)
+        {
+            if (textField == null) return;
+            
+            // If text might be too long, enable auto-sizing with a minimum size
+            if (textField.text.Length > 15)
+            {
+                textField.enableAutoSizing = true;
+                textField.fontSizeMin = 10;
+                textField.fontSizeMax = 14;
+                textField.overflowMode = TextOverflowModes.Truncate;
+            }
+            else
+            {
+                textField.enableAutoSizing = false;
+                textField.fontSize = 14;
             }
         }
         
@@ -137,52 +166,74 @@ namespace Systems.UI
             statsPanel = new GameObject("NationStatsPanel");
             statsPanel.transform.SetParent(transform, false);
             
-            // Add panel image
+            // Add panel image with improved appearance
             Image panelImage = statsPanel.AddComponent<Image>();
             panelImage.color = panelColor;
+            panelImage.type = Image.Type.Sliced; // Use sliced image for better borders
             
-            // Configure panel size and position
+            // Configure panel size and position - bottom right
             RectTransform panelRect = statsPanel.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0, 1);
-            panelRect.anchorMax = new Vector2(0, 1);
-            panelRect.pivot = new Vector2(0, 1);
+            panelRect.anchorMin = new Vector2(1, 0);
+            panelRect.anchorMax = new Vector2(1, 0);
+            panelRect.pivot = new Vector2(1, 0);
             panelRect.sizeDelta = statsPanelSize;
             panelRect.anchoredPosition = panelPosition;
             
-            // Add layout group for content
-            VerticalLayoutGroup layout = statsPanel.AddComponent<VerticalLayoutGroup>();
+            // Add content container with padding for better text fit
+            GameObject contentContainer = new GameObject("ContentContainer");
+            contentContainer.transform.SetParent(statsPanel.transform, false);
+            
+            RectTransform contentRect = contentContainer.GetComponent<RectTransform>();
+            if (contentRect == null)
+            {
+                contentRect = contentContainer.AddComponent<RectTransform>();
+            }
+            contentRect.anchorMin = Vector2.zero;
+            contentRect.anchorMax = Vector2.one;
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
+            contentRect.offsetMin = new Vector2(10, 10); // Left, bottom padding
+            contentRect.offsetMax = new Vector2(-10, -10); // Right, top padding
+            
+            // Add layout group for content with improved spacing
+            VerticalLayoutGroup layout = contentContainer.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(10, 10, 10, 10);
-            layout.spacing = 5;
+            layout.spacing = 8;
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
             
             // Create header section
-            CreateHeaderSection();
+            CreateHeaderSection(contentContainer.transform);
             
-            // Add divider
-            CreateDivider();
+            // Create divider
+            CreateDivider(contentContainer.transform);
             
-            // Add basic stats fields
-            CreateStatField("Regions", "0");
-            CreateStatField("Treasury", "0");
-            CreateStatField("GDP", "0");
-            CreateStatField("Growth", "0%");
-            CreateStatField("Total Wealth", "0");
-            CreateStatField("Production", "0");
-            CreateStatField("Stability", "0%");
-            CreateStatField("Unrest", "0%");
+            // Create primary stats directly in the content container without scroll view
+            CreateStatField("Regions", "0", contentContainer.transform);
+            CreateStatField("Treasury", "0", contentContainer.transform);
+            CreateStatField("GDP", "0", contentContainer.transform);
+            CreateStatField("Growth", "0%", contentContainer.transform);
+            CreateStatField("Total Wealth", "0", contentContainer.transform);
+            CreateStatField("Production", "0", contentContainer.transform);
             
-            // Add divider
-            CreateDivider();
+            // Create divider in content
+            CreateDivider(contentContainer.transform);
             
-            // Add policy stats
-            CreateStatCategory("Policy Settings");
-            CreateStatField("Economic", "Balanced");
-            CreateStatField("Diplomatic", "Balanced");
-            CreateStatField("Military", "Balanced");
-            CreateStatField("Social", "Balanced");
+            // Create stability stats
+            CreateStatCategory("Stability", contentContainer.transform);
+            CreateStatField("Stability", "0%", contentContainer.transform);
+            CreateStatField("Unrest", "0%", contentContainer.transform);
+            
+            // Create divider in content
+            CreateDivider(contentContainer.transform);
+            
+            // Create policy stats
+            CreateStatCategory("Policy Settings", contentContainer.transform);
+            CreateStatField("Economic", "Balanced", contentContainer.transform);
+            CreateStatField("Diplomatic", "Balanced", contentContainer.transform);
+            CreateStatField("Military", "Balanced", contentContainer.transform);
+            CreateStatField("Social", "Balanced", contentContainer.transform);
             
             Debug.Log("UI elements created successfully");
             
@@ -190,11 +241,11 @@ namespace Systems.UI
             statsPanel.SetActive(false);
         }
         
-        private void CreateHeaderSection()
+        private void CreateHeaderSection(Transform parent)
         {
             // Add header container
             GameObject headerContainer = new GameObject("HeaderContainer");
-            headerContainer.transform.SetParent(statsPanel.transform, false);
+            headerContainer.transform.SetParent(parent, false);
             
             // Add horizontal layout for header
             HorizontalLayoutGroup headerLayout = headerContainer.AddComponent<HorizontalLayoutGroup>();
@@ -218,28 +269,30 @@ namespace Systems.UI
             colorLayout.minWidth = 20;
             colorLayout.minHeight = 20;
             
-            // Add title
+            // Add title with improved text settings
             GameObject titleObj = new GameObject("TitleText");
             titleObj.transform.SetParent(headerContainer.transform, false);
             
             titleText = titleObj.AddComponent<TextMeshProUGUI>();
             titleText.text = "NATION NAME";
-            titleText.fontSize = 20;
+            titleText.fontSize = 22;
             titleText.fontStyle = FontStyles.Bold;
             titleText.color = headerColor;
             titleText.alignment = TextAlignmentOptions.Center;
+            titleText.overflowMode = TextOverflowModes.Ellipsis;
+            titleText.textWrappingMode = TextWrappingModes.Normal;
             
             LayoutElement titleLayout = titleObj.AddComponent<LayoutElement>();
             titleLayout.flexibleWidth = 1;
         }
         
-        private void CreateDivider()
+        private void CreateDivider(Transform parent)
         {
             GameObject dividerObj = new GameObject("Divider");
-            dividerObj.transform.SetParent(statsPanel.transform, false);
+            dividerObj.transform.SetParent(parent, false);
             
             Image dividerImage = dividerObj.AddComponent<Image>();
-            dividerImage.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+            dividerImage.color = new Color(0.7f, 0.7f, 0.7f, 0.8f);
             
             LayoutElement dividerLayout = dividerObj.AddComponent<LayoutElement>();
             dividerLayout.preferredHeight = 2;
@@ -247,11 +300,11 @@ namespace Systems.UI
             dividerLayout.minHeight = 2;
         }
         
-        private void CreateStatCategory(string categoryName)
+        private void CreateStatCategory(string categoryName, Transform parent)
         {
             // Create category header
             GameObject categoryObj = new GameObject(categoryName + "Category");
-            categoryObj.transform.SetParent(statsPanel.transform, false);
+            categoryObj.transform.SetParent(parent, false);
             
             TextMeshProUGUI categoryText = categoryObj.AddComponent<TextMeshProUGUI>();
             categoryText.text = categoryName.ToUpper();
@@ -259,29 +312,36 @@ namespace Systems.UI
             categoryText.fontStyle = FontStyles.Bold;
             categoryText.color = headerColor;
             categoryText.alignment = TextAlignmentOptions.Center;
+            categoryText.overflowMode = TextOverflowModes.Ellipsis;
             
             LayoutElement categoryLayout = categoryObj.AddComponent<LayoutElement>();
             categoryLayout.preferredHeight = 25;
             categoryLayout.minHeight = 25;
+            categoryLayout.flexibleWidth = 1;
         }
         
-        private void CreateStatField(string label, string defaultValue = "0")
+        private void CreateStatField(string label, string defaultValue = "0", Transform parent = null)
         {
-            GameObject statObj = new GameObject(label.Replace(" ", "") + "Stat");
-            statObj.transform.SetParent(statsPanel.transform, false);
+            // Use statsPanel as parent if none specified
+            if (parent == null) parent = statsPanel.transform;
             
-            // Create horizontal layout for this stat
+            GameObject statObj = new GameObject(label.Replace(" ", "") + "Stat");
+            statObj.transform.SetParent(parent, false);
+            
+            // Create horizontal layout for this stat with better spacing
             HorizontalLayoutGroup statLayout = statObj.AddComponent<HorizontalLayoutGroup>();
             statLayout.childAlignment = TextAnchor.MiddleLeft;
             statLayout.childControlWidth = false;
             statLayout.childForceExpandWidth = false;
-            statLayout.spacing = 5;
+            statLayout.spacing = 10;
+            statLayout.padding = new RectOffset(5, 5, 0, 0);
             
             LayoutElement statObjLayout = statObj.AddComponent<LayoutElement>();
-            statObjLayout.preferredHeight = 20;
-            statObjLayout.minHeight = 20;
+            statObjLayout.preferredHeight = 25;
+            statObjLayout.minHeight = 22;
+            statObjLayout.flexibleWidth = 1;
             
-            // Create label
+            // Create label with improved text settings
             GameObject labelObj = new GameObject("Label");
             labelObj.transform.SetParent(statObj.transform, false);
             
@@ -290,12 +350,13 @@ namespace Systems.UI
             labelText.fontSize = 14;
             labelText.color = Color.white;
             labelText.alignment = TextAlignmentOptions.Left;
+            labelText.overflowMode = TextOverflowModes.Truncate;
             
             LayoutElement labelLayout = labelObj.AddComponent<LayoutElement>();
             labelLayout.preferredWidth = 120;
-            labelLayout.minWidth = 120;
+            labelLayout.minWidth = 100;
             
-            // Create value text
+            // Create value text with improved overflow handling
             GameObject valueObj = new GameObject("Value");
             valueObj.transform.SetParent(statObj.transform, false);
             
@@ -304,10 +365,12 @@ namespace Systems.UI
             valueText.fontSize = 14;
             valueText.color = Color.white;
             valueText.alignment = TextAlignmentOptions.Left;
+            valueText.overflowMode = TextOverflowModes.Ellipsis;
+            valueText.textWrappingMode = TextWrappingModes.Normal;
             
             LayoutElement valueLayout = valueObj.AddComponent<LayoutElement>();
-            valueLayout.preferredWidth = 90;
-            valueLayout.minWidth = 90;
+            valueLayout.preferredWidth = 150;
+            valueLayout.minWidth = 100;
             valueLayout.flexibleWidth = 1;
             
             // Store reference to value text for updates
@@ -316,10 +379,9 @@ namespace Systems.UI
         
         private void UpdateStatValue(string key, string value)
         {
-            if (statTexts.ContainsKey(key))
+            if (statTexts.ContainsKey(key) && statTexts[key] != null)
             {
                 statTexts[key].text = value;
-                // Debug.Log($"Updated stat {key} to {value}");
             }
             else
             {
