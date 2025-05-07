@@ -53,6 +53,13 @@ public class GameManager : MonoBehaviour
     // Interface references for better coupling
     private ITurnManager _turnManagerInterface;
     private IEconomicSystem _economicSystemInterface;
+    private IPopulationManager _populationManagerInterface;
+    
+    // Public properties for accessing managers
+    /// <summary>
+    /// Access to the population manager for detailed population controls
+    /// </summary>
+    public IPopulationManager PopulationManager => _populationManagerInterface;
     
     /// <summary>
     /// Validates all settings on editor changes
@@ -191,6 +198,7 @@ public class GameManager : MonoBehaviour
         // Set up interface references
         _turnManagerInterface = turnManager as ITurnManager;
         _economicSystemInterface = economicSystem as IEconomicSystem;
+        _populationManagerInterface = populationManager as IPopulationManager;
         
         if (_turnManagerInterface == null)
         {
@@ -200,6 +208,11 @@ public class GameManager : MonoBehaviour
         if (_economicSystemInterface == null)
         {
             Debug.LogError("EconomicSystem does not implement IEconomicSystem interface!");
+        }
+        
+        if (_populationManagerInterface == null)
+        {
+            Debug.LogError("PopulationManager does not implement IPopulationManager interface!");
         }
         
         // Initialize UI Manager
@@ -266,39 +279,23 @@ public class GameManager : MonoBehaviour
     
     /// <summary>
     /// Get the total population across all regions
+    /// Uses null conditional operator for null safety
     /// </summary>
-    public int GetTotalPopulation()
-    {
-        if (populationManager != null)
-        {
-            return populationManager.GetTotalPopulation();
-        }
-        return 0;
-    }
+    public int GetTotalPopulation() => _populationManagerInterface?.GetTotalPopulation() ?? 0;
     
     /// <summary>
     /// Get the current population growth rate
+    /// Uses null conditional operator for null safety
     /// </summary>
-    public float GetPopulationGrowthRate()
-    {
-        if (populationManager != null)
-        {
-            return populationManager.GetPopulationGrowthRate();
-        }
-        return gameSettings != null ? gameSettings.populationGrowthRate : 0.02f;
-    }
+    public float GetPopulationGrowthRate() => _populationManagerInterface?.GetPopulationGrowthRate() ?? 
+        (gameSettings?.populationGrowthRate ?? 0.02f);
     
     /// <summary>
     /// Get the current migration rate
+    /// Uses null conditional operator for null safety
     /// </summary>
-    public float GetMigrationRate()
-    {
-        if (populationManager != null)
-        {
-            return populationManager.GetMigrationRate();
-        }
-        return gameSettings != null ? gameSettings.migrationRate : 0.01f;
-    }
+    public float GetMigrationRate() => _populationManagerInterface?.GetMigrationRate() ?? 
+        (gameSettings?.migrationRate ?? 0.01f);
     
     /// <summary>
     /// Set the simulation speed

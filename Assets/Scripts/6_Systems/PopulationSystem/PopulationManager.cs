@@ -18,7 +18,7 @@ namespace Managers
     /// - Provide centralized growth/migration rates and policies
     /// - Delegate region-specific population management to PopulationComponent
     /// </summary>
-    public class PopulationManager : MonoBehaviour
+    public class PopulationManager : MonoBehaviour, IPopulationManager
     {
         #region Singleton
         private static PopulationManager _instance;
@@ -125,7 +125,7 @@ namespace Managers
         /// <summary>
         /// Calculate the total population from all regions, with option to rebuild cache
         /// </summary>
-        private void CalculateTotalPopulation(bool rebuildCache = false)
+        public void CalculateTotalPopulation(bool rebuildCache = false)
         {
             totalPopulation = 0;
             float totalGrowthRate = 0;
@@ -170,7 +170,7 @@ namespace Managers
         /// <summary>
         /// Apply population growth to all regions
         /// </summary>
-        private void ApplyPopulationGrowth()
+        public void ApplyPopulationGrowth()
         {
             if (_economicSystem == null || gameSettings == null) return;
             
