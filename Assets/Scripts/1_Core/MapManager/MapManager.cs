@@ -5,8 +5,6 @@ using Managers;
 using Entities;
 using Systems;
 using UI.MapComponents;
-using UI.Generation;
-using UI.Configuration;
 using Controllers;
 using Scenarios; // Added this namespace for RegionStartCondition
 
@@ -25,19 +23,22 @@ namespace UI
     /// </summary>
     public class MapManager : MonoBehaviour
     {
-        [Header("Map Configuration")]
-        [SerializeField] private MapGenerationConfig mapConfig;
-        [SerializeField] private MapGenerationFactory.StrategyType generationStrategy = MapGenerationFactory.StrategyType.StandardGrid;
-
-        [Header("Map Components")]
+        [Header("Map Settings")]
         [SerializeField] private GameObject regionPrefab;
         [SerializeField] private Transform regionsContainer;
+        [SerializeField] private int gridWidth = 8;
+        [SerializeField] private int gridHeight = 8;
+        [SerializeField] private float hexSize = 1.0f;
+        
+        [Header("Hex Grid Settings")]
+        [SerializeField] private bool pointyTopHexes = false;
+        [SerializeField] [Range(0.7f, 1.3f)] private float horizontalSpacingAdjust = 1.0f;
+        [SerializeField] [Range(0.7f, 1.3f)] private float verticalSpacingAdjust = 1.0f;
         
         // Component references
         private HexGridGenerator gridGenerator;
         private RegionFactory regionFactory;
         private MapSelectionManager selectionManager;
-        private MapGenerationFactory generationFactory;
         
         // State
         private Dictionary<string, RegionView> regionViews = new Dictionary<string, RegionView>();
@@ -49,12 +50,6 @@ namespace UI
         
         private void Awake()
         {
-            // Create default config if none assigned
-            if (mapConfig == null)
-            {
-                mapConfig = CreateDefaultConfig();
-            }
-            
             // Get dependencies
             economicSystem = FindFirstObjectByType<EconomicSystem>();
             colorService = RegionColorService.Instance;
@@ -68,10 +63,10 @@ namespace UI
         
         private void Start()
         {
-            // Only create the map if not being controlled by a scenario
+            // Only create the default hex grid if not being controlled by a scenario
             if (!gameObject.TryGetComponent<MapScenarioController>(out _))
             {
-                GenerateMap();
+                CreateHexGrid();
             }
         }
         
@@ -92,12 +87,12 @@ namespace UI
         {
             // Create the hex grid generator
             gridGenerator = new HexGridGenerator(
-                mapConfig.gridWidth, 
-                mapConfig.gridHeight, 
-                mapConfig.hexSize, 
-                mapConfig.pointyTopHexes, 
-                mapConfig.horizontalSpacingAdjust, 
-                mapConfig.verticalSpacingAdjust
+                gridWidth, 
+                gridHeight, 
+                hexSize, 
+                pointyTopHexes, 
+                horizontalSpacingAdjust, 
+                verticalSpacingAdjust
             );
             
             // Create the region factory
@@ -111,39 +106,35 @@ namespace UI
             // Create the selection manager
             selectionManager = new MapSelectionManager(regionViews);
             
-            // Create the generation factory
-            generationFactory = new MapGenerationFactory();
-            
             // Initialize the color service with our region views
             if (colorService != null)
             {
-                colorService.Initialize(regionViews, mapConfig.gridWidth, mapConfig.gridHeight);
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
             }
             else 
             {
                 Debug.LogError("MapManager: RegionColorService is null! Colors will not be properly managed.");
             }
+            
+//            Debug.Log("MapManager: Initialized all components");
         }
         
         /// <summary>
-        /// Generate a map using the selected strategy
+        /// Create the hexagonal grid of regions
         /// </summary>
-        private void GenerateMap()
+        private void CreateHexGrid()
         {
             ClearExistingRegions();
             
-            // Get the selected strategy
-            IMapGenerationStrategy strategy = generationFactory.GetStrategy(generationStrategy);
-            
-            // Generate cells using the strategy
-            var cells = strategy.GenerateMap(mapConfig);
+            // Generate the grid cells
+            var cells = gridGenerator.GenerateGrid();
             
             // Create regions for each cell
             foreach (var cell in cells)
             {
                 // Get the color for this region
                 Color regionColor = colorService != null 
-                    ? colorService.GetRegionColor(cell.Id, cell.Q, cell.R, mapConfig.gridWidth, mapConfig.gridHeight, colorService.GetColorMode())
+                    ? colorService.GetRegionColor(cell.Id, cell.Q, cell.R, gridWidth, gridHeight, colorService.GetColorMode())
                     : Color.white;
                 
                 // Create the region with entity
@@ -154,12 +145,12 @@ namespace UI
                 regionViews[cell.Id] = regionView;
             }
             
-            Debug.Log($"MapManager created {regionViews.Count} regions using strategy: {strategy.GetStrategyName()}");
+            Debug.Log($"MapManager created {regionViews.Count} hexagonal regions in a tightly packed hex grid");
             
             // Update the color service with the new region views
             if (colorService != null)
             {
-                colorService.Initialize(regionViews, mapConfig.gridWidth, mapConfig.gridHeight);
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
             }
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
@@ -213,7 +204,7 @@ namespace UI
             
             // Create starting positions for each nation as an anchor point
             Dictionary<string, Vector2Int> nationStartPositions = new Dictionary<string, Vector2Int>();
-            int nationSpacing = mapConfig != null ? mapConfig.nationSpacing : 3;
+            int nationSpacing = 3; // Space between nation clusters
             int currentX = 0;
             
             foreach (string nationId in regionsByNation.Keys)
@@ -279,7 +270,7 @@ namespace UI
                     
                     // Get appropriate color
                     Color regionColor = colorService != null 
-                        ? colorService.GetRegionColor(regionCondition.regionId, q, r, mapConfig.gridWidth, mapConfig.gridHeight, colorService.GetColorMode())
+                        ? colorService.GetRegionColor(regionCondition.regionId, q, r, gridWidth, gridHeight, colorService.GetColorMode())
                         : Color.white;
                     
                     // Create the region with entity and custom properties
@@ -308,7 +299,7 @@ namespace UI
             // Update the color service with the new region views
             if (colorService != null)
             {
-                colorService.Initialize(regionViews, mapConfig.gridWidth, mapConfig.gridHeight);
+                colorService.Initialize(regionViews, gridWidth, gridHeight);
             }
             
             // Trigger the RegionsCreated event to notify NationManager that regions have been created
@@ -423,52 +414,11 @@ namespace UI
         
         #endregion
         
-        /// <summary>
-        /// Create default map configuration if none is assigned
-        /// </summary>
-        private MapGenerationConfig CreateDefaultConfig()
-        {
-            MapGenerationConfig config = ScriptableObject.CreateInstance<MapGenerationConfig>();
-            
-            // Set default values
-            config.gridWidth = 8;
-            config.gridHeight = 8;
-            config.hexSize = 1.0f;
-            config.pointyTopHexes = false;
-            config.horizontalSpacingAdjust = 1.0f;
-            config.verticalSpacingAdjust = 1.0f;
-            config.noiseScale = 0.3f;
-            config.terrainSeed = Random.Range(1, 10000);
-            config.nationSpacing = 3;
-            config.clusterNations = true;
-            
-            Debug.Log("Created default map configuration");
-            
-            return config;
-        }
-        
-        /// <summary>
-        /// Change the map generation strategy
-        /// </summary>
-        public void SetGenerationStrategy(MapGenerationFactory.StrategyType strategyType)
-        {
-            generationStrategy = strategyType;
-            Debug.Log($"Map generation strategy changed to: {generationFactory.GetStrategy(strategyType).GetStrategyName()}");
-        }
-        
-        /// <summary>
-        /// Get the current map generation config
-        /// </summary>
-        public MapGenerationConfig GetMapConfig()
-        {
-            return mapConfig;
-        }
-        
         // Add a reset method that can be called from editor/inspector
-        [ContextMenu("Reset Map")]
-        public void ResetMap()
+        [ContextMenu("Reset Hex Grid")]
+        public void ResetHexGrid()
         {
-            GenerateMap();
+            CreateHexGrid();
         }
     }
 }
