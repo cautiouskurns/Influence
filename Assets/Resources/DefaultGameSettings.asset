@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4defc9d3827e415da4cd7385524d352, type: 3}
+  m_Name: DefaultGameSettings
+  m_EditorClassIdentifier: 
+  startingTurn: 1
+  baseSimulationSpeed: 1
+  startPaused: 1
+  populationGrowthRate: 0.02
+  migrationRate: 0.01
+  maxPopulationDensity: 1000
+  infrastructureGrowthThreshold: 0.5

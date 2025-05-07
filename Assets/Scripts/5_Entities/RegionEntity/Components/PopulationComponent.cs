@@ -153,6 +153,56 @@ namespace Entities.Components
         }
 
         /// <summary>
+        /// Apply population growth with external factors like infrastructure and terrain
+        /// </summary>
+        public void ApplyGrowth(float baseGrowthRate, float infrastructureLevel = 0, 
+                               float infrastructureGrowthThreshold = 10f, float? area = null, 
+                               float? maxDensity = null)
+        {
+            // Start with the base growth rate
+            float growthRate = baseGrowthRate;
+            
+            // Apply infrastructure bonus if available
+            if (infrastructureLevel > 0)
+            {
+                // Better infrastructure can improve growth rate up to 50%
+                float infrastructureMultiplier = Mathf.Min(
+                    infrastructureLevel / infrastructureGrowthThreshold,
+                    1.5f);
+                
+                growthRate *= infrastructureMultiplier;
+            }
+            
+            // Calculate growth amount based on current available labor
+            int growthAmount = Mathf.FloorToInt(LaborAvailable * growthRate);
+            
+            // Check if region is approaching max density
+            if (area.HasValue && maxDensity.HasValue && area.Value > 0)
+            {
+                float currentDensity = LaborAvailable / area.Value;
+                
+                if (currentDensity > maxDensity.Value * 0.8f)
+                {
+                    // Reduce growth as we approach max density
+                    float densityFactor = 1f - (currentDensity / maxDensity.Value);
+                    densityFactor = Mathf.Max(0.1f, densityFactor);
+                    growthAmount = Mathf.FloorToInt(growthAmount * densityFactor);
+                }
+            }
+            
+            // Apply the growth
+            UpdateLaborAvailable(growthAmount);
+        }
+        
+        /// <summary>
+        /// Set the base growth rate for this population
+        /// </summary>
+        public void SetGrowthRate(float rate)
+        {
+            GrowthRate = Mathf.Clamp(rate, -0.05f, 0.1f); // Reasonable limits
+        }
+
+        /// <summary>
         /// Get a summary of the population status
         /// </summary>
         public string GetSummary()

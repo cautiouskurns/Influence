@@ -3,6 +3,8 @@ using Systems;
 using Managers;
 using UI;
 using Core;
+using Core.Interfaces;
+using System.Collections.Generic;
 
 /// <summary>
 /// Core GameManager class that acts as the central controller for initializing and managing the simulation loop.
@@ -39,19 +41,29 @@ public class GameManager : MonoBehaviour
     [SerializeField] private EconomicSystem economicSystem;
     [SerializeField] private UIManager uiManager;
     [SerializeField] private MapManager mapManager;
+    [SerializeField] private PopulationManager populationManager;
     
-    [Header("Simulation Settings")]
-    [SerializeField] private int startingTurn = 1;
-    [SerializeField] private float baseSimulationSpeed = 1.0f;
-    [SerializeField] private bool startPaused = true;
+    [Header("Configuration")]
+    [Tooltip("ScriptableObject containing game settings")]
+    [SerializeField] private GameSettings gameSettings;
     
     [Header("Game State")]
     [SerializeField] private int currentTurn;
-    [SerializeField] private int totalPopulation;
-    [SerializeField] private float populationGrowthRate = 0.02f;
-    [SerializeField] private float migrationRate = 0.01f;
     
-    // private bool _isInitialized = false;
+    // Interface references for better coupling
+    private ITurnManager _turnManagerInterface;
+    private IEconomicSystem _economicSystemInterface;
+    
+    /// <summary>
+    /// Validates all settings on editor changes
+    /// </summary>
+    private void OnValidate()
+    {
+        if (gameSettings != null)
+        {
+            gameSettings.ValidateSettings();
+        }
+    }
     
     private void Awake()
     {
@@ -66,8 +78,18 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         
-        // Initialize game state
-        currentTurn = startingTurn;
+        // Load default settings if none provided
+        if (gameSettings == null)
+        {
+            gameSettings = Resources.Load<GameSettings>("DefaultGameSettings");
+            if (gameSettings == null)
+            {
+                Debug.LogError("No GameSettings found! Please create one in the Resources folder named 'DefaultGameSettings'.");
+            }
+        }
+        
+        // Initialize game state from settings
+        currentTurn = gameSettings != null ? gameSettings.startingTurn : 1;
     }
     
     private void Start()
@@ -85,20 +107,19 @@ public class GameManager : MonoBehaviour
         }
         
         // Set initial simulation state
-        if (turnManager != null)
+        if (_turnManagerInterface != null)
         {
-            if (startPaused)
+            if (gameSettings.startPaused)
             {
-                turnManager.Pause();
+                _turnManagerInterface.Pause();
             }
             else
             {
-                turnManager.Resume();
+                _turnManagerInterface.Resume();
             }
             
-            turnManager.SetTimeScale(baseSimulationSpeed);
+            _turnManagerInterface.SetTimeScale(gameSettings.baseSimulationSpeed);
         }
-        
     }
     
     private void OnDestroy()
@@ -156,35 +177,36 @@ public class GameManager : MonoBehaviour
             }
         }
         
+        if (populationManager == null)
+        {
+            populationManager = FindFirstObjectByType<PopulationManager>();
+            if (populationManager == null)
+            {
+                Debug.LogWarning("No PopulationManager found. Creating one...");
+                GameObject populationManagerObj = new GameObject("PopulationManager");
+                populationManager = populationManagerObj.AddComponent<PopulationManager>();
+            }
+        }
+        
+        // Set up interface references
+        _turnManagerInterface = turnManager as ITurnManager;
+        _economicSystemInterface = economicSystem as IEconomicSystem;
+        
+        if (_turnManagerInterface == null)
+        {
+            Debug.LogError("TurnManager does not implement ITurnManager interface!");
+        }
+        
+        if (_economicSystemInterface == null)
+        {
+            Debug.LogError("EconomicSystem does not implement IEconomicSystem interface!");
+        }
+        
         // Initialize UI Manager
         if (uiManager != null)
         {
             // This will be called in Start() as well, but it's safe to call multiple times
             uiManager.Initialize();
-        }
-        
-        // The EconomicSystem doesn't have an Initialize method, so we'll just proceed
-        // with calculating the total population
-        CalculateTotalPopulation();
-    }
-    
-    /// <summary>
-    /// Calculate the total population from all regions
-    /// </summary>
-    private void CalculateTotalPopulation()
-    {
-        totalPopulation = 0;
-        
-        if (economicSystem != null)
-        {
-            foreach (string regionId in economicSystem.GetAllRegionIds())
-            {
-                var region = economicSystem.GetRegion(regionId);
-                if (region != null)
-                {
-                    totalPopulation += Mathf.RoundToInt(region.LaborAvailable);
-                }
-            }
         }
     }
     
@@ -194,36 +216,33 @@ public class GameManager : MonoBehaviour
     private void OnEconomicTick(object data)
     {
         currentTurn++;
-        CalculateTotalPopulation();
-        
-        // Trigger population growth
-        ApplyPopulationGrowth();
-        
-        Debug.Log($"Turn {currentTurn} completed. Total population: {totalPopulation}");
+        Debug.Log($"Turn {currentTurn} completed. Total population: {GetTotalPopulation()}");
     }
     
     /// <summary>
-    /// Apply population growth to all regions
+    /// Event definitions for the GameManager
     /// </summary>
-    private void ApplyPopulationGrowth()
+    public static class GameEvents
     {
-        if (economicSystem == null) return;
+        /// <summary>
+        /// Event raised when a new turn begins
+        /// </summary>
+        public const string NewTurn = "NewTurn";
         
-        foreach (string regionId in economicSystem.GetAllRegionIds())
-        {
-            var region = economicSystem.GetRegion(regionId);
-            if (region != null)
-            {
-                // Calculate growth based on current population and growth rate
-                int growthAmount = Mathf.FloorToInt(region.LaborAvailable * populationGrowthRate);
-                
-                // Apply growth using the PopulationComp component instead of directly setting LaborAvailable
-                region.PopulationComp.UpdateLaborAvailable(growthAmount);
-                
-                // Update the region
-                economicSystem.UpdateRegion(region);
-            }
-        }
+        /// <summary>
+        /// Event raised when population changes significantly
+        /// </summary>
+        public const string PopulationChanged = "PopulationChanged";
+        
+        /// <summary>
+        /// Event raised when simulation state changes (pause/resume)
+        /// </summary>
+        public const string SimulationStateChanged = "SimulationStateChanged";
+        
+        /// <summary>
+        /// Event raised when a significant economic change occurs
+        /// </summary>
+        public const string EconomicTick = "EconomicTick";
     }
     
     /// <summary>
@@ -250,7 +269,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public int GetTotalPopulation()
     {
-        return totalPopulation;
+        if (populationManager != null)
+        {
+            return populationManager.GetTotalPopulation();
+        }
+        return 0;
     }
     
     /// <summary>
@@ -258,7 +281,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public float GetPopulationGrowthRate()
     {
-        return populationGrowthRate;
+        if (populationManager != null)
+        {
+            return populationManager.GetPopulationGrowthRate();
+        }
+        return gameSettings != null ? gameSettings.populationGrowthRate : 0.02f;
     }
     
     /// <summary>
@@ -266,7 +293,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public float GetMigrationRate()
     {
-        return migrationRate;
+        if (populationManager != null)
+        {
+            return populationManager.GetMigrationRate();
+        }
+        return gameSettings != null ? gameSettings.migrationRate : 0.01f;
     }
     
     /// <summary>
@@ -274,9 +305,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void SetSimulationSpeed(float speed)
     {
-        if (turnManager != null)
+        if (_turnManagerInterface != null)
         {
-            turnManager.SetTimeScale(speed);
+            _turnManagerInterface.SetTimeScale(speed);
         }
     }
     
@@ -285,9 +316,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void PauseSimulation()
     {
-        if (turnManager != null)
+        if (_turnManagerInterface != null)
         {
-            turnManager.Pause();
+            _turnManagerInterface.Pause();
         }
     }
     
@@ -296,9 +327,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void ResumeSimulation()
     {
-        if (turnManager != null)
+        if (_turnManagerInterface != null)
         {
-            turnManager.Resume();
+            _turnManagerInterface.Resume();
         }
     }
     
@@ -307,6 +338,14 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public bool IsSimulationPaused()
     {
-        return turnManager != null && turnManager.IsPaused;
+        return _turnManagerInterface != null && _turnManagerInterface.IsPaused;
+    }
+    
+    /// <summary>
+    /// Get the current game settings
+    /// </summary>
+    public GameSettings GetGameSettings()
+    {
+        return gameSettings;
     }
 }
