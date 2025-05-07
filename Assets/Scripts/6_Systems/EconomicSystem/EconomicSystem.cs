@@ -4,13 +4,14 @@ using Managers;
 using Systems.Economics;
 using System.Collections.Generic;
 using System.Linq;
+using Core.Interfaces;
 
 namespace Systems
 {
     /// <summary>
     /// EconomicSystem processes economic calculations for all regions in the simulation.
     /// </summary>
-    public class EconomicSystem : MonoBehaviour
+    public class EconomicSystem : MonoBehaviour, IEconomicSystem
     {
         [Header("Production Settings")]
         public float productivityFactor = 1.0f;
@@ -438,9 +439,10 @@ namespace Systems
             return regions.Values.ToList();
         }
 
-        public List<string> GetAllRegionIds()
+        // Changed return type from List<string> to IEnumerable<string> to match interface
+        public IEnumerable<string> GetAllRegionIds()
         {
-            return regions.Keys.ToList();
+            return regions.Keys; // Dictionary keys are already IEnumerable<string>
         }
 
         public void UpdateRegion(RegionEntity region)

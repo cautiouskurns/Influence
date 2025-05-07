@@ -6,6 +6,7 @@ using Core;
 using Systems.Economics;
 using System;
 using System.Collections.Generic;
+using System.Linq; // Add LINQ namespace for IEnumerable extension methods
 using Editor.DebugWindow.Modules;
 using Editor.DebugWindow.Data;
 
@@ -166,10 +167,10 @@ namespace Editor.DebugWindow
             
             // Process region updates
             var regions = economicSystem.GetAllRegionIds();
-            if (regions.Count > 0)
+            if (regions.Any()) // Changed from Count > 0 to Any()
             {
                 // Get the first region for simplicity
-                var region = economicSystem.GetRegion(regions[0]);
+                var region = economicSystem.GetRegion(regions.First()); // Changed from [0] to First()
                 if (region != null)
                 {
                     // Record data for graphs

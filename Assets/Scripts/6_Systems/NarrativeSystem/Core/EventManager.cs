@@ -7,6 +7,7 @@ using Systems;
 using Core;
 using Managers;
 using UI;
+using System.Linq; // For LINQ methods
 
 namespace NarrativeSystem
 {
@@ -250,7 +251,7 @@ namespace NarrativeSystem
             if (economicSystem == null) return;
             
             // Get a random region to check (for simplicity)
-            List<string> regionIds = economicSystem.GetAllRegionIds();
+            var regionIds = economicSystem.GetAllRegionIds().ToList(); // Convert IEnumerable to List
             if (regionIds.Count == 0) return;
             
             string randomRegionId = regionIds[Random.Range(0, regionIds.Count)];
@@ -408,7 +409,7 @@ namespace NarrativeSystem
             // Apply effects to a random region (this could be enhanced to target specific regions)
             if (economicSystem != null)
             {
-                List<string> regionIds = economicSystem.GetAllRegionIds();
+                var regionIds = economicSystem.GetAllRegionIds().ToList(); // Convert IEnumerable to List
                 if (regionIds.Count > 0)
                 {
                     string regionId = regionIds[Random.Range(0, regionIds.Count)];

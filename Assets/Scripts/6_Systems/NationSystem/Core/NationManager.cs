@@ -3,6 +3,7 @@ using UnityEngine;
 using Entities;
 using Systems;
 using System.Collections;
+using System.Linq; // Added for LINQ extension methods
 
 namespace Managers
 {
@@ -127,9 +128,9 @@ namespace Managers
             
             // Now try to assign regions
             var regions = economicSystem.GetAllRegionIds();
-            if (regions.Count > 0)
+            if (regions.Any()) // Changed from Count > 0 to Any()
             {
-                Debug.Log($"[NationManager] Found {regions.Count} regions, assigning to nations");
+                Debug.Log($"[NationManager] Found {regions.Count()} regions, assigning to nations"); // Changed from Count to Count()
                 AssignRegionsToNations();
             }
             else
@@ -174,7 +175,7 @@ namespace Managers
             var regions = economicSystem.GetAllRegionIds();
 //            Debug.Log($"[NationManager] Regions found: {regions.Count}");
             
-            if (regions.Count > 0)
+            if (regions.Any()) // Changed from Count > 0 to Any()
             {
                 // Make sure regions are assigned to nations
                 AssignRegionsToNations();
@@ -309,7 +310,7 @@ namespace Managers
                 return;
             }
             
-            var regions = economicSystem.GetAllRegionIds();
+            var regions = economicSystem.GetAllRegionIds().ToList(); // Convert to List to use Count and indexing
             if (regions.Count == 0)
             {
                 Debug.LogWarning("[NationManager] No regions found to assign to nations");

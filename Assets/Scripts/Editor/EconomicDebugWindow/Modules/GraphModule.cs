@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq; // Add LINQ namespace for IEnumerable extension methods
 using Editor.DebugWindow.Data;
 using Editor.DebugWindow.Utilities;
 using Systems.Economics;
@@ -242,10 +243,10 @@ namespace Editor.DebugWindow.Modules
             
             // Check if we have regions
             var regions = economicSystem.GetAllRegionIds();
-            if (regions.Count == 0) return;
+            if (!regions.Any()) return; // Changed Count to Any()
             
             // Get the first region to track
-            var region = economicSystem.GetRegion(regions[0]);
+            var region = economicSystem.GetRegion(regions.First()); // Changed indexer to First()
             if (region == null) return;
             
             // Check if we have history data already

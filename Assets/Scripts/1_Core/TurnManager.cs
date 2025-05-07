@@ -1,13 +1,14 @@
 using UnityEngine;
 using Managers;
 using System.Collections;
+using Core.Interfaces;
 
 namespace Core
 {
     /// <summary>
     /// TurnManager handles turn-based progression with support for pausing and customizable tick speed.
     /// </summary>
-    public class TurnManager : MonoBehaviour
+    public class TurnManager : MonoBehaviour, ITurnManager
     {
         [SerializeField] private float tickIntervalSeconds = 1.0f;
         [SerializeField] private float timeScale = 1.0f;
@@ -19,6 +20,7 @@ namespace Core
         // Public properties for external access
         public bool IsPaused => isPaused;
         public int CurrentTurn => currentTurn;
+        public float TimeScale => timeScale;
 
         private void Start()
         {
@@ -58,6 +60,8 @@ namespace Core
             Debug.Log($"Time scale set to {timeScale:F1}x");
         }
         
+        // This method is now redundant since we have the TimeScale property
+        // but keeping it for backward compatibility
         public float GetTimeScale()
         {
             return timeScale;

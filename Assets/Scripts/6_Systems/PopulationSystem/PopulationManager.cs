@@ -174,8 +174,11 @@ namespace Managers
         {
             if (_economicSystem == null || gameSettings == null) return;
             
-            // Use IEnumerable directly without converting to List
-            foreach (string regionId in _economicSystem.GetAllRegionIds())
+            // Create a copy of the region IDs to avoid enumeration issues
+            var regionIds = _economicSystem.GetAllRegionIds().ToList();
+            
+            // Iterate through the copy instead of the original collection
+            foreach (string regionId in regionIds)
             {
                 var region = _economicSystem.GetRegion(regionId);
                 if (region != null && region.PopulationComp != null)
@@ -187,9 +190,9 @@ namespace Managers
                     
                     // Get infrastructure level if available
                     float infrastructureLevel = 0;
-                    if (region.Infrastructure != null) // Fixed: Changed from InfrastructureComp to Infrastructure
+                    if (region.Infrastructure != null)
                     {
-                        infrastructureLevel = region.InfrastructureLevel; // Use the existing property
+                        infrastructureLevel = region.InfrastructureLevel;
                     }
                     
                     // Apply growth with all relevant factors
