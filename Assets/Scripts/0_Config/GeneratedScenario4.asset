@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
+  m_Name: GeneratedScenario4
+  m_EditorClassIdentifier: 
+  scenarioName: Generated Scenario
+  description: Procedurally generated scenario with 15 regions and 3 nations.
+  turnLimit: 15
+  regionStartConditions:
+  - regionId: Region_4_1
+    regionName: South Haven
+    initialWealth: 227
+    initialProduction: 31
+    initialInfrastructureLevel: 9.122942
+    initialPopulation: 1978
+    initialSatisfaction: 0.50021386
+  - regionId: Region_3_3
+    regionName: CrystalPlains
+    initialWealth: 226
+    initialProduction: 68
+    initialInfrastructureLevel: 11.728274
+    initialPopulation: 1735
+    initialSatisfaction: 0.6770844
+  - regionId: Region_0_1
+    regionName: FoxPlains
+    initialWealth: 209
+    initialProduction: 50
+    initialInfrastructureLevel: 5.6522417
+    initialPopulation: 1723
+    initialSatisfaction: 0.63171446
+  - regionId: Region_4_4
+    regionName: Amber Peaks
+    initialWealth: 201
+    initialProduction: 79
+    initialInfrastructureLevel: 7.168176
+    initialPopulation: 1693
+    initialSatisfaction: 0.5612402
+  - regionId: Region_4_0
+    regionName: East Iron
+    initialWealth: 175
+    initialProduction: 58
+    initialInfrastructureLevel: 10.772504
+    initialPopulation: 1908
+    initialSatisfaction: 0.5211863
+  - regionId: Region_1_1
+    regionName: Forest Highlands
+    initialWealth: 175
+    initialProduction: 43
+    initialInfrastructureLevel: 11.5368805
+    initialPopulation: 1785
+    initialSatisfaction: 0.71281254
+  - regionId: Region_2_2
+    regionName: Mountain Valley
+    initialWealth: 174
+    initialProduction: 48
+    initialInfrastructureLevel: 9.465864
+    initialPopulation: 849
+    initialSatisfaction: 0.60589033
+  - regionId: Region_4_3
+    regionName: River Highlands
+    initialWealth: 171
+    initialProduction: 36
+    initialInfrastructureLevel: 8.117861
+    initialPopulation: 1827
+    initialSatisfaction: 0.37426347
+  - regionId: Region_3_1
+    regionName: East Stone
+    initialWealth: 160
+    initialProduction: 61
+    initialInfrastructureLevel: 5.819747
+    initialPopulation: 1272
+    initialSatisfaction: 0.39810175
+  - regionId: Region_3_4
+    regionName: Jade Basin
+    initialWealth: 158
+    initialProduction: 59
+    initialInfrastructureLevel: 11.475435
+    initialPopulation: 737
+    initialSatisfaction: 0.6103145
+  - regionId: Region_0_3
+    regionName: SilverForest
+    initialWealth: 153
+    initialProduction: 39
+    initialInfrastructureLevel: 12.592461
+    initialPopulation: 507
+    initialSatisfaction: 0.52333605
+  - regionId: Region_2_4
+    regionName: Forest Lily
+    initialWealth: 142
+    initialProduction: 63
+    initialInfrastructureLevel: 9.028476
+    initialPopulation: 1257
+    initialSatisfaction: 0.66758245
+  - regionId: Region_2_3
+    regionName: StagPeaks
+    initialWealth: 123
+    initialProduction: 53
+    initialInfrastructureLevel: 13.12643
+    initialPopulation: 983
+    initialSatisfaction: 0.74917585
+  - regionId: Region_2_1
+    regionName: Upper Tiger
+    initialWealth: 119
+    initialProduction: 31
+    initialInfrastructureLevel: 10.241163
+    initialPopulation: 1132
+    initialSatisfaction: 0.3172357
+  - regionId: Region_1_2
+    regionName: LilyHills
+    initialWealth: 115
+    initialProduction: 46
+    initialInfrastructureLevel: 9.1335125
+    initialPopulation: 1144
+    initialSatisfaction: 0.6460673
+  nationStartConditions:
+  - nationId: nation_1
+    nationName: Socialist Helpolis
+    controlledRegionIds:
+    - Region_4_1
+    - Region_4_4
+    - Region_2_2
+    - Region_3_4
+    - Region_2_3
+  - nationId: nation_2
+    nationName: Democratic Luxnia
+    controlledRegionIds:
+    - Region_3_3
+    - Region_4_0
+    - Region_4_3
+    - Region_0_3
+    - Region_2_1
+  - nationId: nation_3
+    nationName: Independent Estland
+    controlledRegionIds:
+    - Region_0_1
+    - Region_1_1
+    - Region_3_1
+    - Region_2_4
+    - Region_1_2
+  victoryCondition:
+    type: 2
+    targetRegionId: 
+    requiredWealth: 500
+    requiredInfrastructure: 20
+    requiredSatisfaction: 0.8134494
+    requiredConsecutiveTurns: 1

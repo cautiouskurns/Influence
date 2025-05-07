@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections.Generic;
 
 namespace UI
 {
@@ -17,7 +18,10 @@ namespace UI
         
         [Header("Sprite References")]
         [SerializeField] private Sprite hexagonSprite;
+        [SerializeField] private Sprite[] randomHexagonSprites; // Array of sprites to randomly choose from
+        [SerializeField] private bool useRandomSprites = false; // Toggle for using random sprites
         private static Sprite sharedHexagonSprite;
+        private static Sprite[] sharedRandomSprites;
         
         [Header("Size Settings")]
         [SerializeField] private float hexScale = 0.7f; // Scale factor for hex
@@ -30,6 +34,12 @@ namespace UI
         
         private void Awake()
         {
+            // Cache random sprites if available
+            if (randomHexagonSprites != null && randomHexagonSprites.Length > 0)
+            {
+                sharedRandomSprites = randomHexagonSprites;
+            }
+            
             // Ensure we have a sprite at runtime
             if (hexagonSprite != null)
             {
@@ -55,17 +65,29 @@ namespace UI
                 }
             }
             
-            // Apply the sprite to renderers if they exist
+            // Apply sprites to renderers if they exist
             if (mainRenderer != null && mainRenderer.sprite == null)
             {
-                mainRenderer.sprite = sharedHexagonSprite;
+                // Check if we should use random sprites
+                if (useRandomSprites && sharedRandomSprites != null && sharedRandomSprites.Length > 0)
+                {
+                    // Select a random sprite from the array
+                    int randomIndex = Random.Range(0, sharedRandomSprites.Length);
+                    mainRenderer.sprite = sharedRandomSprites[randomIndex];
+                }
+                else
+                {
+                    mainRenderer.sprite = sharedHexagonSprite;
+                }
+                
                 // Apply scale to the main renderer
                 mainRenderer.transform.localScale = new Vector3(hexScale, hexScale, 1f);
             }
             
             if (highlightRenderer != null && highlightRenderer.sprite == null)
             {
-                highlightRenderer.sprite = sharedHexagonSprite;
+                // Use the same sprite as the main renderer for consistency
+                highlightRenderer.sprite = mainRenderer.sprite;
                 // Apply scale to the highlight renderer
                 highlightRenderer.transform.localScale = new Vector3(hexScale * 1.1f, hexScale * 1.1f, 1f);
             }
@@ -78,11 +100,127 @@ namespace UI
             }
         }
         
+        /// <summary>
+        /// Load hex sprites from project assets for random assignment
+        /// </summary>
+        [ContextMenu("Load Hex Sprites")]
+        public void LoadHexSprites()
+        {
+            // Try to load sprites from the Hex World Tiles folder
+            Sprite[] loadedSprites = Resources.LoadAll<Sprite>("Hex World Tiles - Free");
+            
+            if (loadedSprites == null || loadedSprites.Length == 0)
+            {
+                // Try loading from other locations if needed
+                loadedSprites = Resources.LoadAll<Sprite>("");
+            }
+            
+            if (loadedSprites != null && loadedSprites.Length > 0)
+            {
+                // Filter to only include hex tiles
+                List<Sprite> hexSprites = new List<Sprite>();
+                foreach (Sprite sprite in loadedSprites)
+                {
+                    if (sprite.name.ToLower().Contains("hex") || 
+                        sprite.name.ToLower().Contains("tile"))
+                    {
+                        hexSprites.Add(sprite);
+                    }
+                }
+                
+                // Update the array with the loaded sprites
+                randomHexagonSprites = hexSprites.ToArray();
+                Debug.Log($"Loaded {randomHexagonSprites.Length} hex sprites");
+            }
+            else
+            {
+                Debug.LogWarning("No sprites found in the Hex World Tiles - Free folder");
+            }
+        }
+        
         private Sprite LoadHexagonFromAssets()
         {
-            // Try to load the Hexagon.png file directly from the assets folder
-            // This requires the sprite to be in Assets folder
-            return Resources.Load<Sprite>("Hexagon") ?? Resources.LoadAll<Sprite>("")[0];
+            // Try different paths to find hexagon sprites
+            Sprite[] hexSprites = Resources.LoadAll<Sprite>("Hex World Tiles - Free");
+            if (hexSprites != null && hexSprites.Length > 0)
+            {
+                return hexSprites[0];
+            }
+            
+            // Fallback options
+            Sprite defaultSprite = Resources.Load<Sprite>("Hexagon");
+            if (defaultSprite != null)
+            {
+                return defaultSprite;
+            }
+            
+            // Final fallback to any available sprite
+            Sprite[] allSprites = Resources.LoadAll<Sprite>("");
+            if (allSprites != null && allSprites.Length > 0)
+            {
+                foreach (Sprite sprite in allSprites)
+                {
+                    if (sprite.name.ToLower().Contains("hex") || 
+                        sprite.name.ToLower().Contains("tile"))
+                    {
+                        return sprite;
+                    }
+                }
+                
+                // If no hex-like sprites found, return the first sprite
+                if (allSprites.Length > 0)
+                {
+                    return allSprites[0];
+                }
+            }
+            
+            // No sprites found at all
+            return null;
+        }
+        
+        /// <summary>
+        /// Apply a random sprite from the available hex sprites
+        /// </summary>
+        public void ApplyRandomSprite()
+        {
+            // Ensure we have random sprites to choose from
+            if ((randomHexagonSprites == null || randomHexagonSprites.Length == 0) &&
+                (sharedRandomSprites == null || sharedRandomSprites.Length == 0))
+            {
+                LoadHexSprites();
+                
+                // If still no sprites, log warning and exit
+                if (randomHexagonSprites == null || randomHexagonSprites.Length == 0)
+                {
+                    Debug.LogWarning("No random hex sprites available to apply");
+                    return;
+                }
+            }
+            
+            // Use whichever sprite array is available
+            Sprite[] spritesToUse = (randomHexagonSprites != null && randomHexagonSprites.Length > 0) 
+                ? randomHexagonSprites 
+                : sharedRandomSprites;
+            
+            if (spritesToUse != null && spritesToUse.Length > 0)
+            {
+                // Select a random sprite
+                int randomIndex = Random.Range(0, spritesToUse.Length);
+                Sprite randomSprite = spritesToUse[randomIndex];
+                
+                // Apply to renderers
+                if (mainRenderer != null)
+                {
+                    mainRenderer.sprite = randomSprite;
+                }
+                
+                if (highlightRenderer != null)
+                {
+                    highlightRenderer.sprite = randomSprite;
+                }
+                
+                Debug.Log($"Applied random sprite: {randomSprite.name}");
+            }
         }
         
         [ContextMenu("Setup Region Prefab")]

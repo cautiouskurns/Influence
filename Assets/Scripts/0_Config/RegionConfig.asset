@@ -15,7 +15,7 @@ MonoBehaviour:
   regionType: 0
   regionTypeName: 
   description: 
-  regionColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  regionColor: {r: 1, g: 1, b: 1, a: 1}
   regionPrefab: {fileID: 0}
   resourceConfig: {fileID: 11400000, guid: 637118c7450814ca0bafab4e1005ee3f, type: 2}
   productionConfig: {fileID: 11400000, guid: 01b14f06822914242b82ba26115b26a4, type: 2}

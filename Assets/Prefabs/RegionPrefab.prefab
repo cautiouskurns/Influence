@@ -760,6 +760,8 @@ MonoBehaviour:
   wealthText: {fileID: 7405833994623718977}
   productionText: {fileID: 289097587991939758}
   hexagonSprite: {fileID: 0}
+  randomHexagonSprites: []
+  useRandomSprites: 0
   hexScale: 0.7
   nameFontSize: 6
   statsFontSize: 8

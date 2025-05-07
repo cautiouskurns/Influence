@@ -17,60 +17,36 @@ MonoBehaviour:
   turnLimit: 15
   regionStartConditions:
   - regionId: Region_2_1
-    regionName: Forest Hills
-    initialWealth: 244
-    initialProduction: 31
-    initialInfrastructureLevel: 11.95158
-    initialPopulation: 614
-    initialSatisfaction: 0.55051935
-  - regionId: Region_0_0
-    regionName: Old Oak
-    initialWealth: 183
-    initialProduction: 40
-    initialInfrastructureLevel: 13.662847
-    initialPopulation: 1872
-    initialSatisfaction: 0.7329953
-  - regionId: Region_0_2
-    regionName: StoneCape
-    initialWealth: 154
-    initialProduction: 43
-    initialInfrastructureLevel: 6.05183
-    initialPopulation: 534
-    initialSatisfaction: 0.3618588
-  - regionId: Region_1_2
-    regionName: North Cape
-    initialWealth: 138
-    initialProduction: 39
-    initialInfrastructureLevel: 8.706038
-    initialPopulation: 1795
-    initialSatisfaction: 0.56260216
-  - regionId: Region_0_1
-    regionName: New Highlands
-    initialWealth: 137
-    initialProduction: 35
-    initialInfrastructureLevel: 13.909744
-    initialPopulation: 1651
-    initialSatisfaction: 0.5761148
+    regionName: Valley Valley
+    initialWealth: 146
+    initialProduction: 45
+    initialInfrastructureLevel: 14.576419
+    initialPopulation: 1314
+    initialSatisfaction: 0.7665578
+  - regionId: Region_1_1
+    regionName: West Fox
+    initialWealth: 128
+    initialProduction: 69
+    initialInfrastructureLevel: 5.697905
+    initialPopulation: 1302
+    initialSatisfaction: 0.3826151
   - regionId: Region_2_2
-    regionName: North Point
-    initialWealth: 137
-    initialProduction: 70
-    initialInfrastructureLevel: 6.9264317
-    initialPopulation: 534
-    initialSatisfaction: 0.6116352
+    regionName: AmberHaven
+    initialWealth: 123
+    initialProduction: 58
+    initialInfrastructureLevel: 12.032948
+    initialPopulation: 1475
+    initialSatisfaction: 0.7143028
   nationStartConditions:
-  - nationId: nation_1
-    nationName: Naradorond
+  - nationId: proc_nation_1
+    nationName: Arionond
     controlledRegionIds:
     - Region_2_1
-    - Region_0_2
-    - Region_0_1
-  - nationId: nation_2
-    nationName: Lorlinion
-    controlledRegionIds:
-    - Region_0_0
-    - Region_1_2
     - Region_2_2
+  - nationId: proc_nation_2
+    nationName: Arion
+    controlledRegionIds:
+    - Region_1_1
   victoryCondition:
     type: 0
     targetRegionId: 

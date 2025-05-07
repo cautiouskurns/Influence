@@ -81,7 +81,7 @@ namespace UI.MapComponents
 
         [Header("Color Settings")]
         [SerializeField] private RegionColorMode colorMode = RegionColorMode.Default;
-        [SerializeField] private Color defaultRegionColor = new Color(0.5f, 0.5f, 0.7f);
+        [SerializeField] private Color defaultRegionColor = Color.white;
         [SerializeField] private Color wealthMinColor = new Color(0.8f, 0.2f, 0.2f);
         [SerializeField] private Color wealthMaxColor = new Color(0.2f, 0.8f, 0.2f);
         [SerializeField] private Color productionMinColor = new Color(0.2f, 0.2f, 0.8f);

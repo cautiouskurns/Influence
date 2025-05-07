@@ -1,0 +1,152 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a94912f3f8dd74da7a1852c70396534e, type: 3}
+  m_Name: GeneratedScenario5
+  m_EditorClassIdentifier: 
+  scenarioName: Generated Scenario
+  description: Procedurally generated scenario with 15 regions and 2 nations.
+  turnLimit: 15
+  regionStartConditions:
+  - regionId: Region_2_1
+    regionName: South Shores
+    initialWealth: 241
+    initialProduction: 63
+    initialInfrastructureLevel: 10.447202
+    initialPopulation: 1250
+    initialSatisfaction: 0.39417517
+  - regionId: Region_4_1
+    regionName: Lower Fields
+    initialWealth: 232
+    initialProduction: 47
+    initialInfrastructureLevel: 7.596958
+    initialPopulation: 1387
+    initialSatisfaction: 0.5732134
+  - regionId: Region_2_3
+    regionName: South Forest
+    initialWealth: 220
+    initialProduction: 39
+    initialInfrastructureLevel: 9.784581
+    initialPopulation: 717
+    initialSatisfaction: 0.31689864
+  - regionId: Region_1_2
+    regionName: EagleHighlands
+    initialWealth: 211
+    initialProduction: 50
+    initialInfrastructureLevel: 5.3969316
+    initialPopulation: 1790
+    initialSatisfaction: 0.6291776
+  - regionId: Region_3_0
+    regionName: Lower Silver
+    initialWealth: 208
+    initialProduction: 52
+    initialInfrastructureLevel: 8.326776
+    initialPopulation: 1937
+    initialSatisfaction: 0.31928307
+  - regionId: Region_0_0
+    regionName: South Silver
+    initialWealth: 167
+    initialProduction: 68
+    initialInfrastructureLevel: 7.611514
+    initialPopulation: 1521
+    initialSatisfaction: 0.74956006
+  - regionId: Region_4_0
+    regionName: BoarShores
+    initialWealth: 159
+    initialProduction: 76
+    initialInfrastructureLevel: 14.120578
+    initialPopulation: 1431
+    initialSatisfaction: 0.52555275
+  - regionId: Region_3_3
+    regionName: North Mountains
+    initialWealth: 154
+    initialProduction: 54
+    initialInfrastructureLevel: 5.154584
+    initialPopulation: 1778
+    initialSatisfaction: 0.49486402
+  - regionId: Region_3_1
+    regionName: Raven Hills
+    initialWealth: 147
+    initialProduction: 57
+    initialInfrastructureLevel: 7.9601774
+    initialPopulation: 1137
+    initialSatisfaction: 0.33178526
+  - regionId: Region_1_3
+    regionName: StagPoint
+    initialWealth: 145
+    initialProduction: 77
+    initialInfrastructureLevel: 6.9499173
+    initialPopulation: 1151
+    initialSatisfaction: 0.31720752
+  - regionId: Region_0_4
+    regionName: Lion Fields
+    initialWealth: 144
+    initialProduction: 44
+    initialInfrastructureLevel: 11.997199
+    initialPopulation: 1351
+    initialSatisfaction: 0.7876183
+  - regionId: Region_2_2
+    regionName: Forest Hawk
+    initialWealth: 143
+    initialProduction: 73
+    initialInfrastructureLevel: 12.435298
+    initialPopulation: 706
+    initialSatisfaction: 0.4589272
+  - regionId: Region_0_2
+    regionName: Rose Point
+    initialWealth: 139
+    initialProduction: 39
+    initialInfrastructureLevel: 5.499814
+    initialPopulation: 649
+    initialSatisfaction: 0.31813043
+  - regionId: Region_2_0
+    regionName: Old Lion
+    initialWealth: 136
+    initialProduction: 73
+    initialInfrastructureLevel: 10.028178
+    initialPopulation: 656
+    initialSatisfaction: 0.5195956
+  - regionId: Region_4_3
+    regionName: RavenMountains
+    initialWealth: 124
+    initialProduction: 74
+    initialInfrastructureLevel: 12.918557
+    initialPopulation: 1848
+    initialSatisfaction: 0.40551573
+  nationStartConditions:
+  - nationId: nation_1
+    nationName: Socialist Galnia
+    controlledRegionIds:
+    - Region_2_1
+    - Region_2_3
+    - Region_3_0
+    - Region_4_0
+    - Region_3_1
+    - Region_0_4
+    - Region_0_2
+    - Region_4_3
+  - nationId: nation_2
+    nationName: Republic of Quadmark
+    controlledRegionIds:
+    - Region_4_1
+    - Region_1_2
+    - Region_0_0
+    - Region_3_3
+    - Region_1_3
+    - Region_2_2
+    - Region_2_0
+  victoryCondition:
+    type: 1
+    targetRegionId: 
+    requiredWealth: 500
+    requiredInfrastructure: 25.4184
+    requiredSatisfaction: 0.8
+    requiredConsecutiveTurns: 3

@@ -1033,6 +1033,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 737560868}
   m_CullTransparentMesh: 1
+--- !u!1 &743861067
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 743861069}
+  - component: {fileID: 743861068}
+  m_Layer: 0
+  m_Name: SpriteTestManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &743861068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 743861067}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 901eb63e54f61439db5f64459ff4a327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  applyOnStart: 1
+  applyRandomSpritesToAll: 0
+  randomizeKey: 114
+  randomizeInterval: 2
+  testSprites:
+  - {fileID: 21300000, guid: 75e570d9a362a469ab0fcb4be474b026, type: 3}
+  - {fileID: 21300000, guid: caef1295cf4c54ba48f72483bbfe1835, type: 3}
+  - {fileID: 21300000, guid: 69e0fc60e5b564ac291aea9a4bc7ea13, type: 3}
+  regionsContainer: {fileID: 0}
+--- !u!4 &743861069
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 743861067}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1092.9724, y: 540.878, z: -3.7999446}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &754185607
 GameObject:
   m_ObjectHideFlags: 0
@@ -2058,9 +2111,11 @@ MonoBehaviour:
   createSimulationControls: 1
   createVisualizationControls: 1
   createStatsDisplay: 0
+  createEconomicControls: 1
   simulationControlsPosition: 1
   visualizationControlsPosition: 0
   statsDisplayPosition: 3
+  economicControlsPosition: 0
 --- !u!114 &1455276067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3143,3 +3198,4 @@ SceneRoots:
   - {fileID: 771388975}
   - {fileID: 182796287}
   - {fileID: 246743159}
+  - {fileID: 743861069}
