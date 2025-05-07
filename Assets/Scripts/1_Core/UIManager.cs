@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,26 +6,129 @@ using UnityEngine.UI;
 namespace UI
 {
     /// <summary>
-    /// Central manager for all UI modules
+    /// Central manager for all UI modules in the game interface.
+    /// 
+    /// This class manages UI layout, module creation, registration, and provides
+    /// utilities for positioning and organizing UI elements across standardized panels.
+    /// It follows a Singleton pattern for global access while maintaining encapsulation.
+    /// 
+    /// Responsibilities:
+    /// - Maintaining the main UI canvas and panel structure
+    /// - Registration and initialization of UI modules
+    /// - Dynamic creation of UI modules at runtime
+    /// - Panel positioning and layout management
     /// </summary>
     public class UIManager : MonoBehaviour
     {
+        #region Singleton Pattern
+        private static UIManager _instance;
+        
+        /// <summary>
+        /// Singleton accessor for global access to the UI manager
+        /// </summary>
+        public static UIManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindFirstObjectByType<UIManager>();
+                    
+                    if (_instance == null)
+                    {
+                        Debug.LogWarning("No UIManager found - creating a new instance");
+                        GameObject go = new GameObject("UIManager");
+                        _instance = go.AddComponent<UIManager>();
+                    }
+                }
+                return _instance;
+            }
+        }
+        #endregion
+        
+        #region Events
+        /// <summary>
+        /// Event raised when a new UI module is registered with the manager
+        /// </summary>
+        public event Action<UIModuleBase> OnModuleRegistered;
+        
+        /// <summary>
+        /// Event raised when the UI layout is initialized or changed significantly
+        /// </summary>
+        public event Action OnUILayoutInitialized;
+        #endregion
+        
+        #region Inspector Fields
         [Header("Canvas References")]
+        [Tooltip("Main canvas for all UI elements")]
         [SerializeField] private Canvas mainCanvas;
+        
+        [Tooltip("Panel positioned at the top of the screen")]
         [SerializeField] private RectTransform topPanel;
+        
+        [Tooltip("Panel positioned at the bottom of the screen")]
         [SerializeField] private RectTransform bottomPanel;
+        
+        [Tooltip("Panel positioned at the left side of the screen")]
         [SerializeField] private RectTransform leftPanel;
+        
+        [Tooltip("Panel positioned at the right side of the screen")]
         [SerializeField] private RectTransform rightPanel;
+        
+        [Tooltip("Panel positioned at the center of the screen")]
         [SerializeField] private RectTransform centerPanel;
         
         [Header("Initialization")]
+        [Tooltip("Whether to automatically initialize UI on Awake")]
         [SerializeField] private bool autoInitialize = true;
         
-        // List of all registered UI modules
-        private List<UIModuleBase> uiModules = new List<UIModuleBase>();
+        [Header("Layout Configuration")]
+        [Tooltip("Default height for the top panel")]
+        [SerializeField] private float topPanelHeight = 80f;
         
+        [Tooltip("Default height for the bottom panel")]
+        [SerializeField] private float bottomPanelHeight = 150f;
+        
+        [Tooltip("Default width for the side panels")]
+        [SerializeField] private float sidePanelWidth = 200f;
+        
+        [Tooltip("Default size for the center panel")]
+        [SerializeField] private Vector2 centerPanelSize = new Vector2(400f, 300f);
+        
+        [Tooltip("Default spacing between UI elements in layouts")]
+        [SerializeField] private float defaultElementSpacing = 10f;
+        #endregion
+        
+        #region Private Fields
+        // List of all registered UI modules
+        private List<UIModuleBase> _uiModules = new List<UIModuleBase>();
+        
+        // Dictionary for fast lookup of modules by type
+        private Dictionary<Type, UIModuleBase> _moduleCache = new Dictionary<Type, UIModuleBase>();
+        
+        // Initialization state
+        private bool _initialized = false;
+        
+        // Constants
+        private const int PANEL_PADDING = 10;
+        #endregion
+        
+        #region Unity Lifecycle Methods
+        /// <summary>
+        /// Handles singleton initialization and auto-initialization if enabled
+        /// </summary>
         private void Awake()
         {
+            // Singleton pattern enforcement
+            if (_instance != null && _instance != this)
+            {
+                Debug.LogWarning($"Multiple UIManager instances detected. Destroying duplicate on {gameObject.name}");
+                Destroy(this);
+                return;
+            }
+            
+            _instance = this;
+            
             if (autoInitialize)
             {
                 Initialize();
@@ -32,41 +136,247 @@ namespace UI
         }
         
         /// <summary>
-        /// Initialize the UI Manager and all UI modules
+        /// Validates serialized field values in the editor
         /// </summary>
-        public void Initialize()
+        private void OnValidate()
         {
-            // Create UI layout if not set in inspector
-            CreateUILayoutIfNeeded();
-            
-            // Discover UI modules in the scene
-            DiscoverUIModules();
-            
-            // Create essential UI modules if they don't exist
-            CreateEssentialModules();
-            
-            // Initialize all modules
-            InitializeModules();
+            // Ensure panel dimensions are positive
+            topPanelHeight = Mathf.Max(0, topPanelHeight);
+            bottomPanelHeight = Mathf.Max(0, bottomPanelHeight);
+            sidePanelWidth = Mathf.Max(0, sidePanelWidth);
+            centerPanelSize = new Vector2(
+                Mathf.Max(0, centerPanelSize.x),
+                Mathf.Max(0, centerPanelSize.y)
+            );
+            defaultElementSpacing = Mathf.Max(0, defaultElementSpacing);
         }
         
         /// <summary>
-        /// Register a UI module with the manager
+        /// Clean up resources on destruction
         /// </summary>
-        public void RegisterModule(UIModuleBase module)
+        private void OnDestroy()
         {
-            if (!uiModules.Contains(module))
+            if (_instance == this)
             {
-                uiModules.Add(module);
-                module.Initialize();
+                _instance = null;
+            }
+            
+            // Clear module collections
+            _uiModules.Clear();
+            _moduleCache.Clear();
+        }
+        #endregion
+        
+        #region Initialization Methods
+        /// <summary>
+        /// Initialize the UI Manager and all UI modules.
+        /// Creates the UI layout if needed, discovers existing modules,
+        /// and ensures essential modules are available.
+        /// </summary>
+        public void Initialize()
+        {
+            if (_initialized)
+            {
+                Debug.LogWarning("UIManager is already initialized");
+                return;
+            }
+            
+            try
+            {
+                // Create UI layout if not set in inspector
+                CreateUILayoutIfNeeded();
+                
+                // Discover UI modules in the scene
+                DiscoverUIModules();
+                
+                // Create essential UI modules if they don't exist
+                CreateEssentialModules();
+                
+                // Initialize all modules
+                InitializeModules();
+                
+                _initialized = true;
+                OnUILayoutInitialized?.Invoke();
+                
+                Debug.Log($"UIManager initialized with {_uiModules.Count} modules");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error initializing UIManager: {e.Message}\n{e.StackTrace}");
             }
         }
         
         /// <summary>
-        /// Create a new UI module of the specified type
+        /// Create the basic UI layout if it doesn't already exist.
+        /// Sets up the main canvas and all panels with appropriate anchors and positions.
         /// </summary>
+        private void CreateUILayoutIfNeeded()
+        {
+            // Check for canvas
+            if (mainCanvas == null)
+            {
+                GameObject canvasObj = new GameObject("MainCanvas");
+                mainCanvas = canvasObj.AddComponent<Canvas>();
+                mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                
+                CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                
+                canvasObj.AddComponent<GraphicRaycaster>();
+            }
+            
+            // Create panels if they don't exist
+            if (topPanel == null)
+            {
+                topPanel = CreatePanel("TopPanel", mainCanvas.transform);
+                topPanel.anchorMin = new Vector2(0, 1);
+                topPanel.anchorMax = new Vector2(1, 1);
+                topPanel.pivot = new Vector2(0.5f, 1);
+                topPanel.sizeDelta = new Vector2(0, topPanelHeight);
+                topPanel.anchoredPosition = Vector2.zero;
+            }
+            
+            if (bottomPanel == null)
+            {
+                bottomPanel = CreatePanel("BottomPanel", mainCanvas.transform);
+                bottomPanel.anchorMin = new Vector2(0, 0);
+                bottomPanel.anchorMax = new Vector2(1, 0);
+                bottomPanel.pivot = new Vector2(0.5f, 0);
+                bottomPanel.sizeDelta = new Vector2(0, bottomPanelHeight);
+                bottomPanel.anchoredPosition = Vector2.zero;
+            }
+            
+            if (leftPanel == null)
+            {
+                leftPanel = CreatePanel("LeftPanel", mainCanvas.transform);
+                leftPanel.anchorMin = new Vector2(0, 0);
+                leftPanel.anchorMax = new Vector2(0, 1);
+                leftPanel.pivot = new Vector2(0, 0.5f);
+                leftPanel.sizeDelta = new Vector2(sidePanelWidth, 0);
+                leftPanel.anchoredPosition = Vector2.zero;
+            }
+            
+            if (rightPanel == null)
+            {
+                rightPanel = CreatePanel("RightPanel", mainCanvas.transform);
+                rightPanel.anchorMin = new Vector2(1, 0);
+                rightPanel.anchorMax = new Vector2(1, 1);
+                rightPanel.pivot = new Vector2(1, 0.5f);
+                rightPanel.sizeDelta = new Vector2(sidePanelWidth, 0);
+                rightPanel.anchoredPosition = Vector2.zero;
+            }
+            
+            if (centerPanel == null)
+            {
+                centerPanel = CreatePanel("CenterPanel", mainCanvas.transform);
+                centerPanel.anchorMin = new Vector2(0.5f, 0.5f);
+                centerPanel.anchorMax = new Vector2(0.5f, 0.5f);
+                centerPanel.pivot = new Vector2(0.5f, 0.5f);
+                centerPanel.sizeDelta = centerPanelSize;
+                centerPanel.anchoredPosition = Vector2.zero;
+            }
+        }
+        
+        /// <summary>
+        /// Discover UI modules already present in the scene
+        /// </summary>
+        private void DiscoverUIModules()
+        {
+            // Find all UI modules in the scene
+            UIModuleBase[] modules = FindObjectsByType<UIModuleBase>(FindObjectsSortMode.None);
+            
+            foreach (UIModuleBase module in modules)
+            {
+                if (module != null)
+                {
+                    RegisterModule(module);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Initialize all registered modules
+        /// </summary>
+        private void InitializeModules()
+        {
+            foreach (UIModuleBase module in _uiModules)
+            {
+                if (module != null)
+                {
+                    try
+                    {
+                        module.Initialize();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Error initializing module {module.GetType().Name}: {e.Message}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create essential UI modules if they don't exist yet
+        /// </summary>
+        private void CreateEssentialModules()
+        {
+            // Check if we already have a GameStatsUIModule
+            if (GetModule<GameStatsUIModule>() == null)
+            {
+                // Create the turn counter in the bottom panel
+                CreateModule<GameStatsUIModule>(UIPosition.Bottom);
+            }
+        }
+        #endregion
+        
+        #region Module Management Methods
+        /// <summary>
+        /// Register a UI module with the manager.
+        /// Once registered, the module will be initialized and can be accessed through GetModule.
+        /// </summary>
+        /// <param name="module">The UI module to register</param>
+        public void RegisterModule(UIModuleBase module)
+        {
+            if (module == null)
+            {
+                Debug.LogError("Attempted to register null UI module");
+                return;
+            }
+            
+            if (!_uiModules.Contains(module))
+            {
+                _uiModules.Add(module);
+                _moduleCache[module.GetType()] = module;
+                
+                try
+                {
+                    module.Initialize();
+                    OnModuleRegistered?.Invoke(module);
+                    
+                    // Debug.Log($"Registered UI module: {module.GetType().Name}");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to initialize UI module {module.GetType().Name}: {e.Message}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Create a new UI module of the specified type and position it in the given panel.
+        /// </summary>
+        /// <typeparam name="T">The type of UI module to create</typeparam>
+        /// <param name="position">Which panel to place the module in</param>
+        /// <returns>The created UI module instance</returns>
         public T CreateModule<T>(UIPosition position = UIPosition.Center) where T : UIModuleBase
         {
             RectTransform parent = GetPanelForPosition(position);
+            if (parent == null)
+            {
+                Debug.LogError($"Failed to create UI module {typeof(T).Name}: Panel not found for position {position}");
+                return null;
+            }
             
             GameObject moduleObj = new GameObject(typeof(T).Name);
             moduleObj.transform.SetParent(parent, false);
@@ -87,19 +397,113 @@ namespace UI
         }
         
         /// <summary>
-        /// Find a UI module of the specified type
+        /// Find a UI module of the specified type.
         /// </summary>
+        /// <typeparam name="T">The type of UI module to find</typeparam>
+        /// <returns>The UI module if found, null otherwise</returns>
         public T GetModule<T>() where T : UIModuleBase
         {
-            foreach (UIModuleBase module in uiModules)
+            // Try fast lookup first
+            if (_moduleCache.TryGetValue(typeof(T), out UIModuleBase cachedModule))
+            {
+                return cachedModule as T;
+            }
+            
+            // Fall back to linear search
+            foreach (UIModuleBase module in _uiModules)
             {
                 if (module is T typedModule)
                 {
+                    // Cache for future lookups
+                    _moduleCache[typeof(T)] = module;
                     return typedModule;
                 }
             }
             
             return null;
+        }
+        
+        /// <summary>
+        /// Get all registered UI modules
+        /// </summary>
+        /// <returns>A read-only list of all UI modules</returns>
+        public IReadOnlyList<UIModuleBase> GetAllModules()
+        {
+            return _uiModules.AsReadOnly();
+        }
+        
+        /// <summary>
+        /// Show all registered UI modules
+        /// </summary>
+        public void ShowAllModules()
+        {
+            foreach (UIModuleBase module in _uiModules)
+            {
+                if (module != null)
+                {
+                    module.Show();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Hide all registered UI modules
+        /// </summary>
+        public void HideAllModules()
+        {
+            foreach (UIModuleBase module in _uiModules)
+            {
+                if (module != null)
+                {
+                    module.Hide();
+                }
+            }
+        }
+        #endregion
+        
+        #region Panel Management Methods
+        /// <summary>
+        /// Create a panel with the given name
+        /// </summary>
+        /// <param name="name">Name of the panel GameObject</param>
+        /// <param name="parent">Parent transform</param>
+        /// <returns>RectTransform of the created panel</returns>
+        private RectTransform CreatePanel(string name, Transform parent)
+        {
+            GameObject panelObj = new GameObject(name);
+            panelObj.transform.SetParent(parent, false);
+            
+            // Add components
+            RectTransform rectTransform = panelObj.AddComponent<RectTransform>();
+            
+            // Initially invisible
+            Image image = panelObj.AddComponent<Image>();
+            image.color = new Color(0, 0, 0, 0);
+            
+            return rectTransform;
+        }
+        
+        /// <summary>
+        /// Get the panel for a specific position
+        /// </summary>
+        /// <param name="position">The desired UI position</param>
+        /// <returns>RectTransform for the corresponding panel</returns>
+        private RectTransform GetPanelForPosition(UIPosition position)
+        {
+            switch (position)
+            {
+                case UIPosition.Top:
+                    return topPanel;
+                case UIPosition.Bottom:
+                    return bottomPanel;
+                case UIPosition.Left:
+                    return leftPanel;
+                case UIPosition.Right:
+                    return rightPanel;
+                case UIPosition.Center:
+                default:
+                    return centerPanel;
+            }
         }
         
         /// <summary>
@@ -110,6 +514,11 @@ namespace UI
         public void ResizePanel(UIPosition position, float size)
         {
             RectTransform panel = GetPanelForPosition(position);
+            if (panel == null)
+            {
+                Debug.LogError($"Cannot resize panel: No panel found for position {position}");
+                return;
+            }
             
             switch (position)
             {
@@ -143,6 +552,10 @@ namespace UI
             {
                 centerPanel.sizeDelta = new Vector2(width, height);
             }
+            else
+            {
+                Debug.LogError("Cannot resize center panel: Panel not found");
+            }
         }
         
         /// <summary>
@@ -153,37 +566,29 @@ namespace UI
         public Vector2 GetPanelSize(UIPosition position)
         {
             RectTransform panel = GetPanelForPosition(position);
-            return panel.sizeDelta;
+            return panel != null ? panel.sizeDelta : Vector2.zero;
         }
         
         /// <summary>
-        /// Show all registered UI modules
+        /// Position a game object in a specified panel and apply appropriate layout
         /// </summary>
-        public void ShowAllModules()
-        {
-            foreach (UIModuleBase module in uiModules)
-            {
-                module.Show();
-            }
-        }
-        
-        /// <summary>
-        /// Hide all registered UI modules
-        /// </summary>
-        public void HideAllModules()
-        {
-            foreach (UIModuleBase module in uiModules)
-            {
-                module.Hide();
-            }
-        }
-        
-        /// <summary>
-        /// Position a game object in a specified panel
-        /// </summary>
+        /// <param name="obj">The GameObject to position</param>
+        /// <param name="position">Which panel to place it in</param>
         public void PositionInPanel(GameObject obj, UIPosition position)
         {
+            if (obj == null)
+            {
+                Debug.LogError("Cannot position null GameObject in panel");
+                return;
+            }
+            
             RectTransform parent = GetPanelForPosition(position);
+            if (parent == null)
+            {
+                Debug.LogError($"Cannot position GameObject: No panel found for position {position}");
+                return;
+            }
+            
             obj.transform.SetParent(parent, false);
             
             RectTransform rectTransform = obj.GetComponent<RectTransform>();
@@ -197,195 +602,135 @@ namespace UI
                 {
                     case UIPosition.Top:
                     case UIPosition.Bottom:
-                        // Horizontal layout
-                        HorizontalLayoutGroup layout = parent.GetComponent<HorizontalLayoutGroup>();
-                        if (layout == null)
-                        {
-                            layout = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
-                            layout.childAlignment = TextAnchor.MiddleCenter;
-                            layout.spacing = 10;
-                            layout.childForceExpandWidth = false;
-                            layout.childForceExpandHeight = true;
-                            layout.padding = new RectOffset(10, 10, 5, 5);
-                        }
+                        ConfigureHorizontalLayout(parent);
                         break;
                         
                     case UIPosition.Left:
                     case UIPosition.Right:
-                        // Vertical layout
-                        VerticalLayoutGroup vertLayout = parent.GetComponent<VerticalLayoutGroup>();
-                        if (vertLayout == null)
-                        {
-                            vertLayout = parent.gameObject.AddComponent<VerticalLayoutGroup>();
-                            vertLayout.childAlignment = TextAnchor.MiddleCenter;
-                            vertLayout.spacing = 10;
-                            vertLayout.childForceExpandWidth = true;
-                            vertLayout.childForceExpandHeight = false;
-                            vertLayout.padding = new RectOffset(5, 5, 10, 10);
-                        }
+                        ConfigureVerticalLayout(parent);
                         break;
                         
                     case UIPosition.Center:
-                        // Grid layout
-                        GridLayoutGroup gridLayout = parent.GetComponent<GridLayoutGroup>();
-                        if (gridLayout == null)
-                        {
-                            gridLayout = parent.gameObject.AddComponent<GridLayoutGroup>();
-                            gridLayout.cellSize = new Vector2(100, 100);
-                            gridLayout.spacing = new Vector2(10, 10);
-                            gridLayout.childAlignment = TextAnchor.MiddleCenter;
-                        }
+                        ConfigureGridLayout(parent);
                         break;
                 }
             }
-        }
-        
-        /// <summary>
-        /// Create the basic UI layout if it doesn't already exist
-        /// </summary>
-        private void CreateUILayoutIfNeeded()
-        {
-            // Check for canvas
-            if (mainCanvas == null)
+            else
             {
-                GameObject canvasObj = new GameObject("MainCanvas");
-                mainCanvas = canvasObj.AddComponent<Canvas>();
-                mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                
-                CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920, 1080);
-                
-                canvasObj.AddComponent<GraphicRaycaster>();
-            }
-            
-            // Create panels if they don't exist
-            if (topPanel == null)
-            {
-                topPanel = CreatePanel("TopPanel", mainCanvas.transform);
-                topPanel.anchorMin = new Vector2(0, 1);
-                topPanel.anchorMax = new Vector2(1, 1);
-                topPanel.pivot = new Vector2(0.5f, 1);
-                topPanel.sizeDelta = new Vector2(0, 80);
-                topPanel.anchoredPosition = Vector2.zero;
-            }
-            
-            if (bottomPanel == null)
-            {
-                bottomPanel = CreatePanel("BottomPanel", mainCanvas.transform);
-                bottomPanel.anchorMin = new Vector2(0, 0);
-                bottomPanel.anchorMax = new Vector2(1, 0);
-                bottomPanel.pivot = new Vector2(0.5f, 0);
-                bottomPanel.sizeDelta = new Vector2(0, 150);
-                bottomPanel.anchoredPosition = Vector2.zero;
-            }
-            
-            if (leftPanel == null)
-            {
-                leftPanel = CreatePanel("LeftPanel", mainCanvas.transform);
-                leftPanel.anchorMin = new Vector2(0, 0);
-                leftPanel.anchorMax = new Vector2(0, 1);
-                leftPanel.pivot = new Vector2(0, 0.5f);
-                leftPanel.sizeDelta = new Vector2(200, 0);
-                leftPanel.anchoredPosition = Vector2.zero;
-            }
-            
-            if (rightPanel == null)
-            {
-                rightPanel = CreatePanel("RightPanel", mainCanvas.transform);
-                rightPanel.anchorMin = new Vector2(1, 0);
-                rightPanel.anchorMax = new Vector2(1, 1);
-                rightPanel.pivot = new Vector2(1, 0.5f);
-                rightPanel.sizeDelta = new Vector2(200, 0);
-                rightPanel.anchoredPosition = Vector2.zero;
-            }
-            
-            if (centerPanel == null)
-            {
-                centerPanel = CreatePanel("CenterPanel", mainCanvas.transform);
-                centerPanel.anchorMin = new Vector2(0.5f, 0.5f);
-                centerPanel.anchorMax = new Vector2(0.5f, 0.5f);
-                centerPanel.pivot = new Vector2(0.5f, 0.5f);
-                centerPanel.sizeDelta = new Vector2(400, 300);
-                centerPanel.anchoredPosition = Vector2.zero;
+                Debug.LogWarning($"GameObject {obj.name} doesn't have a RectTransform component");
             }
         }
         
         /// <summary>
-        /// Create a panel with the given name
+        /// Configure horizontal layout on a panel
         /// </summary>
-        private RectTransform CreatePanel(string name, Transform parent)
+        private void ConfigureHorizontalLayout(RectTransform parent)
         {
-            GameObject panelObj = new GameObject(name);
-            panelObj.transform.SetParent(parent, false);
-            
-            // Add components
-            RectTransform rectTransform = panelObj.AddComponent<RectTransform>();
-            
-            // Initially invisible
-            Image image = panelObj.AddComponent<Image>();
-            image.color = new Color(0, 0, 0, 0);
-            
-            return rectTransform;
-        }
-        
-        /// <summary>
-        /// Get the panel for a specific position
-        /// </summary>
-        private RectTransform GetPanelForPosition(UIPosition position)
-        {
-            switch (position)
+            HorizontalLayoutGroup layout = parent.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
             {
-                case UIPosition.Top:
-                    return topPanel;
-                case UIPosition.Bottom:
-                    return bottomPanel;
-                case UIPosition.Left:
-                    return leftPanel;
-                case UIPosition.Right:
-                    return rightPanel;
-                case UIPosition.Center:
-                default:
-                    return centerPanel;
+                layout = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
+                layout.childAlignment = TextAnchor.MiddleCenter;
+                layout.spacing = defaultElementSpacing;
+                layout.childForceExpandWidth = false;
+                layout.childForceExpandHeight = true;
+                layout.padding = new RectOffset(PANEL_PADDING, PANEL_PADDING, 5, 5);
             }
         }
         
         /// <summary>
-        /// Discover UI modules in the scene
+        /// Configure vertical layout on a panel
         /// </summary>
-        private void DiscoverUIModules()
+        private void ConfigureVerticalLayout(RectTransform parent)
         {
-            // Find all UI modules in the scene
-            UIModuleBase[] modules = FindObjectsByType<UIModuleBase>(FindObjectsSortMode.None);
-            
-            foreach (UIModuleBase module in modules)
+            VerticalLayoutGroup vertLayout = parent.GetComponent<VerticalLayoutGroup>();
+            if (vertLayout == null)
             {
-                RegisterModule(module);
+                vertLayout = parent.gameObject.AddComponent<VerticalLayoutGroup>();
+                vertLayout.childAlignment = TextAnchor.MiddleCenter;
+                vertLayout.spacing = defaultElementSpacing;
+                vertLayout.childForceExpandWidth = true;
+                vertLayout.childForceExpandHeight = false;
+                vertLayout.padding = new RectOffset(5, 5, PANEL_PADDING, PANEL_PADDING);
             }
         }
         
         /// <summary>
-        /// Initialize all registered modules
+        /// Configure grid layout on a panel
         /// </summary>
-        private void InitializeModules()
+        private void ConfigureGridLayout(RectTransform parent)
         {
-            foreach (UIModuleBase module in uiModules)
+            GridLayoutGroup gridLayout = parent.GetComponent<GridLayoutGroup>();
+            if (gridLayout == null)
             {
-                module.Initialize();
+                gridLayout = parent.gameObject.AddComponent<GridLayoutGroup>();
+                gridLayout.cellSize = new Vector2(100, 100);
+                gridLayout.spacing = new Vector2(defaultElementSpacing, defaultElementSpacing);
+                gridLayout.childAlignment = TextAnchor.MiddleCenter;
             }
         }
-
+        #endregion
+        
+        #region Debug and Testing Methods
+        #if UNITY_EDITOR
         /// <summary>
-        /// Create essential UI modules if they don't exist yet
+        /// Reset the entire UI layout
         /// </summary>
-        private void CreateEssentialModules()
+        public void ResetUILayout()
         {
-            // Check if we already have a GameStatsUIModule
-            if (GetModule<GameStatsUIModule>() == null)
+            // Destroy all panel children first
+            DestroyPanelContents(topPanel);
+            DestroyPanelContents(bottomPanel);
+            DestroyPanelContents(leftPanel);
+            DestroyPanelContents(rightPanel);
+            DestroyPanelContents(centerPanel);
+            
+            // Clear module lists
+            _uiModules.Clear();
+            _moduleCache.Clear();
+            
+            // Re-initialize
+            _initialized = false;
+            Initialize();
+        }
+        
+        /// <summary>
+        /// Helper to destroy all children of a panel
+        /// </summary>
+        private void DestroyPanelContents(RectTransform panel)
+        {
+            if (panel == null) return;
+            
+            for (int i = panel.childCount - 1; i >= 0; i--)
             {
-                // Create the turn counter in the bottom panel (was previously in top panel)
-                CreateModule<GameStatsUIModule>(UIPosition.Bottom);
+                DestroyImmediate(panel.GetChild(i).gameObject);
+            }
+            
+            // Remove layout components
+            LayoutGroup layout = panel.GetComponent<LayoutGroup>();
+            if (layout != null)
+            {
+                DestroyImmediate(layout);
             }
         }
+        #endif
+        #endregion
     }
+    
+    /// <summary>
+    /// Enum representing UI element positions within the screen layout
+    /// </summary>
+    // public enum UIPosition
+    // {
+    //     /// <summary>Top of screen panel</summary>
+    //     Top,
+    //     /// <summary>Bottom of screen panel</summary>
+    //     Bottom,
+    //     /// <summary>Left side panel</summary>
+    //     Left,
+    //     /// <summary>Right side panel</summary>
+    //     Right,
+    //     /// <summary>Center of screen panel</summary>
+    //     Center
+    // }
 }
