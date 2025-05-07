@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UI.Config;
 
 namespace UI
 {
@@ -78,25 +79,12 @@ namespace UI
         [Tooltip("Panel positioned at the center of the screen")]
         [SerializeField] private RectTransform centerPanel;
         
-        [Header("Initialization")]
+        [Header("Configuration")]
+        [Tooltip("ScriptableObject containing UI layout configuration")]
+        [SerializeField] private UIManagerConfig config;
+        
         [Tooltip("Whether to automatically initialize UI on Awake")]
         [SerializeField] private bool autoInitialize = true;
-        
-        [Header("Layout Configuration")]
-        [Tooltip("Default height for the top panel")]
-        [SerializeField] private float topPanelHeight = 80f;
-        
-        [Tooltip("Default height for the bottom panel")]
-        [SerializeField] private float bottomPanelHeight = 150f;
-        
-        [Tooltip("Default width for the side panels")]
-        [SerializeField] private float sidePanelWidth = 200f;
-        
-        [Tooltip("Default size for the center panel")]
-        [SerializeField] private Vector2 centerPanelSize = new Vector2(400f, 300f);
-        
-        [Tooltip("Default spacing between UI elements in layouts")]
-        [SerializeField] private float defaultElementSpacing = 10f;
         #endregion
         
         #region Private Fields
@@ -108,9 +96,6 @@ namespace UI
         
         // Initialization state
         private bool _initialized = false;
-        
-        // Constants
-        private const int PANEL_PADDING = 10;
         #endregion
         
         #region Unity Lifecycle Methods
@@ -129,6 +114,9 @@ namespace UI
             
             _instance = this;
             
+            // Ensure we have a configuration
+            EnsureConfiguration();
+            
             if (autoInitialize)
             {
                 Initialize();
@@ -140,15 +128,7 @@ namespace UI
         /// </summary>
         private void OnValidate()
         {
-            // Ensure panel dimensions are positive
-            topPanelHeight = Mathf.Max(0, topPanelHeight);
-            bottomPanelHeight = Mathf.Max(0, bottomPanelHeight);
-            sidePanelWidth = Mathf.Max(0, sidePanelWidth);
-            centerPanelSize = new Vector2(
-                Mathf.Max(0, centerPanelSize.x),
-                Mathf.Max(0, centerPanelSize.y)
-            );
-            defaultElementSpacing = Mathf.Max(0, defaultElementSpacing);
+            // Nothing to validate here since values are now in the config
         }
         
         /// <summary>
@@ -164,6 +144,61 @@ namespace UI
             // Clear module collections
             _uiModules.Clear();
             _moduleCache.Clear();
+        }
+        #endregion
+        
+        #region Configuration Management
+        /// <summary>
+        /// Ensures a configuration asset is available, creates a runtime instance if needed
+        /// </summary>
+        private void EnsureConfiguration()
+        {
+            if (config == null)
+            {
+                // Try to load from Resources first
+                config = Resources.Load<UIManagerConfig>("UIManagerConfig");
+                
+                // If still null, create a default runtime instance
+                if (config == null)
+                {
+                    config = UIManagerConfig.CreateDefaultConfig();
+                    Debug.LogWarning("No UIManagerConfig found. Using default runtime configuration. " +
+                                    "Create a configuration asset via 'Create > UI > UIManager Configuration'");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the current UI configuration
+        /// </summary>
+        public UIManagerConfig GetConfiguration()
+        {
+            EnsureConfiguration();
+            return config;
+        }
+        
+        /// <summary>
+        /// Sets a new configuration
+        /// </summary>
+        /// <param name="newConfig">The new configuration to use</param>
+        public void SetConfiguration(UIManagerConfig newConfig)
+        {
+            if (newConfig == null)
+            {
+                Debug.LogError("Attempted to set null UIManagerConfig");
+                return;
+            }
+            
+            bool wasInitialized = _initialized;
+            
+            // Store new config
+            config = newConfig;
+            
+            // Re-initialize if already initialized
+            if (wasInitialized)
+            {
+                ResetUILayout();
+            }
         }
         #endregion
         
@@ -183,14 +218,20 @@ namespace UI
             
             try
             {
+                // Ensure we have configuration
+                EnsureConfiguration();
+                
                 // Create UI layout if not set in inspector
                 CreateUILayoutIfNeeded();
                 
                 // Discover UI modules in the scene
                 DiscoverUIModules();
                 
-                // Create essential UI modules if they don't exist
-                CreateEssentialModules();
+                // Create essential UI modules if they don't exist and it's enabled in config
+                if (config.autoCreateEssentialModules)
+                {
+                    CreateEssentialModules();
+                }
                 
                 // Initialize all modules
                 InitializeModules();
@@ -221,7 +262,7 @@ namespace UI
                 
                 CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.referenceResolution = config.referenceResolution;
                 
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
@@ -233,7 +274,7 @@ namespace UI
                 topPanel.anchorMin = new Vector2(0, 1);
                 topPanel.anchorMax = new Vector2(1, 1);
                 topPanel.pivot = new Vector2(0.5f, 1);
-                topPanel.sizeDelta = new Vector2(0, topPanelHeight);
+                topPanel.sizeDelta = new Vector2(0, config.topPanelHeight);
                 topPanel.anchoredPosition = Vector2.zero;
             }
             
@@ -243,7 +284,7 @@ namespace UI
                 bottomPanel.anchorMin = new Vector2(0, 0);
                 bottomPanel.anchorMax = new Vector2(1, 0);
                 bottomPanel.pivot = new Vector2(0.5f, 0);
-                bottomPanel.sizeDelta = new Vector2(0, bottomPanelHeight);
+                bottomPanel.sizeDelta = new Vector2(0, config.bottomPanelHeight);
                 bottomPanel.anchoredPosition = Vector2.zero;
             }
             
@@ -253,7 +294,7 @@ namespace UI
                 leftPanel.anchorMin = new Vector2(0, 0);
                 leftPanel.anchorMax = new Vector2(0, 1);
                 leftPanel.pivot = new Vector2(0, 0.5f);
-                leftPanel.sizeDelta = new Vector2(sidePanelWidth, 0);
+                leftPanel.sizeDelta = new Vector2(config.sidePanelWidth, 0);
                 leftPanel.anchoredPosition = Vector2.zero;
             }
             
@@ -263,7 +304,7 @@ namespace UI
                 rightPanel.anchorMin = new Vector2(1, 0);
                 rightPanel.anchorMax = new Vector2(1, 1);
                 rightPanel.pivot = new Vector2(1, 0.5f);
-                rightPanel.sizeDelta = new Vector2(sidePanelWidth, 0);
+                rightPanel.sizeDelta = new Vector2(config.sidePanelWidth, 0);
                 rightPanel.anchoredPosition = Vector2.zero;
             }
             
@@ -273,7 +314,7 @@ namespace UI
                 centerPanel.anchorMin = new Vector2(0.5f, 0.5f);
                 centerPanel.anchorMax = new Vector2(0.5f, 0.5f);
                 centerPanel.pivot = new Vector2(0.5f, 0.5f);
-                centerPanel.sizeDelta = centerPanelSize;
+                centerPanel.sizeDelta = config.centerPanelSize;
                 centerPanel.anchoredPosition = Vector2.zero;
             }
         }
@@ -476,9 +517,16 @@ namespace UI
             // Add components
             RectTransform rectTransform = panelObj.AddComponent<RectTransform>();
             
-            // Initially invisible
+            // Add image component with configurable debug color
             Image image = panelObj.AddComponent<Image>();
-            image.color = new Color(0, 0, 0, 0);
+            if (config != null && config.showPanelDebugBorders)
+            {
+                image.color = config.panelDebugBorderColor;
+            }
+            else
+            {
+                image.color = new Color(0, 0, 0, 0); // Transparent
+            }
             
             return rectTransform;
         }
@@ -631,10 +679,10 @@ namespace UI
             {
                 layout = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
                 layout.childAlignment = TextAnchor.MiddleCenter;
-                layout.spacing = defaultElementSpacing;
+                layout.spacing = config.defaultElementSpacing;
                 layout.childForceExpandWidth = false;
                 layout.childForceExpandHeight = true;
-                layout.padding = new RectOffset(PANEL_PADDING, PANEL_PADDING, 5, 5);
+                layout.padding = new RectOffset(config.panelPadding, config.panelPadding, 5, 5);
             }
         }
         
@@ -648,10 +696,10 @@ namespace UI
             {
                 vertLayout = parent.gameObject.AddComponent<VerticalLayoutGroup>();
                 vertLayout.childAlignment = TextAnchor.MiddleCenter;
-                vertLayout.spacing = defaultElementSpacing;
+                vertLayout.spacing = config.defaultElementSpacing;
                 vertLayout.childForceExpandWidth = true;
                 vertLayout.childForceExpandHeight = false;
-                vertLayout.padding = new RectOffset(5, 5, PANEL_PADDING, PANEL_PADDING);
+                vertLayout.padding = new RectOffset(5, 5, config.panelPadding, config.panelPadding);
             }
         }
         
@@ -665,7 +713,7 @@ namespace UI
             {
                 gridLayout = parent.gameObject.AddComponent<GridLayoutGroup>();
                 gridLayout.cellSize = new Vector2(100, 100);
-                gridLayout.spacing = new Vector2(defaultElementSpacing, defaultElementSpacing);
+                gridLayout.spacing = new Vector2(config.defaultElementSpacing, config.defaultElementSpacing);
                 gridLayout.childAlignment = TextAnchor.MiddleCenter;
             }
         }
