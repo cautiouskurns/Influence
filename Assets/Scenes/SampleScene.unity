@@ -1422,7 +1422,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tickIntervalSeconds: 1
   timeScale: 1
-  isPaused: 0
+  startPaused: 1
 --- !u!114 &890069362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1481,13 +1481,9 @@ MonoBehaviour:
   economicSystem: {fileID: 890069362}
   uiManager: {fileID: 1455276065}
   mapManager: {fileID: 1395318621}
-  startingTurn: 1
-  baseSimulationSpeed: 1
-  startPaused: 1
+  populationManager: {fileID: 0}
+  gameSettings: {fileID: 0}
   currentTurn: 0
-  totalPopulation: 0
-  populationGrowthRate: 0.02
-  migrationRate: 0.01
 --- !u!1 &946969353
 GameObject:
   m_ObjectHideFlags: 0
@@ -2094,6 +2090,7 @@ MonoBehaviour:
   leftPanel: {fileID: 0}
   rightPanel: {fileID: 0}
   centerPanel: {fileID: 0}
+  config: {fileID: 0}
   autoInitialize: 1
 --- !u!114 &1455276066
 MonoBehaviour:
@@ -3197,5 +3194,5 @@ SceneRoots:
   - {fileID: 1802490352}
   - {fileID: 771388975}
   - {fileID: 182796287}
-  - {fileID: 246743159}
   - {fileID: 743861069}
+  - {fileID: 246743159}

@@ -2,6 +2,7 @@ using UnityEngine;
 using Systems;
 using Managers;
 using UI;
+using UI.Core;
 using Core;
 using Core.Interfaces;
 using System.Collections.Generic;
@@ -88,10 +89,10 @@ public class GameManager : MonoBehaviour
         // Load default settings if none provided
         if (gameSettings == null)
         {
-            gameSettings = Resources.Load<GameSettings>("DefaultGameSettings");
+            gameSettings = Resources.Load<GameSettings>("GameConfig/DefaultGameSettings");
             if (gameSettings == null)
             {
-                Debug.LogError("No GameSettings found! Please create one in the Resources folder named 'DefaultGameSettings'.");
+                Debug.LogError("No GameSettings found! Please create one in the Resources/GameConfig folder named 'DefaultGameSettings'.");
             }
         }
         

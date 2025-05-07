@@ -4,6 +4,8 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UI;  // This imports the UIManager class
+using UI.UIManager;
+using UI.Core;
 
 namespace Tests.PlayMode
 {

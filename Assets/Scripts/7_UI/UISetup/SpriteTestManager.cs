@@ -84,7 +84,7 @@ namespace UI
             // If no container specified or no regions found, search in entire scene
             if (regionPrefabs.Count == 0)
             {
-                RegionPrefabSetup[] allRegions = FindObjectsOfType<RegionPrefabSetup>();
+                RegionPrefabSetup[] allRegions = FindObjectsByType<RegionPrefabSetup>(FindObjectsSortMode.None);
                 regionPrefabs.AddRange(allRegions);
             }
             

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UI.Core; // For UIManager class
 
 namespace UI
 {
@@ -12,7 +13,7 @@ namespace UI
     {
         [Header("UI Integration")]
         [SerializeField] private bool useUIManagerSystem = true;
-        [SerializeField] private UIManager uiManager;
+        [SerializeField] private UI.Core.UIManager uiManager;
         
         [Header("UI Prefabs")]
         public Button buttonPrefab;
@@ -61,12 +62,12 @@ namespace UI
             
             if (useUIManagerSystem && uiManager == null)
             {
-                uiManager = FindFirstObjectByType<UIManager>();
+                uiManager = FindFirstObjectByType<UI.Core.UIManager>();
                 if (uiManager == null)
                 {
                     Debug.Log("No UIManager found. Creating one...");
                     GameObject uiManagerObj = new GameObject("UIManager");
-                    uiManager = uiManagerObj.AddComponent<UIManager>();
+                    uiManager = uiManagerObj.AddComponent<UI.Core.UIManager>();
                 }
             }
         }
@@ -715,7 +716,7 @@ namespace UI
             if (uiManager == null)
             {
                 GameObject uiManagerObj = new GameObject("UIManager");
-                uiManager = uiManagerObj.AddComponent<UIManager>();
+                uiManager = uiManagerObj.AddComponent<UI.Core.UIManager>();
             }
             
             // Initialize the UI Manager

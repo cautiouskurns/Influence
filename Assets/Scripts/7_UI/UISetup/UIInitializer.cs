@@ -1,5 +1,6 @@
 using UnityEngine;
 using UI;
+using UI.Core;
 
 /// <summary>
 /// Helper class to initialize the UI system via UIManager at runtime.
