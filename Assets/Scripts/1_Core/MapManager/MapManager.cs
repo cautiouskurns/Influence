@@ -237,7 +237,9 @@ namespace UI
                     if (availablePositions.Count == 0)
                     {
                         // Search for positions adjacent to any existing region from this nation
-                        foreach (Vector2Int pos in occupiedPositions)
+                        // Create a copy of occupied positions to avoid modification during enumeration
+                        Vector2Int[] positionsCopy = occupiedPositions.ToArray();
+                        foreach (Vector2Int pos in positionsCopy)
                         {
                             AddAdjacentPositions(pos, occupiedPositions, availablePositions);
                         }

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace UI
 {
     /// <summary>
-    /// UI Module for adjusting key economic parameters with a cooldown system
+    /// UI Module for adjusting key economic parameters
     /// </summary>
     public class EconomicControlUIModule : UIModuleBase
     {
@@ -19,17 +19,12 @@ namespace UI
         [SerializeField] private Vector2 panelSize = new Vector2(400f, 350f);
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.3f, 0.5f, 0.8f, 1f);
-        [SerializeField] private float cooldownDuration = 10f; // Cooldown in seconds
-        
-        [Header("Sliders")]
-        [SerializeField] private bool showTooltips = true;
         
         // UI Elements
         private GameObject controlPanel;
         private Dictionary<string, Slider> sliders = new Dictionary<string, Slider>();
         private Dictionary<string, TextMeshProUGUI> valueTexts = new Dictionary<string, TextMeshProUGUI>();
         private Dictionary<string, Button> buttons = new Dictionary<string, Button>();
-        private Dictionary<string, Image> cooldownImages = new Dictionary<string, Image>();
         
         // Parameter ranges
         private Dictionary<string, Vector2> parameterRanges = new Dictionary<string, Vector2>()
@@ -41,22 +36,12 @@ namespace UI
             { "DecayRate", new Vector2(0.01f, 0.1f) }
         };
         
-        // Cooldown trackers
-        private Dictionary<string, float> lastAdjustmentTime = new Dictionary<string, float>();
-        private Dictionary<string, bool> isOnCooldown = new Dictionary<string, bool>();
-        
+        // Track button click times for debug purposes
+        private Dictionary<string, float> lastClickTime = new Dictionary<string, float>();
+
         public override void Initialize()
         {
             base.Initialize();
-            
-            // Initialize cooldown dictionaries for all parameters
-            foreach (string param in parameterRanges.Keys)
-            {
-                lastAdjustmentTime[param] = -cooldownDuration * 2; // Start with no cooldown (increased buffer)
-                isOnCooldown[param] = false;
-            }
-            lastAdjustmentTime["EnableEconomicCycles"] = -cooldownDuration * 2;
-            isOnCooldown["EnableEconomicCycles"] = false;
             
             // Find EconomicSystem if not set in inspector
             if (economicSystem == null)
@@ -69,31 +54,6 @@ namespace UI
             }
             
             CreateUIElements();
-            
-            // Force reset cooldown state for all buttons to ensure they're interactive
-            ResetAllCooldowns();
-        }
-        
-        // Add a method to reset all cooldowns
-        private void ResetAllCooldowns()
-        {
-            foreach (string param in buttons.Keys)
-            {
-                if (buttons[param] != null)
-                {
-                    buttons[param].interactable = true;
-                    
-                    if (cooldownImages.ContainsKey(param))
-                    {
-                        cooldownImages[param].fillAmount = 0;
-                    }
-                    
-                    lastAdjustmentTime[param] = -cooldownDuration * 2;
-                    isOnCooldown[param] = false;
-                }
-            }
-            
-            Debug.Log("All economic control buttons reset to interactive state");
         }
         
         private void CreateUIElements()
@@ -135,17 +95,14 @@ namespace UI
             CreateDivider(controlPanel.transform);
             
             // Create sliders for each parameter
-            CreateParameterSlider("ProductivityFactor", "Production Factor", controlPanel.transform);
-            CreateParameterSlider("LaborElasticity", "Labor Factor", controlPanel.transform);
-            CreateParameterSlider("EfficiencyModifier", "Infrastructure Efficiency", controlPanel.transform); 
-            CreateParameterSlider("BaseConsumptionRate", "Consumption Rate", controlPanel.transform);
-            CreateParameterSlider("DecayRate", "Decay Rate", controlPanel.transform);
+            CreateParameterControl("ProductivityFactor", "Production Factor", controlPanel.transform);
+            CreateParameterControl("LaborElasticity", "Labor Factor", controlPanel.transform);
+            CreateParameterControl("EfficiencyModifier", "Infrastructure Efficiency", controlPanel.transform); 
+            CreateParameterControl("BaseConsumptionRate", "Consumption Rate", controlPanel.transform);
+            CreateParameterControl("DecayRate", "Decay Rate", controlPanel.transform);
             
             // Create divider
             CreateDivider(controlPanel.transform);
-            
-            // Create toggle for economic cycles
-            // CreateToggleButton("EnableEconomicCycles", "Enable Economic Cycles", controlPanel.transform);
             
             // Create a reset button
             CreateResetButton(controlPanel.transform);
@@ -185,7 +142,7 @@ namespace UI
             dividerLayout.flexibleWidth = 1;
         }
         
-        private void CreateParameterSlider(string paramName, string displayName, Transform parent)
+        private void CreateParameterControl(string paramName, string displayName, Transform parent)
         {
             GameObject containerObj = new GameObject(paramName + "Container");
             containerObj.transform.SetParent(parent, false);
@@ -246,7 +203,7 @@ namespace UI
             valueElement.minWidth = 50;
             valueElement.flexibleWidth = 0;
             
-            // Add apply button with cooldown
+            // Add apply button
             GameObject buttonObj = new GameObject("ApplyButton");
             buttonObj.transform.SetParent(containerObj.transform, false);
             
@@ -287,39 +244,30 @@ namespace UI
             buttonTextRect.offsetMin = Vector2.zero;
             buttonTextRect.offsetMax = Vector2.zero;
             
-            // Add cooldown overlay image
-            GameObject cooldownObj = new GameObject("CooldownOverlay");
-            cooldownObj.transform.SetParent(buttonObj.transform, false);
-            
-            Image cooldownImage = cooldownObj.AddComponent<Image>();
-            cooldownImage.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
-            cooldownImage.fillMethod = Image.FillMethod.Radial360;
-            cooldownImage.fillOrigin = 2; // Bottom
-            cooldownImage.fillClockwise = true;
-            cooldownImage.fillAmount = 0;
-            
-            RectTransform cooldownRect = cooldownObj.GetComponent<RectTransform>();
-            cooldownRect.anchorMin = Vector2.zero;
-            cooldownRect.anchorMax = Vector2.one;
-            cooldownRect.offsetMin = Vector2.zero;
-            cooldownRect.offsetMax = Vector2.zero;
-            
             // Store references
             sliders[paramName] = slider;
             valueTexts[paramName] = valueText;
             buttons[paramName] = button;
-            cooldownImages[paramName] = cooldownImage;
+            lastClickTime[paramName] = -1f;
             
-            // Ensure button starts interactable
-            button.interactable = true;
-            cooldownImages[paramName].fillAmount = 0;
+            // Setup slider value change event
+            slider.onValueChanged.AddListener(value => {
+                float actualValue = Mathf.Lerp(parameterRanges[paramName].x, parameterRanges[paramName].y, value);
+                valueText.text = actualValue.ToString("F2");
+            });
             
-            // Setup callbacks
-            slider.onValueChanged.AddListener(value => UpdateValueText(paramName, value));
-            
-            // Use closure to capture parameter name
-            string capturedParam = paramName;
-            button.onClick.AddListener(() => ApplyParameter(capturedParam));
+            // Setup apply button click handler - using Unity's native system
+            button.onClick.AddListener(() => {
+                // Apply parameter 
+                ApplyValueToSystem(paramName);
+                
+                // Visual feedback
+                ShowButtonFeedback(buttonObj, valueText);
+                
+                // Track for debugging
+                lastClickTime[paramName] = Time.time;
+                Debug.Log($"Button {paramName} clicked at time: {Time.time}");
+            });
         }
         
         private void CreateSliderParts(GameObject sliderObj)
@@ -391,105 +339,6 @@ namespace UI
             slider.targetGraphic = handleImage;
         }
         
-        private void CreateToggleButton(string paramName, string displayName, Transform parent)
-        {
-            GameObject containerObj = new GameObject(paramName + "Container");
-            containerObj.transform.SetParent(parent, false);
-            
-            // Setup horizontal layout for this parameter
-            HorizontalLayoutGroup containerLayout = containerObj.AddComponent<HorizontalLayoutGroup>();
-            containerLayout.childAlignment = TextAnchor.MiddleLeft;
-            containerLayout.spacing = 10;
-            
-            LayoutElement containerElement = containerObj.AddComponent<LayoutElement>();
-            containerElement.preferredHeight = 40;
-            containerElement.minHeight = 30;
-            containerElement.flexibleWidth = 1;
-            
-            // Add label
-            GameObject labelObj = new GameObject("Label");
-            labelObj.transform.SetParent(containerObj.transform, false);
-            
-            TextMeshProUGUI labelText = labelObj.AddComponent<TextMeshProUGUI>();
-            labelText.text = displayName + ":";
-            labelText.fontSize = 14;
-            labelText.alignment = TextAlignmentOptions.Left;
-            
-            LayoutElement labelElement = labelObj.AddComponent<LayoutElement>();
-            labelElement.preferredWidth = 220;
-            labelElement.flexibleWidth = 1;
-            
-            // Add toggle button
-            GameObject buttonObj = new GameObject("ToggleButton");
-            buttonObj.transform.SetParent(containerObj.transform, false);
-            
-            // Add button image
-            Image buttonImage = buttonObj.AddComponent<Image>();
-            buttonImage.color = new Color(0.3f, 0.3f, 0.8f);
-            
-            // Add button component
-            Button button = buttonObj.AddComponent<Button>();
-            button.targetGraphic = buttonImage;
-            
-            // Set button colors
-            ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.3f, 0.3f, 0.8f);
-            colors.highlightedColor = new Color(0.4f, 0.4f, 0.9f);
-            colors.pressedColor = new Color(0.2f, 0.2f, 0.7f);
-            colors.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-            button.colors = colors;
-            
-            // Add layout element
-            LayoutElement buttonElement = buttonObj.AddComponent<LayoutElement>();
-            buttonElement.preferredWidth = 80;
-            buttonElement.preferredHeight = 30;
-            buttonElement.flexibleWidth = 0;
-            
-            // Add text to button
-            GameObject buttonTextObj = new GameObject("Text");
-            buttonTextObj.transform.SetParent(buttonObj.transform, false);
-            
-            TextMeshProUGUI buttonText = buttonObj.AddComponent<TextMeshProUGUI>();
-            buttonText.text = "ON";
-            buttonText.fontSize = 14;
-            buttonText.alignment = TextAlignmentOptions.Center;
-            
-            RectTransform buttonTextRect = buttonTextObj.GetComponent<RectTransform>();
-            buttonTextRect.anchorMin = Vector2.zero;
-            buttonTextRect.anchorMax = Vector2.one;
-            buttonTextRect.offsetMin = Vector2.zero;
-            buttonTextRect.offsetMax = Vector2.zero;
-            
-            // Add cooldown overlay image
-            GameObject cooldownObj = new GameObject("CooldownOverlay");
-            cooldownObj.transform.SetParent(buttonObj.transform, false);
-            
-            Image cooldownImage = cooldownObj.AddComponent<Image>();
-            cooldownImage.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
-            cooldownImage.fillMethod = Image.FillMethod.Radial360;
-            cooldownImage.fillOrigin = 2; // Bottom
-            cooldownImage.fillClockwise = true;
-            cooldownImage.fillAmount = 0;
-            
-            RectTransform cooldownRect = cooldownObj.GetComponent<RectTransform>();
-            cooldownRect.anchorMin = Vector2.zero;
-            cooldownRect.anchorMax = Vector2.one;
-            cooldownRect.offsetMin = Vector2.zero;
-            cooldownRect.offsetMax = Vector2.zero;
-            
-            // Store references
-            valueTexts[paramName] = buttonText;
-            buttons[paramName] = button;
-            cooldownImages[paramName] = cooldownImage;
-            
-            // Ensure button starts interactable
-            button.interactable = true;
-            cooldownImages[paramName].fillAmount = 0;
-            
-            // Setup callback
-            button.onClick.AddListener(() => ToggleEconomicCycles());
-        }
-        
         private void CreateResetButton(Transform parent)
         {
             GameObject buttonObj = new GameObject("ResetButton");
@@ -531,130 +380,108 @@ namespace UI
             buttonTextRect.offsetMin = Vector2.zero;
             buttonTextRect.offsetMax = Vector2.zero;
             
-            // Setup callback
-            button.onClick.AddListener(ResetAllParameters);
+            // Setup callback - using Unity's native system
+            button.onClick.AddListener(() => {
+                // Reset all parameters
+                ResetAllParameters();
+                
+                // Visual feedback
+                ShowButtonFeedback(buttonObj, buttonText);
+                
+                Debug.Log("Reset button clicked at time: " + Time.time);
+            });
         }
         
-        private void Update()
+        private void ApplyValueToSystem(string paramName)
         {
-            // Update cooldown visuals
-            foreach (string param in cooldownImages.Keys)
-            {
-                // Make sure the key exists in both dictionaries
-                if (!isOnCooldown.ContainsKey(param))
-                {
-                    isOnCooldown[param] = false;
-                }
-                
-                if (!lastAdjustmentTime.ContainsKey(param))
-                {
-                    lastAdjustmentTime[param] = -cooldownDuration;
-                }
-                
-                if (isOnCooldown[param])
-                {
-                    float elapsed = Time.time - lastAdjustmentTime[param];
-                    float remaining = cooldownDuration - elapsed;
-                    
-                    if (remaining <= 0)
-                    {
-                        // Cooldown finished
-                        cooldownImages[param].fillAmount = 0;
-                        isOnCooldown[param] = false;
-                        buttons[param].interactable = true;
-                    }
-                    else
-                    {
-                        // Update cooldown visual
-                        float fillAmount = remaining / cooldownDuration;
-                        cooldownImages[param].fillAmount = fillAmount;
-                        buttons[param].interactable = false;
-                    }
-                }
+            if (economicSystem == null || !sliders.ContainsKey(paramName)) {
+                Debug.LogError($"Cannot apply parameter {paramName}: economicSystem or slider not found");
+                return;
             }
-        }
-        
-        private void UpdateValueText(string paramName, float sliderValue)
-        {
-            if (valueTexts.ContainsKey(paramName) && parameterRanges.ContainsKey(paramName))
-            {
-                // Map the slider 0-1 range to the parameter's actual range
-                Vector2 range = parameterRanges[paramName];
-                float actualValue = Mathf.Lerp(range.x, range.y, sliderValue);
-                
-                // Update text display
-                valueTexts[paramName].text = actualValue.ToString("F2");
-            }
-        }
-        
-        private void ApplyParameter(string paramName)
-        {
-            if (economicSystem == null || !sliders.ContainsKey(paramName)) return;
             
-            // Check if on cooldown
-            if (isOnCooldown[paramName]) return;
-            
-            // Map the slider 0-1 range to the parameter's actual range
+            // Get slider value and map to parameter range
+            Slider slider = sliders[paramName];
             Vector2 range = parameterRanges[paramName];
-            float sliderValue = sliders[paramName].value;
-            float actualValue = Mathf.Lerp(range.x, range.y, sliderValue);
+            float actualValue = Mathf.Lerp(range.x, range.y, slider.value);
             
-            // Apply the parameter to the economic system using reflection
-            var property = typeof(EconomicSystem).GetProperty(paramName);
-            if (property != null)
+            // Set the value directly on the economic system
+            switch (paramName)
             {
-                property.SetValue(economicSystem, actualValue);
-                Debug.Log($"Applied {paramName} = {actualValue}");
-            }
-            else
-            {
-                var field = typeof(EconomicSystem).GetField(paramName);
-                if (field != null)
-                {
-                    field.SetValue(economicSystem, actualValue);
-                    Debug.Log($"Applied {paramName} = {actualValue}");
-                }
-                else
-                {
-                    Debug.LogWarning($"Could not find parameter {paramName} in EconomicSystem");
+                case "ProductivityFactor":
+                    economicSystem.productivityFactor = actualValue;
+                    break;
+                case "LaborElasticity":
+                    economicSystem.laborElasticity = actualValue;
+                    break;
+                case "EfficiencyModifier":
+                    economicSystem.efficiencyModifier = actualValue;
+                    break;
+                case "BaseConsumptionRate":
+                    economicSystem.baseConsumptionRate = actualValue;
+                    break;
+                case "DecayRate":
+                    economicSystem.decayRate = actualValue;
+                    break;
+                default:
+                    Debug.LogWarning($"Unknown parameter: {paramName}");
                     return;
-                }
             }
             
-            // Start cooldown
-            lastAdjustmentTime[paramName] = Time.time;
-            isOnCooldown[paramName] = true;
-            buttons[paramName].interactable = false;
+            Debug.Log($"APPLIED {paramName} = {actualValue}");
         }
         
-        private void ToggleEconomicCycles()
+        private void ShowButtonFeedback(GameObject buttonObj, TextMeshProUGUI valueText)
         {
-            if (economicSystem == null) return;
+            // 1. Create temporary visual feedback that sits on top of the button
+            GameObject feedbackObj = new GameObject("ButtonFeedback");
+            feedbackObj.transform.SetParent(buttonObj.transform, false);
             
-            // Check if on cooldown
-            string paramName = "EnableEconomicCycles";
-            if (isOnCooldown[paramName]) return;
+            // Add an image that flashes
+            Image feedbackImage = feedbackObj.AddComponent<Image>();
+            feedbackImage.color = new Color(1f, 1f, 1f, 0.5f); // White semi-transparent flash
             
-            // Toggle the value
-            bool newValue = !economicSystem.enableEconomicCycles;
-            economicSystem.enableEconomicCycles = newValue;
+            // Make sure it covers the entire button
+            RectTransform feedbackRect = feedbackObj.GetComponent<RectTransform>();
+            feedbackRect.anchorMin = Vector2.zero;
+            feedbackRect.anchorMax = Vector2.one;
+            feedbackRect.offsetMin = Vector2.zero;
+            feedbackRect.offsetMax = Vector2.zero;
             
-            // Update button text
-            valueTexts[paramName].text = newValue ? "ON" : "OFF";
+            // Create a checkmark text on top
+            GameObject checkObj = new GameObject("Checkmark");
+            checkObj.transform.SetParent(feedbackObj.transform, false);
             
-            // Update button color
-            ColorBlock colors = buttons[paramName].colors;
-            colors.normalColor = newValue ? new Color(0.3f, 0.8f, 0.3f) : new Color(0.8f, 0.3f, 0.3f);
-            colors.highlightedColor = newValue ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.9f, 0.4f, 0.4f);
-            colors.pressedColor = newValue ? new Color(0.2f, 0.7f, 0.2f) : new Color(0.7f, 0.2f, 0.2f);
-            buttons[paramName].colors = colors;
+            TextMeshProUGUI checkText = checkObj.AddComponent<TextMeshProUGUI>();
+            checkText.text = "✓"; // Checkmark
+            checkText.fontSize = 20;
+            checkText.fontStyle = FontStyles.Bold;
+            checkText.color = Color.green;
+            checkText.alignment = TextAlignmentOptions.Center;
             
-            Debug.Log($"Applied EnableEconomicCycles = {newValue}");
+            RectTransform checkRect = checkObj.GetComponent<RectTransform>();
+            checkRect.anchorMin = Vector2.zero;
+            checkRect.anchorMax = Vector2.one;
+            checkRect.offsetMin = Vector2.zero;
+            checkRect.offsetMax = Vector2.zero;
             
-            // Start cooldown
-            lastAdjustmentTime[paramName] = Time.time;
-            isOnCooldown[paramName] = true;
-            buttons[paramName].interactable = false;
+            // Make text briefly bold
+            FontStyles originalStyle = valueText.fontStyle;
+            valueText.fontStyle = FontStyles.Bold;
+            
+            // Destroy after a short time
+            Destroy(feedbackObj, 0.5f);
+            
+            // Return text to normal style after the feedback
+            StartCoroutine(ResetTextStyle(valueText, originalStyle, 0.5f));
+        }
+        
+        private IEnumerator ResetTextStyle(TextMeshProUGUI text, FontStyles originalStyle, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (text != null)
+            {
+                text.fontStyle = originalStyle;
+            }
         }
         
         private void ResetAllParameters()
@@ -685,38 +512,6 @@ namespace UI
             UpdateParameterSlider("EfficiencyModifier", economicSystem.efficiencyModifier);
             UpdateParameterSlider("BaseConsumptionRate", economicSystem.baseConsumptionRate);
             UpdateParameterSlider("DecayRate", economicSystem.decayRate);
-            
-            // Update toggle button
-            string paramName = "EnableEconomicCycles";
-            if (valueTexts.ContainsKey(paramName))
-            {
-                bool currentValue = economicSystem.enableEconomicCycles;
-                valueTexts[paramName].text = currentValue ? "ON" : "OFF";
-                
-                // Update button color
-                if (buttons.ContainsKey(paramName))
-                {
-                    ColorBlock colors = buttons[paramName].colors;
-                    colors.normalColor = currentValue ? new Color(0.3f, 0.8f, 0.3f) : new Color(0.8f, 0.3f, 0.3f);
-                    colors.highlightedColor = currentValue ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.9f, 0.4f, 0.4f);
-                    colors.pressedColor = currentValue ? new Color(0.2f, 0.7f, 0.2f) : new Color(0.7f, 0.2f, 0.2f);
-                    buttons[paramName].colors = colors;
-                }
-            }
-            
-            // Ensure all buttons are interactable after initialization
-            foreach (var buttonKey in buttons.Keys)
-            {
-                if (buttons[buttonKey] != null)
-                {
-                    buttons[buttonKey].interactable = true;
-                    
-                    if (cooldownImages.ContainsKey(buttonKey))
-                    {
-                        cooldownImages[buttonKey].fillAmount = 0;
-                    }
-                }
-            }
         }
         
         private void UpdateParameterSlider(string paramName, float actualValue)
