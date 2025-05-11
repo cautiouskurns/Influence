@@ -36,10 +36,10 @@ namespace Scenarios
             }
             
             // Create advance turn button if not assigned
-            if (advanceTurnButton == null)
-            {
-                CreateAdvanceTurnButton();
-            }
+            // if (advanceTurnButton == null)
+            // {
+            //     CreateAdvanceTurnButton();
+            // }
             
             // Initialize
             scenarioName = "No scenario loaded";

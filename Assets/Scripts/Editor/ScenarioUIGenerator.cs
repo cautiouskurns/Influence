@@ -120,6 +120,9 @@ namespace Editor
                 so.ApplyModifiedProperties();
             }
             
+            // Ensure the button starts disabled until a scenario is loaded
+            advanceTurnButton.gameObject.SetActive(false);
+
             // Create a ScenarioTester component to quickly test scenarios
             GameObject testerObj = new GameObject("ScenarioTester");
             ScenarioTester tester = testerObj.AddComponent<ScenarioTester>();

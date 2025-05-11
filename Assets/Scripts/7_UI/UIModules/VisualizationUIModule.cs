@@ -102,10 +102,10 @@ namespace UI
             }
             
             // Create legend panel if it doesn't exist
-            if (legendPanel == null)
-            {
-                CreateLegendPanel();
-            }
+            // if (legendPanel == null)
+            // {
+            //     CreateLegendPanel();
+            // }
         }
         
         private Button CreateButton(string name, string text)
