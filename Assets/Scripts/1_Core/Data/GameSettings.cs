@@ -8,7 +8,7 @@ namespace Core
     /// ScriptableObject that holds all global game settings and configuration values.
     /// Centralizes game parameters for easy tuning and modification.
     /// </summary>
-    [CreateAssetMenu(fileName = "GameSettings", menuName = "Game/Settings/GameSettings")]
+    [CreateAssetMenu(fileName = "DefaultGameSettings", menuName = "Game/Settings/GameSettings")]
     public class GameSettings : ScriptableObject
     {
         [Header("Simulation Settings")]

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4defc9d3827e415da4cd7385524d352, type: 3}
+  m_Name: DefaultGameSettings
+  m_EditorClassIdentifier: 
+  startingTurn: 10
+  startPaused: 1
+  baseSimulationSpeed: 1
+  turnDuration: 1
+  populationGrowthRate: 0.02
+  migrationRate: 0.01
+  maxPopulationDensity: 1000
+  infrastructureGrowthThreshold: 0.5
+  baseProductionEfficiency: 1
+  baseTradeEfficiency: 1
+  baseConsumptionRate: 0.5
+  resourceRegenerationRate: 0.005
+  maxExtractionEfficiency: 0.8
+  notificationDuration: 3
+  maxZoomLevel: 10
+  minZoomLevel: 2

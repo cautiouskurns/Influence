@@ -52,10 +52,10 @@ namespace UI
             // Initialize cooldown dictionaries for all parameters
             foreach (string param in parameterRanges.Keys)
             {
-                lastAdjustmentTime[param] = -cooldownDuration; // Start with no cooldown
+                lastAdjustmentTime[param] = -cooldownDuration * 2; // Start with no cooldown (increased buffer)
                 isOnCooldown[param] = false;
             }
-            lastAdjustmentTime["EnableEconomicCycles"] = -cooldownDuration;
+            lastAdjustmentTime["EnableEconomicCycles"] = -cooldownDuration * 2;
             isOnCooldown["EnableEconomicCycles"] = false;
             
             // Find EconomicSystem if not set in inspector
@@ -69,6 +69,31 @@ namespace UI
             }
             
             CreateUIElements();
+            
+            // Force reset cooldown state for all buttons to ensure they're interactive
+            ResetAllCooldowns();
+        }
+        
+        // Add a method to reset all cooldowns
+        private void ResetAllCooldowns()
+        {
+            foreach (string param in buttons.Keys)
+            {
+                if (buttons[param] != null)
+                {
+                    buttons[param].interactable = true;
+                    
+                    if (cooldownImages.ContainsKey(param))
+                    {
+                        cooldownImages[param].fillAmount = 0;
+                    }
+                    
+                    lastAdjustmentTime[param] = -cooldownDuration * 2;
+                    isOnCooldown[param] = false;
+                }
+            }
+            
+            Debug.Log("All economic control buttons reset to interactive state");
         }
         
         private void CreateUIElements()
