@@ -19,13 +19,18 @@ namespace UI
         [SerializeField] private Vector2 panelSize = new Vector2(400f, 350f);
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.3f, 0.5f, 0.8f, 1f);
+        [SerializeField] private Color buttonColor = new Color(0.2f, 0.6f, 0.3f);
         
         // UI Elements
         private GameObject controlPanel;
         private Dictionary<string, Slider> sliders = new Dictionary<string, Slider>();
         private Dictionary<string, TextMeshProUGUI> valueTexts = new Dictionary<string, TextMeshProUGUI>();
         private Dictionary<string, Button> buttons = new Dictionary<string, Button>();
-        
+        private Dictionary<string, Image> buttonImages = new Dictionary<string, Image>();
+
+        // Add to track which parameters have been applied
+        private Dictionary<string, bool> parameterApplied = new Dictionary<string, bool>();
+
         // Parameter ranges
         private Dictionary<string, Vector2> parameterRanges = new Dictionary<string, Vector2>()
         {
@@ -35,9 +40,6 @@ namespace UI
             { "BaseConsumptionRate", new Vector2(0.1f, 0.4f) },
             { "DecayRate", new Vector2(0.01f, 0.1f) }
         };
-        
-        // Track button click times for debug purposes
-        private Dictionary<string, float> lastClickTime = new Dictionary<string, float>();
 
         public override void Initialize()
         {
@@ -54,6 +56,22 @@ namespace UI
             }
             
             CreateUIElements();
+            
+            // Ensure we check button states periodically
+            InvokeRepeating(nameof(CheckButtonStates), 1f, 1f);
+        }
+        
+        // Check button states periodically
+        private void CheckButtonStates()
+        {
+            foreach (var button in buttons.Values)
+            {
+                if (button != null && !button.interactable)
+                {
+                    button.interactable = true;
+                    Debug.Log("Restored interactability for button");
+                }
+            }
         }
         
         private void CreateUIElements()
@@ -109,6 +127,8 @@ namespace UI
             
             // Set initial slider values
             UpdateSlidersFromSystem();
+            
+            Debug.Log("Economic Control UI Module initialized with " + buttons.Count + " buttons");
         }
         
         private void CreateHeader(Transform parent)
@@ -203,31 +223,34 @@ namespace UI
             valueElement.minWidth = 50;
             valueElement.flexibleWidth = 0;
             
-            // Add apply button
+            // Add apply button with improved setup - this is the key change
             GameObject buttonObj = new GameObject("ApplyButton");
             buttonObj.transform.SetParent(containerObj.transform, false);
             
-            // Add button image
+            // Add button image first - required for proper button setup
             Image buttonImage = buttonObj.AddComponent<Image>();
-            buttonImage.color = new Color(0.2f, 0.6f, 0.3f);
+            buttonImage.color = buttonColor;
             
-            // Add button component
+            // Set layout constraints with specific size to avoid scaling issues
+            LayoutElement buttonElement = buttonObj.AddComponent<LayoutElement>();
+            buttonElement.preferredWidth = 60;
+            buttonElement.preferredHeight = 30;
+            buttonElement.flexibleWidth = 0;
+            buttonElement.minWidth = 60;
+            
+            // Add button component after establishing layout
             Button button = buttonObj.AddComponent<Button>();
             button.targetGraphic = buttonImage;
             
-            // Set button colors
+            // Set button colors with more pronounced feedback
             ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.2f, 0.6f, 0.3f);
-            colors.highlightedColor = new Color(0.3f, 0.7f, 0.4f);
-            colors.pressedColor = new Color(0.1f, 0.5f, 0.2f);
-            colors.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+            colors.normalColor = buttonColor;
+            colors.highlightedColor = new Color(buttonColor.r + 0.15f, buttonColor.g + 0.15f, buttonColor.b + 0.15f);
+            colors.pressedColor = new Color(buttonColor.r - 0.15f, buttonColor.g - 0.15f, buttonColor.b - 0.15f);
+            colors.selectedColor = new Color(buttonColor.r + 0.1f, buttonColor.g + 0.1f, buttonColor.b + 0.1f);
+            colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+            colors.fadeDuration = 0.1f;
             button.colors = colors;
-            
-            // Add layout element
-            LayoutElement buttonElement = buttonObj.AddComponent<LayoutElement>();
-            buttonElement.preferredWidth = 40;
-            buttonElement.preferredHeight = 25;
-            buttonElement.flexibleWidth = 0;
             
             // Add text to button
             GameObject buttonTextObj = new GameObject("Text");
@@ -237,7 +260,9 @@ namespace UI
             buttonText.text = "Apply";
             buttonText.fontSize = 12;
             buttonText.alignment = TextAlignmentOptions.Center;
+            buttonText.raycastTarget = false; // Important - prevent text from blocking button clicks
             
+            // Set text to fill button area
             RectTransform buttonTextRect = buttonTextObj.GetComponent<RectTransform>();
             buttonTextRect.anchorMin = Vector2.zero;
             buttonTextRect.anchorMax = Vector2.one;
@@ -248,26 +273,47 @@ namespace UI
             sliders[paramName] = slider;
             valueTexts[paramName] = valueText;
             buttons[paramName] = button;
-            lastClickTime[paramName] = -1f;
+            buttonImages[paramName] = buttonImage;
+            parameterApplied[paramName] = false;
             
             // Setup slider value change event
-            slider.onValueChanged.AddListener(value => {
+            slider.onValueChanged.AddListener((value) => {
+                // Convert normalized value to actual parameter value
                 float actualValue = Mathf.Lerp(parameterRanges[paramName].x, parameterRanges[paramName].y, value);
+                // Update the display
                 valueText.text = actualValue.ToString("F2");
+                // Mark parameter as not applied
+                parameterApplied[paramName] = false;
+                // Update button color
+                buttonImage.color = buttonColor;
             });
             
-            // Setup apply button click handler - using Unity's native system
-            button.onClick.AddListener(() => {
-                // Apply parameter 
-                ApplyValueToSystem(paramName);
-                
-                // Visual feedback
-                ShowButtonFeedback(buttonObj, valueText);
-                
-                // Track for debugging
-                lastClickTime[paramName] = Time.time;
-                Debug.Log($"Button {paramName} clicked at time: {Time.time}");
+            // Improved button click event with direct reference
+            string capturedParamName = paramName; // Capture for closure
+            button.onClick.AddListener(delegate {
+                OnApplyButtonClicked(capturedParamName, buttonObj, valueText);
             });
+        }
+        
+        // Separated button click handler to improve debugging
+        private void OnApplyButtonClicked(string paramName, GameObject buttonObj, TextMeshProUGUI valueText)
+        {
+            Debug.Log($"Apply button clicked for {paramName}");
+            
+            // Apply the parameter value to the system
+            ApplyValueToSystem(paramName);
+            
+            // Show visual feedback
+            ShowButtonFeedback(buttonObj, valueText);
+            
+            // Mark parameter as applied
+            parameterApplied[paramName] = true;
+            
+            // Update button color
+            if (buttonImages.ContainsKey(paramName))
+            {
+                buttonImages[paramName].color = new Color(0.5f, 0.5f, 0.5f); // Change to a different color to indicate applied
+            }
         }
         
         private void CreateSliderParts(GameObject sliderObj)
@@ -348,21 +394,24 @@ namespace UI
             Image buttonImage = buttonObj.AddComponent<Image>();
             buttonImage.color = new Color(0.8f, 0.2f, 0.2f);
             
-            // Add button component
-            Button button = buttonObj.AddComponent<Button>();
-            button.targetGraphic = buttonImage;
-            
-            // Set button colors
-            ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.8f, 0.2f, 0.2f);
-            colors.highlightedColor = new Color(0.9f, 0.3f, 0.3f);
-            colors.pressedColor = new Color(0.7f, 0.1f, 0.1f);
-            button.colors = colors;
-            
-            // Set button size and layout
+            // Set button size and layout first
             LayoutElement buttonLayout = buttonObj.AddComponent<LayoutElement>();
             buttonLayout.preferredHeight = 35;
             buttonLayout.flexibleWidth = 1;
+            buttonLayout.minHeight = 35;
+            
+            // Add button component after layout
+            Button button = buttonObj.AddComponent<Button>();
+            button.targetGraphic = buttonImage;
+            
+            // Set button colors with stronger feedback
+            ColorBlock colors = button.colors;
+            colors.normalColor = new Color(0.8f, 0.2f, 0.2f);
+            colors.highlightedColor = new Color(1.0f, 0.3f, 0.3f);
+            colors.pressedColor = new Color(0.6f, 0.1f, 0.1f);
+            colors.selectedColor = new Color(0.9f, 0.25f, 0.25f);
+            colors.fadeDuration = 0.1f;
+            button.colors = colors;
             
             // Add text to button
             GameObject buttonTextObj = new GameObject("Text");
@@ -373,6 +422,7 @@ namespace UI
             buttonText.fontSize = 14;
             buttonText.alignment = TextAlignmentOptions.Center;
             buttonText.fontStyle = FontStyles.Bold;
+            buttonText.raycastTarget = false; // Prevent text from blocking clicks
             
             RectTransform buttonTextRect = buttonTextObj.GetComponent<RectTransform>();
             buttonTextRect.anchorMin = Vector2.zero;
@@ -380,16 +430,22 @@ namespace UI
             buttonTextRect.offsetMin = Vector2.zero;
             buttonTextRect.offsetMax = Vector2.zero;
             
-            // Setup callback - using Unity's native system
-            button.onClick.AddListener(() => {
-                // Reset all parameters
-                ResetAllParameters();
-                
-                // Visual feedback
-                ShowButtonFeedback(buttonObj, buttonText);
-                
-                Debug.Log("Reset button clicked at time: " + Time.time);
+            // Improved click handler
+            button.onClick.AddListener(delegate {
+                OnResetButtonClicked(buttonObj, buttonText);
             });
+        }
+        
+        // Separate reset button handler
+        private void OnResetButtonClicked(GameObject buttonObj, TextMeshProUGUI buttonText)
+        {
+            Debug.Log("Reset button clicked");
+            
+            // Reset parameters
+            ResetAllParameters();
+            
+            // Visual feedback
+            ShowButtonFeedback(buttonObj, buttonText);
         }
         
         private void ApplyValueToSystem(string paramName)
@@ -405,58 +461,81 @@ namespace UI
             float actualValue = Mathf.Lerp(range.x, range.y, slider.value);
             
             // Set the value directly on the economic system
-            switch (paramName)
-            {
-                case "ProductivityFactor":
-                    economicSystem.productivityFactor = actualValue;
-                    break;
-                case "LaborElasticity":
-                    economicSystem.laborElasticity = actualValue;
-                    break;
-                case "EfficiencyModifier":
-                    economicSystem.efficiencyModifier = actualValue;
-                    break;
-                case "BaseConsumptionRate":
-                    economicSystem.baseConsumptionRate = actualValue;
-                    break;
-                case "DecayRate":
-                    economicSystem.decayRate = actualValue;
-                    break;
-                default:
-                    Debug.LogWarning($"Unknown parameter: {paramName}");
-                    return;
-            }
+            Debug.Log($"Setting {paramName} to {actualValue}");
             
-            Debug.Log($"APPLIED {paramName} = {actualValue}");
+            try {
+                switch (paramName)
+                {
+                    case "ProductivityFactor":
+                        economicSystem.productivityFactor = actualValue;
+                        break;
+                    case "LaborElasticity":
+                        economicSystem.laborElasticity = actualValue;
+                        break;
+                    case "EfficiencyModifier":
+                        economicSystem.efficiencyModifier = actualValue;
+                        break;
+                    case "BaseConsumptionRate":
+                        economicSystem.baseConsumptionRate = actualValue;
+                        break;
+                    case "DecayRate":
+                        economicSystem.decayRate = actualValue;
+                        break;
+                    default:
+                        Debug.LogWarning($"Unknown parameter: {paramName}");
+                        return;
+                }
+                
+                // Confirm success
+                Debug.Log($"Successfully updated {paramName} = {actualValue}");
+            }
+            catch (System.Exception e) {
+                Debug.LogError($"Error setting {paramName}: {e.Message}");
+            }
         }
         
+        // Improved visual feedback with better isolation
         private void ShowButtonFeedback(GameObject buttonObj, TextMeshProUGUI valueText)
         {
-            // 1. Create temporary visual feedback that sits on top of the button
+            if (buttonObj == null) {
+                Debug.LogError("Cannot show feedback: button object is null");
+                return;
+            }
+            
+            // Create a standalone feedback object
             GameObject feedbackObj = new GameObject("ButtonFeedback");
             feedbackObj.transform.SetParent(buttonObj.transform, false);
             
-            // Add an image that flashes
-            Image feedbackImage = feedbackObj.AddComponent<Image>();
-            feedbackImage.color = new Color(1f, 1f, 1f, 0.5f); // White semi-transparent flash
+            // Clear any existing feedback
+            foreach (Transform child in buttonObj.transform) {
+                if (child.name == "ButtonFeedback" && child.gameObject != feedbackObj) {
+                    Destroy(child.gameObject);
+                }
+            }
             
-            // Make sure it covers the entire button
+            // Add flash effect with raycast targets disabled
+            Image feedbackImage = feedbackObj.AddComponent<Image>();
+            feedbackImage.color = new Color(1f, 1f, 1f, 0.5f);
+            feedbackImage.raycastTarget = false;
+            
+            // Position feedback to cover the button
             RectTransform feedbackRect = feedbackObj.GetComponent<RectTransform>();
             feedbackRect.anchorMin = Vector2.zero;
             feedbackRect.anchorMax = Vector2.one;
             feedbackRect.offsetMin = Vector2.zero;
             feedbackRect.offsetMax = Vector2.zero;
             
-            // Create a checkmark text on top
+            // Add checkmark
             GameObject checkObj = new GameObject("Checkmark");
             checkObj.transform.SetParent(feedbackObj.transform, false);
             
             TextMeshProUGUI checkText = checkObj.AddComponent<TextMeshProUGUI>();
-            checkText.text = "✓"; // Checkmark
+            checkText.text = "✓";
             checkText.fontSize = 20;
             checkText.fontStyle = FontStyles.Bold;
             checkText.color = Color.green;
             checkText.alignment = TextAlignmentOptions.Center;
+            checkText.raycastTarget = false;
             
             RectTransform checkRect = checkObj.GetComponent<RectTransform>();
             checkRect.anchorMin = Vector2.zero;
@@ -464,18 +543,21 @@ namespace UI
             checkRect.offsetMin = Vector2.zero;
             checkRect.offsetMax = Vector2.zero;
             
-            // Make text briefly bold
-            FontStyles originalStyle = valueText.fontStyle;
-            valueText.fontStyle = FontStyles.Bold;
+            // Make value text bold temporarily if provided
+            if (valueText != null) {
+                FontStyles originalStyle = valueText.fontStyle;
+                valueText.fontStyle = FontStyles.Bold;
+                
+                // Reset text style after delay using a unique coroutine name
+                StartCoroutine(ResetTextStyleAfterDelay(valueText, originalStyle, 0.5f));
+            }
             
-            // Destroy after a short time
+            // Destroy feedback after a delay
             Destroy(feedbackObj, 0.5f);
-            
-            // Return text to normal style after the feedback
-            StartCoroutine(ResetTextStyle(valueText, originalStyle, 0.5f));
         }
         
-        private IEnumerator ResetTextStyle(TextMeshProUGUI text, FontStyles originalStyle, float delay)
+        // Renamed to avoid any potential conflicts
+        private IEnumerator ResetTextStyleAfterDelay(TextMeshProUGUI text, FontStyles originalStyle, float delay)
         {
             yield return new WaitForSeconds(delay);
             if (text != null)
@@ -486,20 +568,28 @@ namespace UI
         
         private void ResetAllParameters()
         {
-            if (economicSystem == null) return;
+            if (economicSystem == null) {
+                Debug.LogError("Cannot reset parameters: economicSystem is null");
+                return;
+            }
             
-            // Reset all parameters to their default values
-            economicSystem.productivityFactor = 1.0f;
-            economicSystem.laborElasticity = 0.5f;
-            economicSystem.efficiencyModifier = 0.1f;
-            economicSystem.baseConsumptionRate = 0.2f;
-            economicSystem.decayRate = 0.02f;
-            economicSystem.enableEconomicCycles = true;
-            
-            // Update UI
-            UpdateSlidersFromSystem();
-            
-            Debug.Log("Reset all economic parameters to defaults");
+            try {
+                // Reset all parameters to their default values
+                economicSystem.productivityFactor = 1.0f;
+                economicSystem.laborElasticity = 0.5f;
+                economicSystem.efficiencyModifier = 0.1f;
+                economicSystem.baseConsumptionRate = 0.2f;
+                economicSystem.decayRate = 0.02f;
+                economicSystem.enableEconomicCycles = true;
+                
+                // Update UI
+                UpdateSlidersFromSystem();
+                
+                Debug.Log("Successfully reset all economic parameters to defaults");
+            }
+            catch (System.Exception e) {
+                Debug.LogError($"Error resetting parameters: {e.Message}");
+            }
         }
         
         private void UpdateSlidersFromSystem()
@@ -518,16 +608,68 @@ namespace UI
         {
             if (!sliders.ContainsKey(paramName) || !parameterRanges.ContainsKey(paramName)) return;
             
-            // Map the actual value to the 0-1 slider range
-            Vector2 range = parameterRanges[paramName];
-            float sliderValue = Mathf.InverseLerp(range.x, range.y, actualValue);
-            sliders[paramName].value = sliderValue;
-            
-            // Update text display
-            if (valueTexts.ContainsKey(paramName))
-            {
-                valueTexts[paramName].text = actualValue.ToString("F2");
+            try {
+                // Map the actual value to the 0-1 slider range
+                Vector2 range = parameterRanges[paramName];
+                float sliderValue = Mathf.InverseLerp(range.x, range.y, actualValue);
+                sliders[paramName].value = sliderValue;
+                
+                // Update text display
+                if (valueTexts.ContainsKey(paramName))
+                {
+                    valueTexts[paramName].text = actualValue.ToString("F2");
+                }
             }
+            catch (System.Exception e) {
+                Debug.LogError($"Error updating slider {paramName}: {e.Message}");
+            }
+        }
+        
+        // Public methods for manual debugging and fixes
+        
+        // Add debug log method that can be called from the editor
+        [ContextMenu("Log Button States")]
+        public void LogButtonStates()
+        {
+            Debug.Log("=== Button States ===");
+            foreach (var kvp in buttons)
+            {
+                if (kvp.Value != null)
+                {
+                    Debug.Log($"Button {kvp.Key}: interactable={kvp.Value.interactable}, enabled={kvp.Value.enabled}, gameObject.active={kvp.Value.gameObject.activeSelf}");
+                }
+                else
+                {
+                    Debug.Log($"Button {kvp.Key}: NULL REFERENCE");
+                }
+            }
+        }
+        
+        // Manually force all buttons to be interactable
+        [ContextMenu("Force Enable All Buttons")]
+        public void ForceEnableAllButtons()
+        {
+            foreach (var button in buttons.Values)
+            {
+                if (button != null)
+                {
+                    button.interactable = true;
+                }
+            }
+            Debug.Log("Forced all buttons to be enabled");
+        }
+        
+        // Make Awake/Start force set interactability
+        private void Start()
+        {
+            // Double-check that all buttons are interactable
+            ForceEnableAllButtons();
+        }
+        
+        // Also check buttons on enable
+        private void OnEnable()
+        {
+            ForceEnableAllButtons();
         }
     }
 }
