@@ -15,8 +15,8 @@ namespace Systems.UI
         [Header("UI Settings")]
         [SerializeField] private Color panelColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
         [SerializeField] private Color headerColor = new Color(0.8f, 0.4f, 0.2f, 1f);
-        [SerializeField] private Vector2 statsPanelSize = new Vector2(500f, 400f); // Larger panel for more stats
-        [SerializeField] private Vector2 panelPosition = new Vector2(650f, 400f); // Right side offset
+        [SerializeField] private Vector2 statsPanelSize = new Vector2(350f, 400f); // Adjusted size
+        [SerializeField] private Vector2 panelPosition = new Vector2(-20f, -20f); // Left side position
         
         // UI Elements
         private GameObject statsPanel;
@@ -35,11 +35,20 @@ namespace Systems.UI
             if (statsPanel != null)
             {
                 statsPanel.SetActive(true);
+                // Force to front
+                statsPanel.transform.SetAsLastSibling();
                 Debug.Log("RegionStatsUIView panel shown");
             }
             else
             {
                 Debug.LogWarning("Cannot show RegionStatsUIView - panel is null");
+                CreateUIElements();
+                if (statsPanel != null)
+                {
+                    statsPanel.SetActive(true);
+                    statsPanel.transform.SetAsLastSibling();
+                    Debug.Log("RegionStatsUIView panel created and shown");
+                }
             }
         }
         
@@ -140,11 +149,11 @@ namespace Systems.UI
             Image panelImage = statsPanel.AddComponent<Image>();
             panelImage.color = panelColor;
             
-            // Configure panel size and position
+            // Configure panel size and position - changed to right side
             RectTransform panelRect = statsPanel.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(1, 1);
-            panelRect.anchorMax = new Vector2(1, 1);
-            panelRect.pivot = new Vector2(1, 1);
+            panelRect.anchorMin = new Vector2(1, 0.5f);
+            panelRect.anchorMax = new Vector2(1, 0.5f);
+            panelRect.pivot = new Vector2(1, 0.5f);
             panelRect.sizeDelta = statsPanelSize;
             panelRect.anchoredPosition = panelPosition;
             
@@ -191,6 +200,18 @@ namespace Systems.UI
             CreateStatField("Nation", "Independent");
             
             Debug.Log("UI elements created successfully");
+            
+            // Make sure the panel has proper canvas sorting order
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                Canvas panelCanvas = statsPanel.AddComponent<Canvas>();
+                panelCanvas.overrideSorting = true;
+                panelCanvas.sortingOrder = 10; // Ensure it's on top
+                
+                // Add a GraphicRaycaster for UI interaction
+                statsPanel.AddComponent<GraphicRaycaster>();
+            }
             
             // Hide panel initially until a region is set
             statsPanel.SetActive(false);

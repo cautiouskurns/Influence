@@ -69,17 +69,22 @@ namespace Scenarios
             GameObject textObj = new GameObject("ScreenInfoText");
             textObj.transform.SetParent(canvas.transform, false);
             RectTransform textRect = textObj.AddComponent<RectTransform>();
+            
+            // Ensure it's anchored to the top left corner
             textRect.anchorMin = new Vector2(0, 1);
             textRect.anchorMax = new Vector2(0, 1);
             textRect.pivot = new Vector2(0, 1);
             textRect.sizeDelta = new Vector2(500, 200);
-            textRect.anchoredPosition = new Vector2(10, -10);
+            textRect.anchoredPosition = new Vector2(10, -10); // Position slightly offset from corner
             
             // Add TextMeshPro component
             screenInfoText = textObj.AddComponent<TextMeshProUGUI>();
             screenInfoText.fontSize = 26;
             screenInfoText.color = Color.white;
             screenInfoText.alignment = TextAlignmentOptions.TopLeft;
+            
+            // Force this object to stay at the top of sibling order to prevent it from being covered
+            textObj.transform.SetAsLastSibling();
         }
         
         private void CreateAdvanceTurnButton()
